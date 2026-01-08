@@ -115,8 +115,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {/* 1. HERO SECTION */}
       <div className="relative w-full pt-32 pb-24 flex flex-col items-center bg-[#020617] overflow-hidden">
         
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          preload="auto"
+        >
+          <source src="/front.mp4" type="video/mp4" />
+        </video>
+
+        {/* Blur Overlay for text readability */}
+        <div className="absolute inset-0 bg-[#020617]/40 backdrop-blur-xl z-[1] pointer-events-none"></div>
+        
         {/* Background Atmosphere */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
             <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[600px] bg-indigo-600/10 rounded-full blur-[120px]"></div>
             <div className="absolute bottom-0 right-0 w-[40vw] h-[500px] bg-purple-600/5 rounded-full blur-[100px]"></div>
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
