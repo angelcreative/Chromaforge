@@ -31,32 +31,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {
           title: "AI Palette Generator",
           desc: "Describe a mood, brand, or constraint. ChromaForge builds perceptually balanced, semantically structured scales instantly.",
-          img: "/public/ai-palette-generation.png"
+          img: "/ai-palette-generation.png"
       },
       {
           title: "Contrast & Accessibility",
           desc: "Instant WCAG / APCA contrast grids across your entire scale, including dark mode combinations.",
-          img: "/public/contrast-and-accessibility.png"
+          img: "/contrast-and-accessibility.png"
       },
       {
           title: "Fine Tuning",
           desc: "Adjust saturation curves and hue shifting with precision to perfect your color ramp.",
-          img: "/public/fine-tuning.png"
+          img: "/fine-tuning.png"
       },
       {
           title: "Production Ready",
           desc: "Export to Tailwind, CSS Vars, SCSS, JSON, and more. No manual cleanup required.",
-          img: "/public/production-ready.png"
+          img: "/production-ready.png"
       },
       {
           title: "Semantic Token Engine",
           desc: "Not just colors — meaningful tokens. Brand, neutrals, and system colors generated with consistent intent.",
-          img: "/public/semantic-token-engine.png"
+          img: "/semantic-token-engine.png"
       },
       {
           title: "3D Color Analysis",
           desc: "Visualize hue rotation, saturation curves, and lightness distribution to detect gaps and collisions.",
-          img: "/public/3d-color-analysis.png"
+          img: "/3d-color-analysis.png"
       }
   ];
 
@@ -173,7 +173,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                             >
                                 <img
-                                    src={`/public/carousel/${index + 1}.jpg`}
+                                    src={`/carousel/${index + 1}.jpg`}
                                     alt={`Feature Preview ${index + 1}`}
                                     className="w-full h-full object-contain"
                                 />
@@ -294,7 +294,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                   <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition duration-1000"></div>
                   <div className="relative rounded-2xl border border-white/10 bg-slate-950 shadow-2xl overflow-hidden aspect-[4/3] transform group-hover:rotate-y-2 transition-transform duration-700 ease-out">
                       <img 
-                        src="/public/figma-plugin.png" 
+                        src="/figma-plugin.png" 
                         alt="Figma Plugin Interface" 
                         className="w-full h-full object-cover"
                       />
