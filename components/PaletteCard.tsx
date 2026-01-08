@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades, rgbToCmyk } from '../utils/colorUtils';
 
@@ -9,16 +9,45 @@ interface PaletteCardProps {
   onOpenGrid: (color: ColorData) => void;
   onEditScale: (color: ColorData) => void; 
   onCopy: (text: string) => void;
+  onColorUpdate?: (updatedColor: ColorData) => void;
   isPrintMode?: boolean;
   isCompact?: boolean;
   globalConfig?: GlobalCurveConfig;
 }
 
-const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid, onEditScale, onCopy, isPrintMode, isCompact = false, globalConfig }) => {
+const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid, onEditScale, onCopy, onColorUpdate, isPrintMode, isCompact = false, globalConfig }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(color.name);
+  
   // Pass globalConfig here to ensure sliders affect the card immediately
   const shades = generateShades(color, globalConfig);
   const cmyk = rgbToCmyk(color.rgb.r, color.rgb.g, color.rgb.b);
+  
+  // Sync editedName when color.name changes externally
+  useEffect(() => {
+    setEditedName(color.name);
+  }, [color.name]);
+  
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedName(e.target.value);
+  };
+  
+  const handleNameBlur = () => {
+    setIsEditingName(false);
+    if (editedName !== color.name && onColorUpdate) {
+      onColorUpdate({ ...color, name: editedName.trim() || color.name });
+    }
+  };
+  
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    } else if (e.key === 'Escape') {
+      setEditedName(color.name);
+      setIsEditingName(false);
+    }
+  };
 
   useEffect(() => {
     if (cardRef.current) {
@@ -72,7 +101,25 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                             {isCompact && (
                                 <div className="w-4 h-4 rounded-full shadow-sm ring-1 ring-white/10" style={{ backgroundColor: color.hex }}></div>
                             )}
-                            <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors">{color.name}</h3>
+                            {isEditingName ? (
+                                <input
+                                    type="text"
+                                    value={editedName}
+                                    onChange={handleNameChange}
+                                    onBlur={handleNameBlur}
+                                    onKeyDown={handleNameKeyDown}
+                                    className="text-lg font-bold text-white bg-slate-800/50 border border-indigo-500/50 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    autoFocus
+                                />
+                            ) : (
+                                <h3 
+                                    className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors cursor-text hover:bg-slate-800/30 rounded px-2 py-1 -mx-2 -my-1"
+                                    onClick={() => setIsEditingName(true)}
+                                    title="Click to edit name"
+                                >
+                                    {color.name}
+                                </h3>
+                            )}
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs font-mono text-slate-400">
                             <button 

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LegalPageType } from './LegalModal';
 import { FaStar } from 'react-icons/fa';
 import { HiCheck } from 'react-icons/hi';
@@ -25,6 +25,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       setCurrentSlide((prev) => (prev + 1) % totalSlides);
     }, slideDuration);
     return () => clearInterval(timer);
+  }, []);
+
+  // Scroll Animation Hook
+  const [visibleElements, setVisibleElements] = useState<Set<string>>(new Set());
+  
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '50px',
+      threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const elementId = entry.target.getAttribute('data-scroll-id');
+          if (elementId) {
+            setVisibleElements(prev => new Set(prev).add(elementId));
+          }
+        }
+      });
+    }, observerOptions);
+
+    const elements = document.querySelectorAll('[data-scroll-id]');
+    elements.forEach(el => observer.observe(el));
+
+    return () => {
+      elements.forEach(el => observer.unobserve(el));
+    };
   }, []);
 
   const features = [
@@ -218,38 +247,90 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {/* 2. PROOF OF VALUE (Problem Statement) */}
       <div className="py-32 border-y border-white/5 bg-slate-950/50">
           <div className="max-w-4xl mx-auto px-6 text-center">
-              <h3 className="text-3xl md:text-5xl font-bold text-white mb-8 tracking-tight">
+              <h3 
+                data-scroll-id="proof-title"
+                className={`text-3xl md:text-5xl font-bold text-white mb-8 tracking-tight transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('proof-title') 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-6'
+                }`}
+              >
                   Color systems break silently.<br/>
                   <span className="text-slate-600">Until production.</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mt-16">
-                  <div className="p-6 border-l border-indigo-500/50">
-                      <h4 className="font-bold text-white mb-2">Broken in Code</h4>
-                      <p className="text-sm text-slate-400">Most palettes look fine in Figma but fail when implemented in CSS/Tailwind due to naming inconsistencies.</p>
-                  </div>
-                  <div className="p-6 border-l border-indigo-500/50">
-                      <h4 className="font-bold text-white mb-2">Zero Semantics</h4>
-                      <p className="text-sm text-slate-400">Raw hex codes provide no context. Is this blue for primary actions or information alerts?</p>
-                  </div>
-                  <div className="p-6 border-l border-indigo-500/50">
-                      <h4 className="font-bold text-white mb-2">Accessibility Last</h4>
-                      <p className="text-sm text-slate-400">Contrast issues are usually ignored until the final audit. We validate them instantly.</p>
-                  </div>
+                  {[
+                    { title: 'Broken in Code', desc: 'Most palettes look fine in Figma but fail when implemented in CSS/Tailwind due to naming inconsistencies.' },
+                    { title: 'Zero Semantics', desc: 'Raw hex codes provide no context. Is this blue for primary actions or information alerts?' },
+                    { title: 'Accessibility Last', desc: 'Contrast issues are usually ignored until the final audit. We validate them instantly.' }
+                  ].map((item, idx) => (
+                    <div 
+                      key={idx}
+                      data-scroll-id={`proof-card-${idx}`}
+                      className={`p-6 border-l border-indigo-500/50 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                        visibleElements.has(`proof-card-${idx}`)
+                          ? 'opacity-100 translate-y-0'
+                          : 'opacity-0 translate-y-6'
+                      }`}
+                      style={{ transitionDelay: `${100 * (idx + 1)}ms` }}
+                    >
+                        <h4 className="font-bold text-white mb-2">{item.title}</h4>
+                        <p className="text-sm text-slate-400">{item.desc}</p>
+                    </div>
+                  ))}
               </div>
-              <p className="mt-16 text-slate-500 font-mono text-sm">ChromaForge exists to turn color into infrastructure, not decoration.</p>
+              <p 
+                data-scroll-id="proof-footer"
+                className={`mt-16 text-slate-500 font-mono text-sm transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('proof-footer')
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-4'
+                }`}
+                style={{ transitionDelay: '400ms' }}
+              >
+                ChromaForge exists to turn color into infrastructure, not decoration.
+              </p>
           </div>
       </div>
 
       {/* 3. CORE FEATURES */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-32">
         <div className="mb-16">
-             <div className="inline-block px-3 py-1 mb-4 border border-indigo-500/30 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest">Core Infrastructure</div>
-             <h2 className="text-3xl md:text-4xl font-bold text-white max-w-2xl">Not just a generator.<br/>A complete engineering tool.</h2>
+             <div 
+               data-scroll-id="features-badge"
+               className={`inline-block px-3 py-1 mb-4 border border-indigo-500/30 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                 visibleElements.has('features-badge')
+                   ? 'opacity-100 translate-y-0'
+                   : 'opacity-0 translate-y-4'
+               }`}
+             >
+               Core Infrastructure
+             </div>
+             <h2 
+               data-scroll-id="features-title"
+               className={`text-3xl md:text-4xl font-bold text-white max-w-2xl transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                 visibleElements.has('features-title')
+                   ? 'opacity-100 translate-y-0'
+                   : 'opacity-0 translate-y-6'
+               }`}
+               style={{ transitionDelay: '100ms' }}
+             >
+               Not just a generator.<br/>A complete engineering tool.
+             </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 glow-cards-container">
             {features.map((feature, idx) => (
-                <div key={idx} className="aspect-[4/3] glow-card rounded-3xl group overflow-hidden">
+                <div 
+                  key={idx} 
+                  data-scroll-id={`feature-card-${idx}`}
+                  className={`aspect-[4/3] glow-card rounded-3xl group overflow-hidden transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    visibleElements.has(`feature-card-${idx}`)
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-8'
+                  }`}
+                  style={{ transitionDelay: `${120 * (idx + 1)}ms` }}
+                >
                     <div className="glow-content bg-slate-950 rounded-[calc(1.5rem-1px)] flex flex-col relative border border-white/5">
                         {/* Image Area */}
                         <div className="flex-1 relative bg-slate-900/50 overflow-hidden">
@@ -274,7 +355,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {/* 4. FIGMA PLUGIN */}
       <div className="py-32 border-y border-white/5 bg-slate-900/20 overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center gap-16">
-              <div className="flex-1 space-y-8">
+              <div 
+                data-scroll-id="figma-content"
+                className={`flex-1 space-y-8 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('figma-content')
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 -translate-x-8'
+                }`}
+              >
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-bold uppercase tracking-widest">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -305,7 +393,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                       Start using plugin
                   </a>
               </div>
-              <div className="flex-1 relative w-full max-w-xl group perspective-1000">
+              <div 
+                data-scroll-id="figma-image"
+                className={`flex-1 relative w-full max-w-xl group perspective-1000 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('figma-image')
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-8'
+                }`}
+                style={{ transitionDelay: '200ms' }}
+              >
                   <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition duration-1000"></div>
                   <div className="relative rounded-2xl border border-white/10 bg-slate-950 shadow-2xl overflow-hidden aspect-[4/3] transform group-hover:rotate-y-2 transition-transform duration-700 ease-out">
                       <img 
@@ -320,13 +416,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
 
       {/* 5. PRODUCTION READY (Code Snippet) */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 flex flex-col lg:flex-row items-center gap-16">
-          <div className="flex-1">
+          <div 
+            data-scroll-id="production-content"
+            className={`flex-1 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              visibleElements.has('production-content')
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 -translate-x-8'
+            }`}
+          >
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Built to plug straight into real production environments.</h2>
               <p className="text-slate-400 text-lg mb-8">No lock-in. Your tokens, your stack. We generate standard formats that work with your existing tools.</p>
               
               <div className="grid grid-cols-2 gap-4">
-                  {['Tailwind CSS', 'CSS Variables', 'SCSS / SASS', 'JSON Design Tokens', 'Figma Variables', 'Adobe ASE'].map(item => (
-                      <div key={item} className="flex items-center gap-2 text-sm text-slate-300">
+                  {['Tailwind CSS', 'CSS Variables', 'SCSS / SASS', 'JSON Design Tokens', 'Figma Variables', 'Adobe ASE'].map((item, idx) => (
+                      <div 
+                        key={item} 
+                        className={`flex items-center gap-2 text-sm text-slate-300 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                          visibleElements.has('production-content')
+                            ? 'opacity-100 translate-x-0'
+                            : 'opacity-0 translate-x-4'
+                        }`}
+                        style={{ transitionDelay: `${50 * idx}ms` }}
+                      >
                           <HiCheck className="w-4 h-4 text-green-400" />
                           {item}
                       </div>
@@ -334,7 +445,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
               </div>
           </div>
           
-          <div className="flex-1 w-full max-w-lg">
+          <div 
+            data-scroll-id="production-code"
+            className={`flex-1 w-full max-w-lg transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              visibleElements.has('production-code')
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 translate-x-8'
+            }`}
+            style={{ transitionDelay: '200ms' }}
+          >
               <div className="bg-slate-950 rounded-xl border border-white/10 p-6 font-mono text-xs md:text-sm text-slate-300 shadow-2xl overflow-x-auto">
 <pre>{`export const theme = {
   colors: {
@@ -364,18 +483,43 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
           
           <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
               <div className="text-center mb-16">
-                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                  <h2 
+                    data-scroll-id="testimonials-title"
+                    className={`text-3xl md:text-5xl font-bold text-white mb-6 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      visibleElements.has('testimonials-title')
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-6'
+                    }`}
+                  >
                       Customers can't stop raving about<br/>
                       <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">the time they save.</span>
                   </h2>
-                  <p className="text-slate-400 max-w-2xl mx-auto">Join fellow designers and engineers who have switched from manual color picking to automated architecture.</p>
+                  <p 
+                    data-scroll-id="testimonials-subtitle"
+                    className={`text-slate-400 max-w-2xl mx-auto transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      visibleElements.has('testimonials-subtitle')
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-4'
+                    }`}
+                    style={{ transitionDelay: '150ms' }}
+                  >
+                    Join fellow designers and engineers who have switched from manual color picking to automated architecture.
+                  </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {testimonials.map((t, i) => (
                       <div 
                         key={i} 
-                        className={`bg-slate-900/50 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-colors ${i >= 3 ? 'lg:col-span-1 lg:translate-x-1/2' : ''}`}
+                        data-scroll-id={`testimonial-${i}`}
+                        className={`bg-slate-900/50 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                          i >= 3 ? 'lg:col-span-1 lg:translate-x-1/2' : ''
+                        } ${
+                          visibleElements.has(`testimonial-${i}`)
+                            ? 'opacity-100 translate-y-0'
+                            : 'opacity-0 translate-y-8'
+                        }`}
+                        style={{ transitionDelay: `${100 * (i + 1)}ms` }}
                       >
                           <div>
                               <div className="flex gap-1 mb-4">
@@ -408,30 +552,72 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {/* 6. WHO IT'S FOR */}
       <div className="py-24 bg-slate-900/30 border-y border-white/5">
           <div className="max-w-4xl mx-auto px-6 text-center">
-              <h2 className="text-2xl font-bold text-white mb-12">Built for teams who care about systems</h2>
+              <h2 
+                data-scroll-id="who-title"
+                className={`text-2xl font-bold text-white mb-12 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('who-title')
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-6'
+                }`}
+              >
+                Built for teams who care about systems
+              </h2>
               <div className="flex flex-wrap justify-center gap-4">
-                  <span className="px-6 py-3 rounded-full border border-slate-700 bg-slate-950 text-slate-300 font-medium">Design System Teams</span>
-                  <span className="px-6 py-3 rounded-full border border-slate-700 bg-slate-950 text-slate-300 font-medium">Product Designers</span>
-                  <span className="px-6 py-3 rounded-full border border-slate-700 bg-slate-950 text-slate-300 font-medium">Frontend Engineers</span>
-                  <span className="px-6 py-3 rounded-full border border-slate-700 bg-slate-950 text-slate-300 font-medium">Design Engineers</span>
+                  {['Design System Teams', 'Product Designers', 'Frontend Engineers', 'Design Engineers'].map((badge, idx) => (
+                    <span 
+                      key={idx}
+                      data-scroll-id={`who-badge-${idx}`}
+                      className={`px-6 py-3 rounded-full border border-slate-700 bg-slate-950 text-slate-300 font-medium transition-all duration-800 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                        visibleElements.has(`who-badge-${idx}`)
+                          ? 'opacity-100 translate-y-0 scale-100'
+                          : 'opacity-0 translate-y-4 scale-95'
+                      }`}
+                      style={{ transitionDelay: `${80 * (idx + 1)}ms` }}
+                    >
+                      {badge}
+                    </span>
+                  ))}
               </div>
           </div>
       </div>
 
       {/* 7. FINAL CTA */}
       <div className="py-32 px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <h2 
+            data-scroll-id="cta-title"
+            className={`text-4xl md:text-5xl font-bold text-white mb-6 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              visibleElements.has('cta-title')
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-6'
+            }`}
+          >
               Design color like infrastructure.<br/>
               <span className="text-slate-600">Not like decoration.</span>
           </h2>
           <div className="flex flex-col items-center gap-4 mt-10">
               <button 
+                data-scroll-id="cta-button"
                 onClick={onGetStarted}
-                className="px-10 py-5 bg-white text-slate-950 rounded-xl font-bold text-lg shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:scale-105 transition-transform"
+                className={`px-10 py-5 bg-white text-slate-950 rounded-xl font-bold text-lg shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:scale-105 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('cta-button')
+                    ? 'opacity-100 translate-y-0 scale-100'
+                    : 'opacity-0 translate-y-4 scale-95'
+                }`}
+                style={{ transitionDelay: '200ms' }}
               >
                   Start Building for Free
               </button>
-              <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">No credit card required</span>
+              <span 
+                data-scroll-id="cta-subtitle"
+                className={`text-xs text-slate-500 uppercase tracking-widest font-bold transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  visibleElements.has('cta-subtitle')
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-4'
+                }`}
+                style={{ transitionDelay: '300ms' }}
+              >
+                No credit card required
+              </span>
           </div>
       </div>
 

@@ -1238,6 +1238,16 @@ const App: React.FC = () => {
                                         onOpenGrid={setSelectedColorForGrid}
                                         onEditScale={handleEditClick}
                                         onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
+                                        onColorUpdate={(updatedColor) => {
+                                            if (activeTab === 'neutrals') {
+                                                setNeutralPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                                            } else if (activeTab === 'system') {
+                                                setSemanticPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                                            } else {
+                                                setPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                                            }
+                                            setIsSaved(false);
+                                        }}
                                         isPrintMode={isPrintMode}
                                         isCompact={isCompactView}
                                         globalConfig={globalCurveConfig} // Pass steps here
