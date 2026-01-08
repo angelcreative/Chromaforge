@@ -211,10 +211,21 @@ app.get('*', (req, res) => {
     
     const indexHtml = readFileSync(indexPath, 'utf-8');
     
-    // Verify it's the correct file (has /assets/, not index.tsx)
-    if (indexHtml.includes('index.tsx') || indexHtml.includes('importmap')) {
-      console.error('[Server] ERROR: Serving wrong index.html (has index.tsx or importmap)');
+    // Verify it's the correct file (has /assets/, not index.tsx or importmap script tag)
+    // Check for specific patterns that indicate wrong HTML
+    const hasWrongScript = /<script[^>]*src=["']\/index\.tsx["']/.test(indexHtml);
+    const hasImportmap = /<script[^>]*type=["']importmap["']/.test(indexHtml);
+    const hasAssetsScript = /<script[^>]*src=["']\/assets\/[^"']+\.js["']/.test(indexHtml);
+    
+    if (hasWrongScript || hasImportmap) {
+      console.error('[Server] ERROR: Serving wrong index.html (has index.tsx script or importmap)');
+      console.error('[Server] hasWrongScript:', hasWrongScript, 'hasImportmap:', hasImportmap, 'hasAssetsScript:', hasAssetsScript);
       return res.status(500).send('Configuration error: wrong index.html');
+    }
+    
+    if (!hasAssetsScript) {
+      console.error('[Server] ERROR: dist/index.html does not have /assets/...js script');
+      return res.status(500).send('Configuration error: missing assets script');
     }
     
     res.setHeader('Content-Type', 'text/html');
