@@ -51,6 +51,25 @@
         }
         .stagger-entry { animation: slide-up-fade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         
+        /* Gradient Animation */
+        @keyframes gradientFade {
+            0%, 100% { opacity: 1; }
+            33.33% { opacity: 0; }
+            66.66% { opacity: 0; }
+        }
+        .gradient-1 {
+            animation: gradientFade 15s ease-in-out infinite;
+            animation-delay: 0s;
+        }
+        .gradient-2 {
+            animation: gradientFade 15s ease-in-out infinite;
+            animation-delay: 5s;
+        }
+        .gradient-3 {
+            animation: gradientFade 15s ease-in-out infinite;
+            animation-delay: 10s;
+        }
+        
         /* Carousel Timeline Animation */
         @keyframes progress-loading {
             0% { width: 0%; }

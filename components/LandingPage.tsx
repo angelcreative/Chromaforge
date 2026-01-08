@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { LegalPageType } from './LegalModal';
 import { FaStar } from 'react-icons/fa';
 import { HiCheck } from 'react-icons/hi';
@@ -27,32 +27,40 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
     return () => clearInterval(timer);
   }, []);
 
-  // Scroll Animation Hook
+  // Scroll Animation Hook - Optimized with useRef
   const [visibleElements, setVisibleElements] = useState<Set<string>>(new Set());
+  const observerRef = useRef<IntersectionObserver | null>(null);
   
   useEffect(() => {
+    if (observerRef.current) return; // Evitar crear múltiples observers
+    
     const observerOptions = {
       root: null,
       rootMargin: '50px',
       threshold: 0.1
     };
 
-    const observer = new IntersectionObserver((entries) => {
+    observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const elementId = entry.target.getAttribute('data-scroll-id');
           if (elementId) {
-            setVisibleElements(prev => new Set(prev).add(elementId));
+            setVisibleElements(prev => {
+              if (prev.has(elementId)) return prev; // Evitar re-renders innecesarios
+              return new Set(prev).add(elementId);
+            });
           }
         }
       });
     }, observerOptions);
 
     const elements = document.querySelectorAll('[data-scroll-id]');
-    elements.forEach(el => observer.observe(el));
+    elements.forEach(el => observerRef.current?.observe(el));
 
     return () => {
-      elements.forEach(el => observer.unobserve(el));
+      elements.forEach(el => observerRef.current?.unobserve(el));
+      observerRef.current?.disconnect();
+      observerRef.current = null;
     };
   }, []);
 
@@ -144,20 +152,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {/* 1. HERO SECTION */}
       <div className="relative w-full pt-32 pb-24 flex flex-col items-center bg-[#020617] overflow-hidden">
         
-        {/* Video Background */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          preload="auto"
-        >
-          <source src="/front.mp4" type="video/mp4" />
-        </video>
-
-        {/* Blur Overlay for text readability */}
-        <div className="absolute inset-0 bg-[#020617]/40 backdrop-blur-xl z-[1] pointer-events-none"></div>
+        {/* Animated Gradient Background */}
+        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
+          <div 
+            className="absolute inset-0 w-full h-full opacity-80 gradient-1"
+            style={{
+              background: 'linear-gradient(90deg, #B83086 0%, #6348DB 100%)'
+            }}
+          />
+          <div 
+            className="absolute inset-0 w-full h-full opacity-80 gradient-2"
+            style={{
+              background: 'linear-gradient(90deg, #BA305E 0%, #6E8200 100%)'
+            }}
+          />
+          <div 
+            className="absolute inset-0 w-full h-full opacity-80 gradient-3"
+            style={{
+              background: 'linear-gradient(90deg, #6E8200 0%, #008660 100%)'
+            }}
+          />
+        </div>
+        
+        {/* Subtle overlay for text readability */}
+        <div className="absolute inset-0 bg-[#020617]/30 z-[1] pointer-events-none"></div>
         
         {/* Background Atmosphere */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
@@ -172,13 +190,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
             {showProductHunt && (
                 <a 
                     href="https://www.producthunt.com/products/chromaforge?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-chromaforge" 
-                    target="_blank" 
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="mb-8 animate-in fade-in zoom-in duration-700 hover:opacity-90 transition-opacity"
                 >
                     <img 
                         src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1056702&theme=dark&t=1767209901531" 
                         alt="ChromaForge - Build semantic color tokens in seconds | Product Hunt" 
+                        loading="lazy"
                         style={{ width: '250px', height: '54px' }} 
                         width="250" 
                         height="54" 
@@ -209,22 +228,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
             <div className="w-full max-w-[70vw] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 mt-8">
                 <div className="relative rounded-3xl border border-white/10 shadow-2xl bg-slate-950 overflow-hidden aspect-video group">
                     
-                    {/* Slides */}
+                    {/* Slides - Lazy loading optimization */}
                     <div className="absolute inset-0 bg-slate-950">
-                        {[...Array(totalSlides)].map((_, index) => (
-                            <div 
-                                key={index}
-                                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                            >
-                                <img
-                                    src={`/carousel/${index + 1}.jpg`}
-                                    alt={`Feature Preview ${index + 1}`}
-                                    className="w-full h-full object-contain"
-                                />
-                                {/* Subtle gradient overlay for better integration */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent pointer-events-none"></div>
-                            </div>
-                        ))}
+                        {[...Array(totalSlides)].map((_, index) => {
+                            const isVisible = index === currentSlide;
+                            const isNext = index === (currentSlide + 1) % totalSlides;
+                            // Solo renderizar imagen actual y siguiente para optimizar
+                            if (!isVisible && !isNext) return null;
+                            
+                            return (
+                                <div 
+                                    key={index}
+                                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isVisible ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                                >
+                                    <img
+                                        src={`/carousel/${index + 1}.jpg`}
+                                        alt={`Feature Preview ${index + 1}`}
+                                        loading={isVisible ? "eager" : "lazy"}
+                                        className="w-full h-full object-contain"
+                                    />
+                                    {/* Subtle gradient overlay for better integration */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent pointer-events-none"></div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {/* Timeline Progress Bar */}
@@ -337,7 +364,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
                             <img 
                                 src={feature.img} 
-                                alt={feature.title} 
+                                alt={feature.title}
+                                loading="lazy"
                                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
                             />
                         </div>
@@ -406,7 +434,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                   <div className="relative rounded-2xl border border-white/10 bg-slate-950 shadow-2xl overflow-hidden aspect-[4/3] transform group-hover:rotate-y-2 transition-transform duration-700 ease-out">
                       <img 
                         src="/figma-plugin.png" 
-                        alt="Figma Plugin Interface" 
+                        alt="Figma Plugin Interface"
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                   </div>
