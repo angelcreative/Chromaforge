@@ -442,18 +442,27 @@ const App: React.FC = () => {
   };
 
   const handleScaleSave = async (colorHex: string, newConfig: ScaleConfiguration) => {
-      if (!user) return;
+      if (!user || !selectedColorForEdit) return;
       
-      // Update logic needs to handle both modes
-      const updateList = (list: ColorData[]) => list.map(c => c.hex === colorHex ? { ...c, scaleConfig: newConfig } : c);
+      // Create updated color with new config
+      const updatedColor: ColorData = { ...selectedColorForEdit, scaleConfig: newConfig };
       
-      if (creationMode === 'manual') {
-          setCustomColors(prev => updateList(prev));
+      // Update the color in the correct list based on activeTab
+      if (activeTab === 'neutrals') {
+          setNeutralPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
+      } else if (activeTab === 'system') {
+          setSemanticPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
       } else {
-          setPalette(prev => updateList(prev));
+          // For 'brand' tab, update based on creation mode
+          if (creationMode === 'manual') {
+              // Update customColors (source of truth for manual mode)
+              setCustomColors(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
+              // Also update palette directly to reflect changes immediately
+              setPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
+          } else {
+              setPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
+          }
       }
-      setNeutralPalette(prev => updateList(prev)); 
-      setSemanticPalette(prev => updateList(prev));
       
       showToast("Color scale updated");
       setIsSaved(false);
@@ -1282,7 +1291,11 @@ const App: React.FC = () => {
       </div>
 
       {/* Modals */}
-      {selectedColorForEdit && <ScaleEditorModal color={selectedColorForEdit} onClose={() => setSelectedColorForEdit(null)} onSave={handleScaleSave} usageCount={usageStats.editCount} limit={FREE_LIMIT} isPremium={isPremium} />}
+      {selectedColorForEdit && (() => {
+          // Get the updated color from the active list to ensure scaleConfig is current
+          const currentColor = activeColors.find(c => c.hex === selectedColorForEdit.hex) || selectedColorForEdit;
+          return <ScaleEditorModal color={currentColor} onClose={() => setSelectedColorForEdit(null)} onSave={handleScaleSave} usageCount={usageStats.editCount} limit={FREE_LIMIT} isPremium={isPremium} />;
+      })()}
       {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} onClose={() => setIsExportOpen(false)} usageCount={usageStats.exportCount} limit={FREE_LIMIT} isPremium={isPremium} />}
       {isTunerOpen && <PaletteTunerModal onClose={() => setIsTunerOpen(false)} usageCount={usageStats.tunerCount} limit={FREE_LIMIT} isPremium={isPremium} initialCode={getTunerCode()} />}
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={isPremium ? 20 : FREE_COLOR_LIMIT} isPremium={isPremium} />}

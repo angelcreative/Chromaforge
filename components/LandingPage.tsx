@@ -15,18 +15,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
   // Logic to show Product Hunt badge only after Jan 5th, 2026 12:01 AM PST
   const showProductHunt = new Date() >= new Date('2026-01-05T00:01:00-08:00');
 
-  // Carousel State
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 8;
-  const slideDuration = 5000; // 5 seconds per slide
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, slideDuration);
-    return () => clearInterval(timer);
-  }, []);
-
   // Scroll Animation Hook - Optimized with useRef
   const [visibleElements, setVisibleElements] = useState<Set<string>>(new Set());
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -221,51 +209,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                 >
                     Start Building Free
                 </button>
-            </div>
-
-            {/* CAROUSEL DISPLAY - Clean, Large View */}
-            {/* Reduced max-width to 70vw as requested */}
-            <div className="w-full max-w-[70vw] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 mt-8">
-                <div className="relative rounded-3xl border border-white/10 shadow-2xl bg-slate-950 overflow-hidden aspect-video group">
-                    
-                    {/* Slides - Lazy loading optimization */}
-                    <div className="absolute inset-0 bg-slate-950">
-                        {[...Array(totalSlides)].map((_, index) => {
-                            const isVisible = index === currentSlide;
-                            const isNext = index === (currentSlide + 1) % totalSlides;
-                            // Solo renderizar imagen actual y siguiente para optimizar
-                            if (!isVisible && !isNext) return null;
-                            
-                            return (
-                                <div 
-                                    key={index}
-                                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isVisible ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                                >
-                                    <img
-                                        src={`/carousel/${index + 1}.jpg`}
-                                        alt={`Feature Preview ${index + 1}`}
-                                        loading={isVisible ? "eager" : "lazy"}
-                                        className="w-full h-full object-contain"
-                                    />
-                                    {/* Subtle gradient overlay for better integration */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent pointer-events-none"></div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Timeline Progress Bar */}
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-800/50 z-30">
-                        <div 
-                            key={currentSlide}
-                            className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)] animate-progress origin-left"
-                            style={{ animationDuration: `${slideDuration}ms` }}
-                        ></div>
-                    </div>
-                </div>
-                
-                {/* Reflection/Glow below carousel */}
-                <div className="absolute -bottom-10 left-10 right-10 h-32 bg-indigo-500/10 blur-[80px] -z-10 rounded-full"></div>
             </div>
 
         </div>
