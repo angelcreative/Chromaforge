@@ -228,7 +228,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 md:px-12 py-5 bg-[#020617]/90 backdrop-blur-md border-b border-white/5">
         <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.5)]"></div>
+            <img 
+                src="/logo.svg" 
+                alt="ChromaForge Logo" 
+                className="w-6 h-6 rounded-full"
+                style={{ objectFit: 'contain' }}
+            />
             <span className="text-lg font-bold tracking-tight text-white">ChromaForge</span>
         </div>
         <div className="flex gap-4 items-center">
@@ -311,7 +316,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
         {/* TEXT CONTENT - Delante de los squircles */}
         <div className="relative z-[3] px-6 md:px-12 w-full flex flex-col items-center text-center pt-20">
             
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 text-white">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 text-white" style={{ fontSize: '94px' }}>
                 Master <span 
                     className="transition-colors duration-1000 ease-in-out"
                     style={{ 
@@ -321,7 +326,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                 <span className="text-white">Architecture.</span>
             </h1>
             
-            <h2 className="text-xl md:text-2xl text-white max-w-2xl mx-auto mb-12 leading-relaxed font-semibold animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <h2 className="text-xl md:text-2xl text-white max-w-2xl mx-auto mb-12 leading-relaxed font-normal animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200" style={{ letterSpacing: '0.6px' }}>
                 The definitive token engine for modern design systems. Generate semantically correct color scales, analyze them in 3D space, and export production-ready tokens.
             </h2>
         </div>
