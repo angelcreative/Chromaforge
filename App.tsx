@@ -708,7 +708,12 @@ const App: React.FC = () => {
            {/* ... (Existing Header content same as before) ... */}
            <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 cursor-pointer" onClick={handleGlobalReset}>
-                    <div className="w-6 h-6 rounded bg-gradient-to-br from-pink-500 to-indigo-600 shadow-lg shadow-indigo-500/20"></div>
+                    <img 
+                        src="/logo.svg" 
+                        alt="ChromaForge Logo" 
+                        className="w-6 h-6 rounded-full"
+                        style={{ objectFit: 'contain' }}
+                    />
                     <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">ChromaForge</h1>
                 </div>
                 {/* ... (Existing code) ... */}
