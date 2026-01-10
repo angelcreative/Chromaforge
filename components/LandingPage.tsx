@@ -15,6 +15,106 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
   // Logic to show Product Hunt badge only after Jan 5th, 2026 12:01 AM PST
   const showProductHunt = new Date() >= new Date('2026-01-05T00:01:00-08:00');
 
+  // Hover state for squircles
+  const [hoveredSquircle, setHoveredSquircle] = useState<number | null>(null);
+
+  // Color animation for "Color" word
+  const colorPalette = [
+    '#8B5CF6', // purple
+    '#3B82F6', // blue
+    '#06B6D4', // cyan
+    '#EC4899', // pink
+    '#F59E0B', // amber
+    '#10B981', // emerald
+    '#6366F1', // indigo
+    '#EF4444', // red
+    '#A855F7', // violet
+    '#14B8A6', // teal
+    '#F97316', // orange
+    '#84CC16', // lime
+  ];
+  const [currentColorIndex, setCurrentColorIndex] = useState(0);
+
+  // Cambiar color de "Color" cada 2 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentColorIndex((prev) => (prev + 1) % colorPalette.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [colorPalette.length]);
+
+  // Animated Color Squircles Background
+  const [squircles, setSquircles] = useState(() => {
+    // Generar squircles con posiciones y animaciones aleatorias
+    const colorPalettes = [
+      { color: '#8B5CF6', name: 'purple' },    // purple-500
+      { color: '#3B82F6', name: 'blue' },      // blue-500
+      { color: '#06B6D4', name: 'cyan' },     // cyan-500
+      { color: '#EC4899', name: 'pink' },     // pink-500
+      { color: '#F59E0B', name: 'amber' },    // amber-500
+      { color: '#10B981', name: 'emerald' },   // emerald-500
+      { color: '#6366F1', name: 'indigo' },   // indigo-500
+      { color: '#EF4444', name: 'red' },       // red-500
+      { color: '#A855F7', name: 'violet' },   // violet-500
+      { color: '#14B8A6', name: 'teal' },     // teal-500
+      { color: '#F97316', name: 'orange' },   // orange-500
+      { color: '#84CC16', name: 'lime' },     // lime-500
+    ];
+    
+    return colorPalettes.map((palette, i) => ({
+      id: i,
+      color: palette.color,
+      name: palette.name,
+      // Posición inicial aleatoria
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      // Velocidad y dirección - AUMENTADA para más movimiento
+      vx: (Math.random() - 0.5) * 0.05,
+      vy: (Math.random() - 0.5) * 0.05,
+      // Tamaño base y variación - AUMENTADA
+      baseSize: 300 + Math.random() * 400,
+      sizeVariation: 100 + Math.random() * 200,
+      // Rotación - MÁS RÁPIDA
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 1.5,
+      // Timing para animación de crecimiento - MÁS RÁPIDA
+      growthSpeed: 0.6 + Math.random() * 0.8,
+      growthOffset: Math.random() * Math.PI * 2,
+    }));
+  });
+
+  // Animación loop para squircles (infinito)
+  useEffect(() => {
+    const animate = () => {
+      setSquircles(prev => prev.map(squircle => {
+        // Mover squircle
+        let newX = squircle.x + squircle.vx;
+        let newY = squircle.y + squircle.vy;
+        
+        // Rebote en bordes
+        if (newX < 0 || newX > 100) squircle.vx *= -1;
+        if (newY < 0 || newY > 100) squircle.vy *= -1;
+        
+        // Mantener dentro de límites
+        newX = Math.max(0, Math.min(100, newX));
+        newY = Math.max(0, Math.min(100, newY));
+        
+        // Rotar
+        const newRotation = squircle.rotation + squircle.rotationSpeed;
+        
+        return {
+          ...squircle,
+          x: newX,
+          y: newY,
+          rotation: newRotation,
+        };
+      }));
+    };
+    
+    const interval = setInterval(animate, 30); // 33fps para animación más fluida
+    return () => clearInterval(interval);
+  }, []);
+
   // Scroll Animation Hook - Optimized with useRef
   const [visibleElements, setVisibleElements] = useState<Set<string>>(new Set());
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -131,35 +231,73 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
             <div className="w-6 h-6 rounded bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.5)]"></div>
             <span className="text-lg font-bold tracking-tight text-white">ChromaForge</span>
         </div>
-        <div className="flex gap-6 items-center">
+        <div className="flex gap-4 items-center">
+            {showProductHunt && (
+                <a 
+                    href="https://www.producthunt.com/products/chromaforge?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-chromaforge" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:opacity-90 transition-opacity"
+                >
+                    <img 
+                        src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1056702&theme=dark&t=1767209901531" 
+                        alt="ChromaForge - Build semantic color tokens in seconds | Product Hunt" 
+                        loading="lazy"
+                        style={{ width: '130px', height: '28px' }} 
+                        width="130" 
+                        height="28" 
+                    />
+                </a>
+            )}
             <button onClick={onLogin} className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Log In</button>
             <button onClick={onGetStarted} className="bg-white text-slate-950 px-5 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-colors shadow-lg shadow-white/5">Sign Up</button>
         </div>
       </nav>
 
       {/* 1. HERO SECTION */}
-      <div className="relative w-full pt-32 pb-24 flex flex-col items-center bg-[#020617] overflow-hidden">
+      <div className="relative w-full pt-48 pb-24 flex flex-col items-center bg-[#020617] overflow-hidden">
         
-        {/* Animated Gradient Background */}
-        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
-          <div 
-            className="absolute inset-0 w-full h-full opacity-80 gradient-1"
-            style={{
-              background: 'linear-gradient(90deg, #B83086 0%, #6348DB 100%)'
-            }}
-          />
-          <div 
-            className="absolute inset-0 w-full h-full opacity-80 gradient-2"
-            style={{
-              background: 'linear-gradient(90deg, #BA305E 0%, #6E8200 100%)'
-            }}
-          />
-          <div 
-            className="absolute inset-0 w-full h-full opacity-80 gradient-3"
-            style={{
-              background: 'linear-gradient(90deg, #6E8200 0%, #008660 100%)'
-            }}
-          />
+        {/* Animated Color Squircles Background */}
+        <div className="absolute inset-0 w-full h-full z-[2] overflow-hidden">
+          {squircles.map((squircle) => {
+            const currentTime = Date.now() / 1000;
+            const baseSize = squircle.baseSize + Math.sin(currentTime * squircle.growthSpeed + squircle.growthOffset) * squircle.sizeVariation;
+            const isHovered = hoveredSquircle === squircle.id;
+            
+            // Efectos de hover
+            const hoverScale = isHovered ? 1.3 : 1;
+            const hoverBlur = isHovered ? 30 : 60; // Reducir blur al hover
+            const hoverOpacity = isHovered ? 0.9 : 0.6; // Más opaco al hover
+            const hoverRotation = isHovered ? squircle.rotation * 1.5 : squircle.rotation; // Rotar más rápido al hover
+            
+            return (
+              <div
+                key={squircle.id}
+                className="absolute cursor-pointer"
+                onMouseEnter={() => setHoveredSquircle(squircle.id)}
+                onMouseLeave={() => setHoveredSquircle(null)}
+                style={{
+                  left: `${squircle.x}%`,
+                  top: `${squircle.y}%`,
+                  width: `${baseSize * hoverScale}px`,
+                  height: `${baseSize * hoverScale}px`,
+                  background: `radial-gradient(ellipse at center, ${squircle.color} 0%, ${squircle.color}00 70%)`,
+                  borderRadius: '30%', // Squircle effect
+                  filter: `blur(${hoverBlur}px)`,
+                  transform: `translate(-50%, -50%) rotate(${hoverRotation}deg) scale(${hoverScale})`,
+                  mixBlendMode: 'screen',
+                  opacity: hoverOpacity,
+                  willChange: 'transform, width, height, filter, opacity',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  zIndex: isHovered ? 10 : 1,
+                  pointerEvents: 'auto', // Asegurar que el hover funcione
+                }}
+              />
+            );
+          })}
+          
+          {/* Capa adicional para suavizar combinaciones */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/30 via-[#020617]/10 to-[#020617]/30 pointer-events-none" />
         </div>
         
         {/* Subtle overlay for text readability */}
@@ -167,50 +305,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
         
         {/* Background Atmosphere */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
-            <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[600px] bg-indigo-600/10 rounded-full blur-[120px]"></div>
-            <div className="absolute bottom-0 right-0 w-[40vw] h-[500px] bg-purple-600/5 rounded-full blur-[100px]"></div>
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay"></div>
         </div>
 
-        {/* TEXT CONTENT */}
-        <div className="relative z-10 px-6 md:px-12 w-full flex flex-col items-center text-center">
+        {/* TEXT CONTENT - Delante de los squircles */}
+        <div className="relative z-[3] px-6 md:px-12 w-full flex flex-col items-center text-center pt-20">
             
-            {showProductHunt && (
-                <a 
-                    href="https://www.producthunt.com/products/chromaforge?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-chromaforge" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-8 animate-in fade-in zoom-in duration-700 hover:opacity-90 transition-opacity"
-                >
-                    <img 
-                        src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1056702&theme=dark&t=1767209901531" 
-                        alt="ChromaForge - Build semantic color tokens in seconds | Product Hunt" 
-                        loading="lazy"
-                        style={{ width: '250px', height: '54px' }} 
-                        width="250" 
-                        height="54" 
-                    />
-                </a>
-            )}
-            
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 drop-shadow-2xl">
-                Master Color <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-white to-slate-300">Architecture.</span>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 text-white">
+                Master <span 
+                    className="transition-colors duration-1000 ease-in-out"
+                    style={{ 
+                        color: colorPalette[currentColorIndex]
+                    }}
+                >Color</span> <br/>
+                <span className="text-white">Architecture.</span>
             </h1>
             
-            <h2 className="text-xl md:text-2xl text-slate-200 max-w-2xl mx-auto mb-12 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 drop-shadow-lg text-shadow">
+            <h2 className="text-xl md:text-2xl text-white max-w-2xl mx-auto mb-12 leading-relaxed font-semibold animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
                 The definitive token engine for modern design systems. Generate semantically correct color scales, analyze them in 3D space, and export production-ready tokens.
             </h2>
-            
+        </div>
+
+        {/* Botón - Encima de todo y clicable */}
+        <div className="relative z-[10] px-6 md:px-12 w-full flex flex-col items-center">
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 mb-20">
                 <button 
                     onClick={onGetStarted}
-                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-base shadow-[0_0_30px_rgba(79,70,229,0.3)] transition-all hover:scale-105 active:scale-95 border border-indigo-400/20 backdrop-blur-sm"
+                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-base shadow-[0_0_30px_rgba(79,70,229,0.3)] transition-all hover:scale-105 active:scale-95 border border-indigo-400/20 backdrop-blur-sm pointer-events-auto"
+                    style={{ zIndex: 11 }}
                 >
                     Start Building Free
                 </button>
             </div>
-
         </div>
       </div>
 
