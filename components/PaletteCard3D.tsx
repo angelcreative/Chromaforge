@@ -12,6 +12,7 @@ type LightingMode = 'neutral' | 'cool' | 'warm' | 'neon';
 const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
   const shades = generateShades(color);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastMousePos = useRef({ x: 0, y: 0 });
   
   // State
   const [rotation, setRotation] = useState({ x: -25, y: 45 });
@@ -19,11 +20,8 @@ const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
   const [isAutoRotate, setIsAutoRotate] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [lightingMode, setLightingMode] = useState<LightingMode>('neutral');
-  
-  // Dragging State
   const [isDragging, setIsDragging] = useState(false);
-  const lastMousePos = useRef({ x: 0, y: 0 });
-
+  
   // Auto-rotate effect
   useEffect(() => {
     let animationFrame: number;
@@ -192,7 +190,7 @@ const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
       onTouchStart={handleTouchStart}
       ref={containerRef}
     >
-      <div className="absolute top-6 text-center pointer-events-none z-10 transition-transform duration-300 group-hover:-translate-y-2 select-none">
+      <div className="absolute top-6 text-center pointer-events-none z-20 transition-transform duration-300 group-hover:-translate-y-2 select-none">
         <h3 className="text-xl font-bold text-white drop-shadow-md tracking-tight">{color.name}</h3>
         <p className="text-xs text-slate-400 font-mono mt-1 opacity-60 group-hover:opacity-100 transition-opacity duration-300">{color.hex}</p>
         
@@ -202,7 +200,7 @@ const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
       </div>
 
       <div 
-        className="relative will-change-transform transition-transform duration-75 cubic-bezier(0.2, 0.8, 0.2, 1)"
+        className="relative will-change-transform transition-transform duration-75 cubic-bezier(0.2, 0.8, 0.2, 1) z-20"
         style={{ 
           transformStyle: 'preserve-3d',
           transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
@@ -294,7 +292,7 @@ const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
         }}
       />
 
-      <div className="absolute bottom-4 flex flex-col gap-2 items-center opacity-100 transition-all duration-300 z-20">
+      <div className="absolute bottom-4 flex flex-col gap-2 items-center opacity-100 transition-all duration-300 z-30">
           <div className="flex gap-1 bg-slate-950/90 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-lg scale-90">
              <button onTouchEnd={(e) => { e.stopPropagation(); setLightingMode('neutral') }} onClick={(e) => { e.stopPropagation(); setLightingMode('neutral') }} className={`p-1.5 rounded-full ${lightingMode === 'neutral' ? 'bg-white text-black' : 'text-slate-400 hover:text-white'}`} title="Neutral Light">
                 <div className="w-3 h-3 rounded-full border-2 border-current"></div>

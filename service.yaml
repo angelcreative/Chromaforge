@@ -1,0 +1,77 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  annotations:
+    generativelanguage.googleapis.com/type: applet
+    run.googleapis.com/build-enable-automatic-updates: 'false'
+    run.googleapis.com/build-id: f76d6138-5094-446e-8491-9e4b910131c9
+    run.googleapis.com/build-image-uri: us-west1-docker.pkg.dev/gen-lang-client-0594101039/cloud-run-source-deploy/chromaforge
+    run.googleapis.com/build-name: projects/1069299075710/locations/us-west1/builds/f76d6138-5094-446e-8491-9e4b910131c9
+    run.googleapis.com/build-source-location: gs://ai-studio-bucket-1069299075710-us-west1/services/chromaforge/1767855249.477323-9e874b94fb8f4b82ae013819a0e0f9a9.zip#1767855251619008
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/invoker-iam-disabled: 'true'
+    run.googleapis.com/urls: '["https://chromaforge-1069299075710.us-west1.run.app","https://chromaforge-5sn7omh2ma-uw.a.run.app"]'
+  labels:
+    cloud.googleapis.com/location: us-west1
+    commit-sha: 01f425a1c7103bb1bf8744eeda670ccb4d2cd5b4
+    gcb-build-id: 620e6827-8ec7-4b8a-b275-fad5b6baf671
+    gcb-trigger-id: 076f7bf8-a4e2-427a-aadc-eae21ed675f6
+    gcb-trigger-region: global
+    managed-by: gcp-cloud-build-deploy-cloud-run
+  name: chromaforge
+  namespace: '1069299075710'
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 551.0.0
+        run.googleapis.com/cpu-throttling: 'true'
+        run.googleapis.com/sessionAffinity: 'false'
+      labels:
+        client.knative.dev/nonce: kalolbykow
+        commit-sha: 01f425a1c7103bb1bf8744eeda670ccb4d2cd5b4
+        gcb-build-id: 620e6827-8ec7-4b8a-b275-fad5b6baf671
+        gcb-trigger-id: 076f7bf8-a4e2-427a-aadc-eae21ed675f6
+        gcb-trigger-region: global
+        managed-by: gcp-cloud-build-deploy-cloud-run
+        run.googleapis.com/startupProbeType: Default
+    spec:
+      containerConcurrency: 80
+      containers:
+      - env:
+        - name: API_KEY
+          value: AIzaSyBWH-RAx1qSTW3yHHnlXY1KkrJDoJy4A6A
+        image: us-west1-docker.pkg.dev/gen-lang-client-0594101039/cloud-run-source-deploy/chromaforge@sha256:13e0855dfc4b09b25d6915a2668590ecef391b73a0dafeccad143833b5509277
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+        volumeMounts:
+        - mountPath: /app/dist
+          name: applet
+      serviceAccountName: 1069299075710-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+      volumes:
+      - csi:
+          driver: gcsfuse.run.googleapis.com
+          readOnly: true
+          volumeAttributes:
+            bucketName: ai-studio-bucket-1069299075710-us-west1
+            mountOptions: only-dir=services/chromaforge/version-82/compiled
+        name: applet
+  traffic:
+  - latestRevision: true
+    percent: 100
