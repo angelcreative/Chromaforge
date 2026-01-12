@@ -2500,7 +2500,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 <div className="lg:col-span-2">
                                     <div className="bg-white rounded-lg p-6 min-h-[600px] overflow-auto border" style={{ borderColor: theme.border.subtle }}>
                                         <iframe
-                                            key={`preview-${config.primaryIndex}-${config.isDarkMode}-${JSON.stringify(theme?.action?.primary)}`}
+                                            key={`preview-${aiGeneratedComponent.componentName}-${JSON.stringify(theme.action.primary)}-${Date.now()}`}
                                             srcDoc={(() => {
                                                 const code = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
                                                 const usedComponents = detectRadixComponents(aiGeneratedComponent.code);
@@ -2553,6 +2553,22 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+    <script>
+        // Exponer iconos de lucide-react globalmente
+        (function() {
+            if (window.lucideReact) {
+                Object.keys(window.lucideReact).forEach(iconName => {
+                    if (typeof window.lucideReact[iconName] === 'function' && 
+                        iconName[0] === iconName[0].toUpperCase() &&
+                        iconName !== 'createLucideIcon') {
+                        window[iconName] = window.lucideReact[iconName];
+                    }
+                });
+                console.log('Lucide icons loaded:', Object.keys(window).filter(k => window[k] && typeof window[k] === 'function' && k[0] === k[0].toUpperCase() && k.length > 2).length);
+            }
+        })();
+    </script>
     ${scripts}
 </head>
 <body>
@@ -2726,12 +2742,16 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         
         // Create all common lucide-react icons
         const iconNames = [
-            'ArrowLeft', 'MoreVertical', 'Phone', 'Video', 'Send', 'Plus', 'Smile',
-            'Camera', 'Mic', 'CheckCheck', 'Search', 'MapPin', 'ShoppingCart',
-            'Menu', 'Heart', 'Star', 'Clock', 'Home', 'User', 'ChevronDown',
-            'ChevronUp', 'ChevronLeft', 'ChevronRight', 'X', 'Check', 'AlertCircle',
-            'Info', 'Warning', 'Trash', 'Edit', 'Copy', 'Download', 'Upload',
-            'Filter', 'Settings', 'Bell', 'Mail', 'Lock', 'Unlock', 'Eye', 'EyeOff'
+            'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'MoreVertical', 'MoreHorizontal',
+            'Phone', 'Video', 'Send', 'Plus', 'Minus', 'Smile', 'Camera', 'Mic', 
+            'CheckCheck', 'Search', 'MapPin', 'ShoppingCart', 'Menu', 'Heart', 'Star', 
+            'Clock', 'Home', 'User', 'ChevronDown', 'ChevronUp', 'ChevronLeft', 'ChevronRight', 
+            'X', 'Check', 'AlertCircle', 'Info', 'Warning', 'Trash', 'Edit', 'Copy', 
+            'Download', 'Upload', 'Filter', 'Settings', 'Bell', 'Mail', 'Lock', 'Unlock', 
+            'Eye', 'EyeOff', 'Flame', 'Share2', 'Share', 'History', 'Grid', 'List', 
+            'Image', 'File', 'Folder', 'Tag', 'Bookmark', 'ThumbsUp', 'ThumbsDown', 
+            'Message', 'Comment', 'Like', 'Dislike', 'Maximize', 'Minimize', 'Close',
+            'HelpCircle', 'Info', 'AlertTriangle', 'CheckCircle', 'XCircle'
         ];
         
         iconNames.forEach(name => {
@@ -2759,11 +2779,23 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         const Home = createIconFallback('Home');
         const User = createIconFallback('User');
         
-        // Proxy for any icon not explicitly defined
+        // Proxy for any icon not explicitly defined - creates fallbacks dynamically
         const lucideReact = new Proxy({}, {
             get: (target, prop) => {
-                if (window[prop]) return window[prop];
-                return createIconFallback(prop);
+                // Si el icono está en window, usarlo
+                if (window[prop] && typeof window[prop] === 'function') {
+                    return window[prop];
+                }
+                // Si no, crear un fallback dinámico y guardarlo en window
+                if (typeof prop === 'string' && prop.length > 0) {
+                    const iconName = prop;
+                    if (!window[iconName]) {
+                        window[iconName] = createIconFallback(iconName);
+                    }
+                    return window[iconName];
+                }
+                // Fallback genérico si prop no es string válido
+                return createIconFallback('HelpCircle');
             }
         });
         
@@ -2779,36 +2811,104 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         window.ReactDOM = ReactDOM;
         
         // ===== GENERATED CODE =====
-        // Execute the generated code in current scope (not IIFE) so components are accessible
+        // Execute the generated code and expose component to window
+        let executionError = null;
+        let componentDefined = false;
+        
+        console.log('=== PREVIEW INIT ===');
+        console.log('Component name:', '${aiGeneratedComponent.componentName}');
+        console.log('Code length:', ${code.length});
+        
         try {
             ${code.replace(/export\s+default\s+\w+;?/g, '')}
+            
+            // Después de ejecutar el código, exponer el componente en window
+            const componentName = '${aiGeneratedComponent.componentName}';
+            
+            // Intentar encontrar y exponer el componente
+            try {
+                const component = eval(componentName);
+                if (typeof component === 'function') {
+                    window[componentName] = component;
+                    window['__currentComponent'] = component;
+                    componentDefined = true;
+                    console.log('Component exposed to window:', componentName);
+                } else {
+                    console.warn('Component is not a function:', typeof component);
+                }
+            } catch (e) {
+                console.warn('Could not expose component immediately:', e);
+                // Intentar más tarde
+            }
         } catch (e) {
+            executionError = e;
             console.error('Error executing generated code:', e);
+            window['__executionError'] = e;
         }
         
         // ===== RENDER =====
-        // Get the component - it should be in current scope now
         const componentName = '${aiGeneratedComponent.componentName}';
         let ComponentToRender = null;
+        let renderError = null;
         
-        // Try to get component from current scope
-        try {
-            ComponentToRender = eval(componentName);
-            if (typeof ComponentToRender !== 'function') {
-                throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
+        // Estrategia 1: Buscar en window (más confiable)
+        if (window[componentName] && typeof window[componentName] === 'function') {
+            ComponentToRender = window[componentName];
+            console.log('Component found in window:', componentName);
+        }
+        // Estrategia 2: Buscar __currentComponent
+        else if (window['__currentComponent'] && typeof window['__currentComponent'] === 'function') {
+            ComponentToRender = window['__currentComponent'];
+            console.log('Component found as __currentComponent');
+        }
+        // Estrategia 3: Intentar eval
+        else {
+            try {
+                ComponentToRender = eval(componentName);
+                if (typeof ComponentToRender !== 'function') {
+                    throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
+                }
+                console.log('Component found via eval:', componentName);
+            } catch (e) {
+                renderError = e;
+                console.error('Component not found:', componentName, e);
             }
-        } catch (e) {
-            console.error('Component not found or invalid:', componentName, e);
+        }
+        
+        // Si hay error de ejecución, mostrarlo
+        if (window['__executionError']) {
+            ComponentToRender = () => createElement('div', { 
+                style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+            }, [
+                createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
+                createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(window['__executionError']))
+            ]);
+        }
+        // Si no se encontró el componente
+        else if (!ComponentToRender || typeof ComponentToRender !== 'function') {
             ComponentToRender = () => createElement('div', { 
                 style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
             }, [
                 createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Error: Component "' + componentName + '" not found'),
-                createElement('div', { key: 'error', style: { fontSize: '10px', opacity: 0.7 } }, String(e))
+                createElement('div', { key: 'info', style: { fontSize: '10px', marginBottom: '10px', opacity: 0.7 } }, 'Available in window: ' + Object.keys(window).filter(k => k[0] === k[0].toUpperCase() && k.length > 2).slice(0, 20).join(', ')),
+                createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, renderError ? String(renderError) : 'Component not accessible')
             ]);
         }
         
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(createElement(ComponentToRender));
+        // Renderizar con delay para asegurar que todo esté cargado
+        setTimeout(() => {
+            try {
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(createElement(ComponentToRender));
+                console.log('Component rendered successfully');
+            } catch (e) {
+                console.error('Render error:', e);
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(createElement('div', { 
+                    style: { padding: '20px', color: 'red' } 
+                }, 'Render Error: ' + String(e)));
+            }
+        }, 100);
     </script>
 </body>
 </html>`;
@@ -3109,7 +3209,42 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                         
                                         if (result.code) {
                                             setGeneratedCode(result.code);
-                                            const componentName = result.code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/)?.[1] || 'Component';
+                                            
+                                            // Validar que el código no esté vacío o sea solo comentarios
+                                            const codeWithoutComments = result.code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim();
+                                            if (!codeWithoutComments || codeWithoutComments.length < 50) {
+                                                setCodeError('Generated code is too short or empty. Please try rephrasing your request.');
+                                                setAiMessages(prev => [...prev, { 
+                                                    role: 'assistant', 
+                                                    text: 'The generated code appears to be empty or invalid. Please try rephrasing your request with more specific details.'
+                                                }]);
+                                                return;
+                                            }
+                                            
+                                            // Extracción inteligente del nombre del componente
+                                            let componentName = 'Component';
+                                            
+                                            // 1. Prioridad: Buscar export default
+                                            const exportDefaultMatch = result.code.match(/export\s+default\s+(\w+)/);
+                                            if (exportDefaultMatch) {
+                                                componentName = exportDefaultMatch[1];
+                                            } else {
+                                                // 2. Buscar componentes React (const ComponentName = () => {} o const ComponentName = function() {})
+                                                // Ignorar variables simples como 'theme', 'cardStyle', etc. (nombres que empiezan con minúscula)
+                                                const componentMatches = Array.from(result.code.matchAll(/(?:const|function)\s+([A-Z][a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)\s*)?(?:=>|function)/g));
+                                                
+                                                if (componentMatches.length > 0) {
+                                                    // Tomar el último match (el componente principal, no sub-componentes)
+                                                    componentName = componentMatches[componentMatches.length - 1][1];
+                                                } else {
+                                                    // 3. Fallback: buscar cualquier función con mayúscula inicial que no sea 'React', 'Component', etc.
+                                                    const fallbackMatch = result.code.match(/(?:const|function)\s+([A-Z][a-zA-Z0-9]+)(?:\s*=\s*(?:\([^)]*\)\s*)?=>|(?:\s*\{|\s*\([^)]*\)\s*\{))/);
+                                                    if (fallbackMatch && !['React', 'Component', 'Fragment'].includes(fallbackMatch[1])) {
+                                                        componentName = fallbackMatch[1];
+                                                    }
+                                                }
+                                            }
+                                            
                                             setOriginalTheme(theme); // Guardar el tema original cuando se genera el componente
                                             setAiGeneratedComponent({ code: result.code, componentName });
                                             setAiMessages(prev => [...prev, { 

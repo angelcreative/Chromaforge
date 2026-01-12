@@ -327,6 +327,14 @@ app.post('/api/ui-design', async (req, res) => {
        - Use descriptive seed values that match the context (e.g., "portrait" for avatars, "nature" for landscapes, "product" for e-commerce, "kitchen" for kitchen images)
        - The seed ensures the same image is returned for the same keyword, but different keywords return different images
        - NEVER use source.unsplash.com (it's discontinued) or placeholder.com
+    9. **Icons**: 
+       - Use icons from lucide-react library - ALL icons are available globally, DO NOT import them
+       - You can use ANY icon from lucide-react (Plane, Calendar, Ticket, Luggage, Flame, Share2, History, MapPin, Clock, etc.)
+       - Browse available icons at: https://lucide.dev/icons/
+       - Format: <IconName size={20} color="..." /> (e.g., <Plane size={18} color="blue" />, <Calendar size={20} color="red" />)
+       - Examples: <Plane />, <Calendar />, <Ticket />, <Luggage />, <MapPin />, <Clock />, <Heart />, <Star />, <ShoppingCart />, etc.
+       - NEVER import icons - they are provided globally as React components
+       - For buttons, prefer using <button> elements with text labels rather than icon-only buttons when possible
     
     === OUTPUT FORMAT ===
     Return ONLY valid JSX/TSX code. Do not include markdown code blocks, explanations, or comments outside the code.
