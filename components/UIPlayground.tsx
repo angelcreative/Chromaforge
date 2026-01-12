@@ -2500,7 +2500,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 <div className="lg:col-span-2">
                                     <div className="bg-white rounded-lg p-6 min-h-[600px] overflow-auto border" style={{ borderColor: theme.border.subtle }}>
                                         <iframe
-                                            key={`preview-${aiGeneratedComponent.componentName}-${JSON.stringify(theme.action.primary)}-${Date.now()}`}
+                                            key={`preview-${aiGeneratedComponent.componentName}-${JSON.stringify(theme.action.primary)}`}
                                             srcDoc={(() => {
                                                 const code = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
                                                 const usedComponents = detectRadixComponents(aiGeneratedComponent.code);
@@ -2804,6 +2804,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 if (window[prop] && typeof window[prop] === 'function') {
                     return window[prop];
                 }
+                // Si lucideReact real está disponible, intentar cargar desde ahí
+                if (window.lucideReact && typeof window.lucideReact === 'object' && window.lucideReact[prop]) {
+                    window[prop] = window.lucideReact[prop];
+                    return window[prop];
+                }
                 // Si no, crear un fallback dinámico y guardarlo en window
                 if (typeof prop === 'string' && prop.length > 0) {
                     const iconName = prop;
@@ -2819,6 +2824,44 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         
         // Make lucide-react available globally
         window.lucideReact = lucideReact;
+        
+        // ===== ICON DETECTION AND AUTO-EXPOSURE =====
+        
+        // Función para detectar y exponer iconos usados en el código
+        const detectAndExposeIcons = (codeStr) => {
+            // Buscar todos los iconos usados: <IconName o IconName(
+            const iconPattern = /<([A-Z][a-zA-Z0-9]*)\s|([A-Z][a-zA-Z0-9]*)\s*\(/g;
+            const matches = [...codeStr.matchAll(iconPattern)];
+            const usedIcons = new Set();
+            
+            matches.forEach(match => {
+                const iconName = match[1] || match[2];
+                // Filtrar componentes conocidos de React/Radix
+                if (iconName && 
+                    !['React', 'Component', 'Fragment', 'Root', 'Image', 'Fallback', 'Viewport', 'Scrollbar', 'Thumb', 'Trigger', 'Content', 'List', 'Item', 'Field', 'Label', 'Control', 'Message', 'Submit', 'Indicator', 'Separator', 'Avatar', 'Form', 'Checkbox', 'RadioGroup', 'Switch', 'Select', 'Tabs', 'Dialog', 'Popover', 'Accordion', 'AlertDialog', 'DropdownMenu', 'HoverCard', 'Tooltip', 'Progress', 'Slider', 'Toast', 'Collapsible', 'ContextMenu', 'NavigationMenu', 'Menubar', 'ScrollArea', 'AspectRatio', 'Toolbar', 'Card'].includes(iconName) &&
+                    iconName[0] === iconName[0].toUpperCase() &&
+                    iconName.length > 1) {
+                    usedIcons.add(iconName);
+                }
+            });
+            
+            // Exponer iconos desde lucideReact si están disponibles
+            usedIcons.forEach(iconName => {
+                if (!window[iconName]) {
+                    // Intentar cargar desde lucideReact real primero
+                    if (window.lucideReact && typeof window.lucideReact === 'object' && window.lucideReact[iconName]) {
+                        window[iconName] = window.lucideReact[iconName];
+                        console.log('✅ Exposed icon from lucide-react:', iconName);
+                    } else {
+                        // Crear fallback si no está disponible
+                        window[iconName] = createIconFallback(iconName);
+                        console.log('⚠️ Created fallback for icon:', iconName);
+                    }
+                }
+            });
+            
+            return Array.from(usedIcons);
+        };
         
         // Make useState, useEffect, etc. available globally
         window.useState = useState;
@@ -2858,38 +2901,59 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             let ComponentToRender = null;
             
             try {
-                // Ejecutar el código generado (sin export default)
-                ${code.replace(/export\s+default\s+\w+;?/g, '')}
+                const codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
                 
-                // El componente ahora está en el scope local, exponerlo a window y renderizar
-                ComponentToRender = eval(componentName);
+                // PASO 1: Detectar y exponer iconos ANTES de ejecutar el código
+                const detectedIcons = detectAndExposeIcons(codeStr);
+                console.log('🔍 Detected icons:', detectedIcons);
                 
-                if (typeof ComponentToRender !== 'function') {
-                    throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
-                }
-                
-                // Exponer a window para futuras referencias
-                window[componentName] = ComponentToRender;
-                window['__currentComponent'] = ComponentToRender;
-                console.log('✅ Component found and exposed:', componentName);
-                
-                // Renderizar inmediatamente después de exponer
+                // PASO 2: Esperar un momento para que los iconos se expongan desde lucide-react
                 setTimeout(() => {
                     try {
-                        const root = ReactDOM.createRoot(document.getElementById('root'));
-                        root.render(createElement(ComponentToRender));
-                        console.log('✅ Component rendered successfully');
+                        // PASO 3: Ejecutar el código generado
+                        eval(codeStr);
+                        
+                        // PASO 4: Obtener el componente
+                        ComponentToRender = eval(componentName);
+                        
+                        if (typeof ComponentToRender !== 'function') {
+                            throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
+                        }
+                        
+                        // PASO 5: Exponer a window para futuras referencias
+                        window[componentName] = ComponentToRender;
+                        window['__currentComponent'] = ComponentToRender;
+                        console.log('✅ Component found and exposed:', componentName);
+                        
+                        // PASO 6: Renderizar después de asegurar que todo esté listo
+                        setTimeout(() => {
+                            try {
+                                const root = ReactDOM.createRoot(document.getElementById('root'));
+                                root.render(createElement(ComponentToRender));
+                                console.log('✅ Component rendered successfully');
+                            } catch (e) {
+                                console.error('Render error:', e);
+                                const root = ReactDOM.createRoot(document.getElementById('root'));
+                                root.render(createElement('div', { 
+                                    style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+                                }, 'Render Error: ' + String(e)));
+                            }
+                        }, 100);
+                        
                     } catch (e) {
-                        console.error('Render error:', e);
+                        console.error('Error executing code:', e);
                         const root = ReactDOM.createRoot(document.getElementById('root'));
                         root.render(createElement('div', { 
                             style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                        }, 'Render Error: ' + String(e)));
+                        }, [
+                            createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
+                            createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
+                        ]));
                     }
-                }, 100);
+                }, 200); // Delay para asegurar que lucide-react esté completamente cargado
                 
             } catch (e) {
-                console.error('Error executing or rendering code:', e);
+                console.error('Error in executeCodeAndRender:', e);
                 const root = ReactDOM.createRoot(document.getElementById('root'));
                 root.render(createElement('div', { 
                     style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
