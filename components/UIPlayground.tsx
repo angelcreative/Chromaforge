@@ -182,13 +182,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   };
 
   // Función universal para escapar código antes de insertarlo en template literal
-  // Esto previene errores de sintaxis cuando el código generado contiene template literals
+  // Usa JSON.stringify para escapar correctamente sin romper regex literales u otros patrones
+  // Esto previene errores de sintaxis cuando el código generado contiene template literals o regex
   const escapeCodeForTemplate = (codeStr: string): string => {
     if (!codeStr) return codeStr;
-    return codeStr
-      .replace(/\\/g, '\\\\')    // Escapar backslashes primero (importante: debe ser primero)
-      .replace(/`/g, '\\`')       // Escapar comillas invertidas
-      .replace(/\$\{/g, '\\${'); // Escapar ${ para que no se interprete como interpolación
+    // JSON.stringify escapa correctamente todos los caracteres especiales sin romper regex literales
+    // slice(1, -1) remueve las comillas externas que JSON.stringify agrega
+    return JSON.stringify(codeStr).slice(1, -1);
   };
 
   // Función para detectar qué componentes de Radix UI se usan en el código
