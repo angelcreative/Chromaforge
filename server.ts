@@ -31,7 +31,7 @@ if (existsSync(envLocalPath)) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT) || 8080;
 
 // Middleware
 app.use(express.json());
@@ -436,7 +436,7 @@ app.get('*', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`[Server] 🚀 Server running on port ${PORT}`);
   if (process.env.API_KEY) {
     const keyPreview = process.env.API_KEY.substring(0, 10) + '...';
