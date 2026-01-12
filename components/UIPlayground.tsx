@@ -40,6 +40,7 @@ import {
   HiPuzzle, HiCube, HiViewList, HiTemplate, HiCursorClick as HiCursorArrow, HiPhotograph as HiImage,
   HiSparkles
 } from 'react-icons/hi';
+import { FaPaperPlane } from 'react-icons/fa';
 
 interface UIPlaygroundProps {
   brandPalette: ColorData[];
@@ -48,6 +49,8 @@ interface UIPlaygroundProps {
   config: PlaygroundConfig;
   onConfigChange: (newConfig: PlaygroundConfig) => void;
   globalConfig?: GlobalCurveConfig;
+  isPremium?: boolean;
+  onOpenPricing?: () => void;
 }
 
 type MoleculeType = 
@@ -66,9 +69,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     brandPalette, 
     neutralPalette, 
     semanticPalette, 
-    config, 
+    config,
     onConfigChange,
-    globalConfig
+    globalConfig,
+    isPremium = false,
+    onOpenPricing
 }) => {
   const [activeTab, setActiveTab] = useState<'molecules' | 'organisms'>('molecules');
   const [selectedComponent, setSelectedComponent] = useState<ComponentType>('button');
@@ -101,6 +106,66 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     setToastMessage(message);
     setToastOpen(true);
     setTimeout(() => setToastOpen(false), 3000);
+  };
+
+  // Función para reemplazar referencias de theme con valores actuales
+  const replaceThemeReferences = (code: string, currentTheme: any): string => {
+    if (!code || !currentTheme) return code;
+    
+    let updatedCode = code;
+    
+    // Mapeo de referencias de theme a valores actuales
+    const themeMap: { [key: string]: string } = {
+      'theme.action.primary': currentTheme.action.primary,
+      'theme.action.primaryHover': currentTheme.action.primaryHover,
+      'theme.action.secondaryBg': currentTheme.action.secondaryBg,
+      'theme.action.secondaryHover': currentTheme.action.secondaryHover,
+      'theme.action.secondaryText': currentTheme.action.secondaryText,
+      'theme.bg.page': currentTheme.bg.page,
+      'theme.bg.card': currentTheme.bg.card,
+      'theme.bg.sidebar': currentTheme.bg.sidebar,
+      'theme.bg.input': currentTheme.bg.input,
+      'theme.text.main': currentTheme.text.main,
+      'theme.text.secondary': currentTheme.text.secondary,
+      'theme.text.tertiary': currentTheme.text.tertiary,
+      'theme.text.onPrimary': currentTheme.text.onPrimary,
+      'theme.border.subtle': currentTheme.border.subtle,
+      'theme.border.default': currentTheme.border.default,
+      'theme.border.focus': currentTheme.border.focus,
+      'theme.disabled.bg': currentTheme.disabled.bg,
+      'theme.disabled.text': currentTheme.disabled.text,
+      'theme.disabled.border': currentTheme.disabled.border,
+      'theme.semantic.success.main': currentTheme.semantic.success.main,
+      'theme.semantic.success.bg': currentTheme.semantic.success.bg,
+      'theme.semantic.success.text': currentTheme.semantic.success.text,
+      'theme.semantic.warning.main': currentTheme.semantic.warning.main,
+      'theme.semantic.warning.bg': currentTheme.semantic.warning.bg,
+      'theme.semantic.warning.text': currentTheme.semantic.warning.text,
+      'theme.semantic.error.main': currentTheme.semantic.error.main,
+      'theme.semantic.error.bg': currentTheme.semantic.error.bg,
+      'theme.semantic.error.text': currentTheme.semantic.error.text,
+      'theme.semantic.info.main': currentTheme.semantic.info.main,
+      'theme.semantic.info.bg': currentTheme.semantic.info.bg,
+      'theme.semantic.info.text': currentTheme.semantic.info.text,
+    };
+    
+    // Reemplazar todas las referencias de theme con valores actuales
+    // Buscar patrones como: theme.action.primary, 'theme.action.primary', "theme.action.primary"
+    Object.keys(themeMap).forEach(key => {
+      // Reemplazar en strings: 'theme.action.primary' o "theme.action.primary"
+      const stringRegex = new RegExp(`(['"])${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`, 'g');
+      updatedCode = updatedCode.replace(stringRegex, `'${themeMap[key]}'`);
+      
+      // Reemplazar en objetos style: style={{ backgroundColor: theme.action.primary }}
+      const styleRegex = new RegExp(`(\\w+):\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+      updatedCode = updatedCode.replace(styleRegex, `$1: '${themeMap[key]}'`);
+      
+      // Reemplazar referencias directas sin comillas (en JSX): backgroundColor: theme.action.primary
+      const directRegex = new RegExp(`(\\w+):\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!['"])`, 'g');
+      updatedCode = updatedCode.replace(directRegex, `$1: '${themeMap[key]}'`);
+    });
+    
+    return updatedCode;
   };
 
   // --- 1. THEME ENGINE LOGIC ---
@@ -2236,13 +2301,22 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 {isRightSidebarExpanded && (
                 <div className="flex-1 overflow-hidden flex flex-col">
                     <div className="p-6 border-b border-white/5 shrink-0">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                            <HiSparkles className="w-4 h-4 text-indigo-500" />
-                            AI Designer
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-2">
-                            Generate UI components using your color palette.
-                        </p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                    <HiSparkles className="w-4 h-4 text-indigo-500" />
+                                    AI Designer
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-2">
+                                    Generate UI components using your color palette.
+                                </p>
+                            </div>
+                            {!isPremium && (
+                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded">
+                                    PRO
+                                </span>
+                            )}
+                        </div>
                     </div>
                     
                     {/* Messages History */}
@@ -2266,38 +2340,165 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 >
                                     {msg.text}
                                 </div>
-                                {msg.code && (
-                                    <div className="w-full mt-2">
-                                        <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs text-slate-400">Generated Code</span>
-                                                <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            await navigator.clipboard.writeText(msg.code || '');
-                                                            showToast('Code copied to clipboard!');
-                                                        } catch (err) {
-                                                            showToast('Failed to copy code');
-                                                        }
-                                                    }}
-                                                    className="text-xs text-indigo-400 hover:text-indigo-300"
-                                                >
-                                                    <HiClipboard className="w-4 h-4" />
-                                                </button>
+                                {msg.code && (() => {
+                                    const updatedCode = replaceThemeReferences(msg.code, theme);
+                                    const componentName = msg.code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/)?.[1] || 'Component';
+                                    
+                                    // Si no es premium, mostrar banner de upgrade en lugar del preview
+                                    if (!isPremium) {
+                                        return (
+                                            <div className="w-full mt-2 space-y-3">
+                                                {/* Premium Banner */}
+                                                <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <HiSparkles className="w-5 h-5 text-indigo-400" />
+                                                            <div>
+                                                                <h4 className="text-sm font-bold text-white">Preview is a Pro Feature</h4>
+                                                                <p className="text-xs text-slate-400 mt-1">Upgrade to Pro to see your components rendered in real-time</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => onOpenPricing?.()}
+                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors"
+                                                        >
+                                                            Upgrade to Pro
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Code Section - Still visible for free users */}
+                                                <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs text-slate-400">Generated Code</span>
+                                                        <button
+                                                            onClick={async () => {
+                                                                try {
+                                                                    await navigator.clipboard.writeText(updatedCode);
+                                                                    showToast('Code copied to clipboard!');
+                                                                } catch (err) {
+                                                                    showToast('Failed to copy code');
+                                                                }
+                                                            }}
+                                                            className="text-xs text-indigo-400 hover:text-indigo-300"
+                                                        >
+                                                            <HiClipboard className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                    <pre className="text-xs text-slate-300 overflow-x-auto">
+                                                        <code>{updatedCode}</code>
+                                                    </pre>
+                                                </div>
                                             </div>
-                                            <pre className="text-xs text-slate-300 overflow-x-auto">
-                                                <code>{msg.code}</code>
-                                            </pre>
+                                        );
+                                    }
+                                    
+                                    // Usuario premium - mostrar preview completo
+                                    return (
+                                        <div className="w-full mt-2 space-y-3">
+                                            {/* Preview Section */}
+                                            <div className="bg-slate-950 border border-slate-700 rounded-lg p-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-xs font-semibold text-slate-300">Preview</span>
+                                                    <span className="text-xs text-slate-500">Updates automatically when theme changes</span>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-6 min-h-[200px] overflow-auto">
+                                                    <iframe
+                                                        key={`preview-${config.primaryIndex}-${config.isDarkMode}-${JSON.stringify(theme?.action?.primary)}`}
+                                                        srcDoc={`
+                                                            <!DOCTYPE html>
+                                                            <html>
+                                                            <head>
+                                                                <meta charset="UTF-8">
+                                                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                                                <style>
+                                                                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                                                                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; padding: 20px; }
+                                                                </style>
+                                                                <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+                                                                <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+                                                                <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+                                                            </head>
+                                                            <body>
+                                                                <div id="root"></div>
+                                                                <script type="text/babel">
+                                                                    const { useState, useEffect, useRef, useMemo } = React;
+                                                                    ${updatedCode.replace(/export\s+default\s+\w+;?/g, '').replace(/import\s+.*from\s+['"].*['"];?/g, '')}
+                                                                    const ComponentName = ${componentName};
+                                                                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                                                                    root.render(React.createElement(ComponentName));
+                                                                </script>
+                                                            </body>
+                                                            </html>
+                                                        `}
+                                                        className="w-full h-[400px] border-0 rounded"
+                                                        sandbox="allow-scripts allow-same-origin"
+                                                        title="Component Preview"
+                                                    />
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Code Section */}
+                                            <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs text-slate-400">Generated Code</span>
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                await navigator.clipboard.writeText(updatedCode);
+                                                                showToast('Code copied to clipboard!');
+                                                            } catch (err) {
+                                                                showToast('Failed to copy code');
+                                                            }
+                                                        }}
+                                                        className="text-xs text-indigo-400 hover:text-indigo-300"
+                                                    >
+                                                        <HiClipboard className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <pre className="text-xs text-slate-300 overflow-x-auto">
+                                                    <code>{updatedCode}</code>
+                                                </pre>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
                         ))}
                         
                         {isAIGenerating && (
-                            <div className="flex items-center gap-2 text-slate-400 text-sm">
-                                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                                <span>Generating...</span>
+                            <div className="flex flex-col items-start">
+                                <div className="px-3 py-2 rounded-lg text-xs bg-slate-800 text-slate-300 border border-slate-700">
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative w-4 h-4">
+                                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <defs>
+                                                    <linearGradient id="mac-spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stopColor="#ff6b6b" />
+                                                        <stop offset="14.28%" stopColor="#ffa500" />
+                                                        <stop offset="28.57%" stopColor="#ffd700" />
+                                                        <stop offset="42.85%" stopColor="#90ee90" />
+                                                        <stop offset="57.14%" stopColor="#4ecdc4" />
+                                                        <stop offset="71.42%" stopColor="#45b7d1" />
+                                                        <stop offset="85.71%" stopColor="#96ceb4" />
+                                                        <stop offset="100%" stopColor="#ff6b6b" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <circle cx="8" cy="8" r="6" stroke="url(#mac-spinner-gradient)" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 20" fill="none" opacity="0.8">
+                                                    <animateTransform
+                                                        attributeName="transform"
+                                                        type="rotate"
+                                                        from="0 8 8"
+                                                        to="360 8 8"
+                                                        dur="0.8s"
+                                                        repeatCount="indefinite"
+                                                    />
+                                                </circle>
+                                            </svg>
+                                        </div>
+                                        <span>Generating...</span>
+                                    </div>
+                                </div>
                             </div>
                         )}
                         
@@ -2306,80 +2507,16 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     
                     {/* Input Area */}
                     <div className="p-4 border-t border-white/5 shrink-0">
-                        <form 
-                            onSubmit={async (e) => {
-                                e.preventDefault();
-                                if (!aiPrompt.trim() || isAIGenerating) return;
-                                
-                                const userPrompt = aiPrompt.trim();
-                                setAiPrompt('');
-                                setAiMessages(prev => [...prev, { role: 'user', text: userPrompt }]);
-                                setIsAIGenerating(true);
-                                setCodeError('');
-                                
-                                try {
-                                    // Prepare palette with shades
-                                    const pShades = generateShades(brandPalette[config.primaryIndex] || brandPalette[0], globalConfig);
-                                    const brandWithShades = brandPalette.map(c => ({
-                                        name: c.name,
-                                        hex: c.hex,
-                                        shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
-                                    }));
-                                    const neutralWithShades = neutralPalette.map(c => ({
-                                        name: c.name,
-                                        hex: c.hex,
-                                        shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
-                                    }));
-                                    const semanticWithShades = semanticPalette.map(c => ({
-                                        name: c.name,
-                                        hex: c.hex,
-                                        shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
-                                    }));
-                                    
-                                    const result = await generateUIFromPrompt({
-                                        prompt: userPrompt,
-                                        palette: {
-                                            brand: brandWithShades,
-                                            neutral: neutralWithShades,
-                                            semantic: semanticWithShades
-                                        },
-                                        availableComponents: {
-                                            molecules: molecules.map(m => m.id),
-                                            organisms: organisms.map(o => o.id)
-                                        },
-                                        config
-                                    });
-                                    
-                                    if (result.code) {
-                                        setGeneratedCode(result.code);
-                                        setAiMessages(prev => [...prev, { 
-                                            role: 'assistant', 
-                                            text: result.description,
-                                            code: result.code
-                                        }]);
-                                    } else {
-                                        setCodeError(result.description);
-                                        setAiMessages(prev => [...prev, { 
-                                            role: 'assistant', 
-                                            text: result.description || 'Error generating component'
-                                        }]);
-                                    }
-                                } catch (error: any) {
-                                    setCodeError(error.message || 'Unknown error');
-                                    setAiMessages(prev => [...prev, { 
-                                        role: 'assistant', 
-                                        text: `Error: ${error.message || 'Unknown error'}`
-                                    }]);
-                                } finally {
-                                    setIsAIGenerating(false);
-                                }
-                            }}
-                            className="flex gap-2"
-                        >
+                        <div className="flex gap-2">
                             <input
                                 type="text"
                                 value={aiPrompt}
                                 onChange={(e) => setAiPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                    }
+                                }}
                                 placeholder="e.g. Create a card UI with primary-600..."
                                 disabled={isAIGenerating}
                                 className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
@@ -2392,7 +2529,73 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                             />
                             <button
-                                type="submit"
+                                type="button"
+                                onClick={async () => {
+                                    if (!aiPrompt.trim() || isAIGenerating) return;
+                                    
+                                    const userPrompt = aiPrompt.trim();
+                                    setAiPrompt('');
+                                    setAiMessages(prev => [...prev, { role: 'user', text: userPrompt }]);
+                                    setIsAIGenerating(true);
+                                    setCodeError('');
+                                    
+                                    try {
+                                        // Prepare palette with shades
+                                        const pShades = generateShades(brandPalette[config.primaryIndex] || brandPalette[0], globalConfig);
+                                        const brandWithShades = brandPalette.map(c => ({
+                                            name: c.name,
+                                            hex: c.hex,
+                                            shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
+                                        }));
+                                        const neutralWithShades = neutralPalette.map(c => ({
+                                            name: c.name,
+                                            hex: c.hex,
+                                            shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
+                                        }));
+                                        const semanticWithShades = semanticPalette.map(c => ({
+                                            name: c.name,
+                                            hex: c.hex,
+                                            shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
+                                        }));
+                                        
+                                        const result = await generateUIFromPrompt({
+                                            prompt: userPrompt,
+                                            palette: {
+                                                brand: brandWithShades,
+                                                neutral: neutralWithShades,
+                                                semantic: semanticWithShades
+                                            },
+                                            availableComponents: {
+                                                molecules: molecules.map(m => m.id),
+                                                organisms: organisms.map(o => o.id)
+                                            },
+                                            config
+                                        });
+                                        
+                                        if (result.code) {
+                                            setGeneratedCode(result.code);
+                                            setAiMessages(prev => [...prev, { 
+                                                role: 'assistant', 
+                                                text: result.description,
+                                                code: result.code
+                                            }]);
+                                        } else {
+                                            setCodeError(result.description);
+                                            setAiMessages(prev => [...prev, { 
+                                                role: 'assistant', 
+                                                text: result.description || 'Error generating component'
+                                            }]);
+                                        }
+                                    } catch (error: any) {
+                                        setCodeError(error.message || 'Unknown error');
+                                        setAiMessages(prev => [...prev, { 
+                                            role: 'assistant', 
+                                            text: `Error: ${error.message || 'Unknown error'}`
+                                        }]);
+                                    } finally {
+                                        setIsAIGenerating(false);
+                                    }
+                                }}
                                 disabled={isAIGenerating || !aiPrompt.trim()}
                                 className="px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 style={{ 
@@ -2400,9 +2603,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                     color: theme.text.onPrimary
                                 }}
                             >
-                                <HiSparkles className="w-4 h-4" />
+                                <FaPaperPlane className="w-4 h-4" />
                             </button>
-                        </form>
+                        </div>
                     </div>
                 </div>
                 )}

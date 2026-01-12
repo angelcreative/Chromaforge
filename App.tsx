@@ -18,8 +18,8 @@ import Palette3DModal from './components/Palette3DModal';
 import UIPlayground from './components/UIPlayground';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
-import { HiCheck, HiX, HiPencil, HiAdjustments, HiBookOpen, HiHeart, HiArrowRight, HiChevronRight, HiPlus, HiUpload, HiArrowUp, HiViewGrid, HiCube, HiCollection, HiMenu } from 'react-icons/hi';
-import { FaBolt, FaPalette, FaStar, FaEyeDropper, FaCubes } from 'react-icons/fa';
+import { HiCheck, HiX, HiPencil, HiAdjustments, HiBookOpen, HiHeart, HiArrowRight, HiChevronRight, HiPlus, HiUpload, HiArrowUp, HiViewGrid, HiCube, HiCollection, HiMenu, HiSparkles } from 'react-icons/hi';
+import { FaBolt, FaPalette, FaStar, FaCubes, FaPaperPlane, FaEyeDropper } from 'react-icons/fa';
 import { MdEmail, MdLogout } from 'react-icons/md';
 
 // Auth & Storage Imports
@@ -351,8 +351,9 @@ const App: React.FC = () => {
       setIsSaved(false);
   };
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!chatInput.trim()) return;
+  const handleChatSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault(); 
+    if (!chatInput.trim()) return;
     if (!user) return;
 
     if (!isPremium && usageStats.aiCount >= FREE_LIMIT) {
@@ -669,6 +670,11 @@ const App: React.FC = () => {
                       config={playgroundConfig}
                       onConfigChange={setPlaygroundConfig}
                       globalConfig={globalCurveConfig}
+                      isPremium={isPremium}
+                      onOpenPricing={() => {
+                          setPricingLimitType('general');
+                          setIsPricingOpen(true);
+                      }}
                   />
               </div>
               
@@ -1100,7 +1106,7 @@ const App: React.FC = () => {
                 <div className="mt-auto border-t border-white/5 bg-slate-950 relative">
                     <div className="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50">
                         <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                            <FaEyeDropper className="w-4 h-4" />
+                            <HiSparkles className="w-4 h-4" />
                             AI Designer
                         </h3>
                         {!isPremium && <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-500">{usageStats.aiCount}/{FREE_LIMIT}</span>}
@@ -1160,7 +1166,7 @@ const App: React.FC = () => {
                             <div ref={chatEndRef} />
                         </div>
                     </div>
-                    <form onSubmit={handleChatSubmit} className="p-3 bg-slate-950">
+                    <div className="p-3 bg-slate-950">
                         <div className="relative">
                             <input 
                                 type="text" 
@@ -1168,13 +1174,23 @@ const App: React.FC = () => {
                                 placeholder="Ask AI..."
                                 value={chatInput}
                                 onChange={e => setChatInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                    }
+                                }}
                                 onFocus={() => setIsChatOpen(true)}
                             />
-                            <button type="submit" disabled={isChatLoading || !chatInput.trim()} className="absolute right-1.5 top-1.5 p-1.5 bg-indigo-600 rounded-md text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
-                                <HiArrowUp className="w-3 h-3" />
+                            <button 
+                                type="button"
+                                onClick={handleChatSubmit}
+                                disabled={isChatLoading || !chatInput.trim()} 
+                                className="absolute right-1.5 top-1.5 p-1.5 bg-indigo-600 rounded-md text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                            >
+                                <FaPaperPlane className="w-3 h-3" />
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
                 )}
             </div>
