@@ -121,6 +121,45 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     setTimeout(() => setToastOpen(false), 3000);
   };
 
+  // Función para reemplazar URLs de Unsplash Source por Picsum Photos
+  const replaceUnsplashUrls = (code: string): string => {
+    if (!code) return code;
+    
+    let cleaned = code;
+    
+    // Reemplazar source.unsplash.com por picsum.photos
+    // Patrón: https://source.unsplash.com/random/400x300/?keyword
+    // O: https://source.unsplash.com/400x300/?keyword
+    cleaned = cleaned.replace(
+      /https?:\/\/source\.unsplash\.com\/(?:random\/)?(\d+)x(\d+)\/?(?:\?[^"'\s]*)?/g,
+      (match, width, height) => {
+        // Extraer keyword si existe
+        const keywordMatch = match.match(/[?&]([^"'\s]+)$/);
+        const keyword = keywordMatch ? keywordMatch[1].replace(/[?&=]/g, '') : 'random';
+        // Usar el keyword como seed, o un número aleatorio si no hay keyword
+        const seed = keyword && keyword !== 'random' ? keyword : Math.floor(Math.random() * 1000);
+        return `https://picsum.photos/${width}/${height}?random=${seed}`;
+      }
+    );
+    
+    // También reemplazar imágenes.unsplash.com que puedan estar en el código
+    // (aunque no deberían estar, pero por si acaso)
+    cleaned = cleaned.replace(
+      /https?:\/\/images\.unsplash\.com\/photo-[^"'\s]+/g,
+      (match) => {
+        // Extraer dimensiones si están en el código
+        const sizeMatch = match.match(/(\d+)x(\d+)/);
+        if (sizeMatch) {
+          const [, width, height] = sizeMatch;
+          return `https://picsum.photos/${width}/${height}?random=${Math.floor(Math.random() * 1000)}`;
+        }
+        return 'https://picsum.photos/400/300?random=' + Math.floor(Math.random() * 1000);
+      }
+    );
+    
+    return cleaned;
+  };
+
   // Función para eliminar TODOS los imports
   const removeAllImports = (code: string): string => {
     if (!code) return code;
@@ -2463,7 +2502,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                         <iframe
                                             key={`preview-${config.primaryIndex}-${config.isDarkMode}-${JSON.stringify(theme?.action?.primary)}`}
                                             srcDoc={(() => {
-                                                const code = removeAllImports(replaceThemeReferences(aiGeneratedComponent.code, theme));
+                                                const code = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
                                                 const usedComponents = detectRadixComponents(aiGeneratedComponent.code);
                                                 
                                                 // Mapa de scripts UMD de Radix UI
@@ -2789,7 +2828,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             <button
                                                 onClick={async () => {
                                                     try {
-                                                        await navigator.clipboard.writeText(removeAllImports(replaceThemeReferences(aiGeneratedComponent.code, theme)));
+                                                        await navigator.clipboard.writeText(removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme))));
                                                         showToast('Code copied to clipboard!');
                                                     } catch (err) {
                                                         showToast('Failed to copy code');
@@ -2802,7 +2841,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             </button>
                                         </div>
                                         <pre className="flex-1 text-xs text-slate-300 overflow-auto">
-                                            <code>{removeAllImports(replaceThemeReferences(aiGeneratedComponent.code, theme))}</code>
+                                            <code>{removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)))}</code>
                                         </pre>
                                     </div>
                                 </div>
@@ -2930,7 +2969,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                 <button
                                                     onClick={async () => {
                                                         try {
-                                                            const updatedCode = removeAllImports(replaceThemeReferences(msg.code || '', theme));
+                                                            const updatedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(msg.code || '', theme)));
                                                             await navigator.clipboard.writeText(updatedCode);
                                                             showToast('Code copied to clipboard!');
                                                         } catch (err) {
@@ -2944,7 +2983,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                 </button>
                                             </div>
                                             <pre className="text-xs text-slate-300 overflow-x-auto max-h-[200px]">
-                                                <code>{removeAllImports(replaceThemeReferences(msg.code || '', theme))}</code>
+                                                <code>{removeAllImports(replaceUnsplashUrls(replaceThemeReferences(msg.code || '', theme)))}</code>
                                             </pre>
                                         </div>
                                         {!isPremium && (

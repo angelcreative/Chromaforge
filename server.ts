@@ -316,14 +316,17 @@ app.post('/api/ui-design', async (req, res) => {
     6. **Styling**: Use inline styles with theme colors, or Tailwind classes where appropriate
     7. **Code Quality**: Write clean, readable, production-ready code
     8. **Images**: 
-       - For user avatars, profile pictures, or card images, ALWAYS use Unsplash Source API
-       - Format: https://source.unsplash.com/random/400x300/?[keyword] or https://source.unsplash.com/400x300/?portrait for avatars
+       - For user avatars, profile pictures, or card images, ALWAYS use Picsum Photos (Lorem Picsum) service
+       - Format: https://picsum.photos/[width]/[height]?random=[seed] where seed is a number (1-1000) or descriptive keyword
        - Examples: 
-         * Avatar: https://source.unsplash.com/100x100/?portrait
-         * Card image: https://source.unsplash.com/400x300/?nature
-         * Product image: https://source.unsplash.com/600x400/?product
-       - Use descriptive keywords that match the context (e.g., "portrait" for avatars, "nature" for landscapes, "product" for e-commerce)
-       - NEVER use placeholder.com or other placeholder services
+         * Avatar: https://picsum.photos/100/100?random=portrait
+         * Card image: https://picsum.photos/400/300?random=nature
+         * Product image: https://picsum.photos/600/400?random=product
+         * Kitchen image: https://picsum.photos/600/450?random=kitchen
+         * Interior image: https://picsum.photos/600/450?random=interior
+       - Use descriptive seed values that match the context (e.g., "portrait" for avatars, "nature" for landscapes, "product" for e-commerce, "kitchen" for kitchen images)
+       - The seed ensures the same image is returned for the same keyword, but different keywords return different images
+       - NEVER use source.unsplash.com (it's discontinued) or placeholder.com
     
     === OUTPUT FORMAT ===
     Return ONLY valid JSX/TSX code. Do not include markdown code blocks, explanations, or comments outside the code.
