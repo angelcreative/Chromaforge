@@ -80,6 +80,7 @@ export interface PlaygroundConfig {
     primaryIndex: number; // Index in the brand palette to use as Main Primary
     surfaceMode: 'neutral' | 'brand'; // Use Neutral-50 or Brand-50 for bg
     textMode: 'base' | 'tinted'; // Use Base Neutral or Tinted Neutral for text
+    disabledMode: 'base' | 'tinted'; // Use Base Neutral or Tinted Neutral for disabled elements
     isDarkMode: boolean;
 }
 

@@ -135,6 +135,7 @@ const App: React.FC = () => {
       primaryIndex: 0,
       surfaceMode: 'neutral',
       textMode: 'base',
+      disabledMode: 'base',
       isDarkMode: false
   });
   

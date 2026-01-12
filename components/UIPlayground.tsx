@@ -49,14 +49,14 @@ interface UIPlaygroundProps {
 }
 
 type MoleculeType = 
-  | 'button' | 'input' | 'textarea' | 'select' | 'label' | 'badge' | 'tag' | 'pill'
-  | 'checkbox' | 'radio' | 'switch' | 'slider' | 'progress' | 'toggle' | 'separator';
+  | 'badge' | 'button' | 'checkbox' | 'input' | 'label' | 'pill' | 'progress'
+  | 'radio' | 'select' | 'slider' | 'switch' | 'tag' | 'textarea';
 
 type OrganismType = 
   | 'accordion' | 'alert-dialog' | 'aspect-ratio' | 'avatar' | 'collapsible'
   | 'context-menu' | 'dialog' | 'dropdown-menu' | 'form' | 'hover-card'
   | 'menubar' | 'navigation-menu' | 'popover' | 'radio-group' | 'scroll-area'
-  | 'tabs' | 'toast' | 'toggle-group' | 'toolbar' | 'tooltip';
+  | 'tabs' | 'toast' | 'toolbar' | 'tooltip';
 
 type ComponentType = MoleculeType | OrganismType;
 
@@ -71,18 +71,24 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [activeTab, setActiveTab] = useState<'molecules' | 'organisms'>('molecules');
   const [selectedComponent, setSelectedComponent] = useState<ComponentType>('button');
   const [toastOpen, setToastOpen] = useState(false);
+  const [checkboxStates, setCheckboxStates] = useState<{ [key: number]: boolean }>({});
+  const [radioState, setRadioState] = useState<string>('option1');
+  const [switchStates, setSwitchStates] = useState<{ [key: number]: boolean }>({});
+  const [activeTabValue, setActiveTabValue] = useState<string>('tab1');
 
   // --- 1. THEME ENGINE LOGIC ---
   const theme = useMemo(() => {
       const primarySource = brandPalette[config.primaryIndex] || brandPalette[0];
       const textNeutralSource = config.textMode === 'tinted' ? neutralPalette[0] : (neutralPalette[1] || neutralPalette[0]);
       const surfaceSource = config.surfaceMode === 'brand' ? primarySource : (neutralPalette[0] || primarySource);
+      const disabledNeutralSource = config.disabledMode === 'tinted' ? neutralPalette[0] : (neutralPalette[1] || neutralPalette[0]);
 
       if (!primarySource || !textNeutralSource) return null;
 
       const pShades = generateShades(primarySource, globalConfig);
       const tShades = generateShades(textNeutralSource, globalConfig);
       const sShades = generateShades(surfaceSource, globalConfig);
+      const dShades = generateShades(disabledNeutralSource, globalConfig);
       const semanticShades = semanticPalette.map(c => ({ name: c.name, shades: generateShades(c, globalConfig) }));
 
       const get = (shadesArr: any[], level: number) => shadesArr.find(s => s.level === level)?.hex || '#000000';
@@ -107,7 +113,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 
       const primaryBtn = getAccessiblePrimary();
       const secondaryBg = isDark ? get(pShades, 900) : get(pShades, 100);
+      const secondaryHover = isDark ? get(pShades, 700) : get(pShades, 300); // 2 shades más oscuro
       const secondaryTextRaw = isDark ? get(pShades, 100) : get(pShades, 900);
+      
+      // Disabled colors always use neutrals
+      const disabledBg = isDark ? get(dShades, 800) : get(dShades, 100);
+      const disabledText = isDark ? get(dShades, 500) : get(dShades, 400);
+      const disabledBorder = isDark ? get(dShades, 700) : get(dShades, 200);
       
       return {
           bg: {
@@ -131,7 +143,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               primary: primaryBtn.bg,
               primaryHover: primaryBtn.hover,
               secondaryBg: secondaryBg,
+              secondaryHover: secondaryHover,
               secondaryText: secondaryTextRaw, 
+          },
+          disabled: {
+              bg: disabledBg,
+              text: disabledText,
+              border: disabledBorder,
           },
           semantic: {
               success: { bg: isDark ? '#052e16' : '#dcfce7', text: isDark ? '#4ade80' : '#166534', main: '#22c55e' },
@@ -158,45 +176,42 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   if (!theme) return <div className="p-10 text-center text-slate-500">Generate a palette first to activate the playground.</div>;
 
   // --- 2. COMPONENT MENUS ---
-  const molecules: { id: MoleculeType; label: string; icon: React.ReactNode }[] = [
-    { id: 'button', label: 'Button', icon: <HiCursorClick className="w-5 h-5" /> },
-    { id: 'input', label: 'Input', icon: <HiSearch className="w-5 h-5" /> },
-    { id: 'textarea', label: 'Textarea', icon: <HiDocument className="w-5 h-5" /> },
-    { id: 'select', label: 'Select', icon: <HiFilter className="w-5 h-5" /> },
-    { id: 'label', label: 'Label', icon: <HiTag className="w-5 h-5" /> },
-    { id: 'badge', label: 'Badge', icon: <HiTag className="w-5 h-5" /> },
-    { id: 'tag', label: 'Tag', icon: <HiTag className="w-5 h-5" /> },
-    { id: 'pill', label: 'Pill', icon: <HiTag className="w-5 h-5" /> },
-    { id: 'checkbox', label: 'Checkbox', icon: <HiCheck className="w-5 h-5" /> },
-    { id: 'radio', label: 'Radio', icon: <HiSwitchHorizontal className="w-5 h-5" /> },
-    { id: 'switch', label: 'Switch', icon: <HiSwitchHorizontal className="w-5 h-5" /> },
-    { id: 'slider', label: 'Slider', icon: <HiAdjustments className="w-5 h-5" /> },
-    { id: 'progress', label: 'Progress', icon: <HiChartBar className="w-5 h-5" /> },
-    { id: 'toggle', label: 'Toggle', icon: <HiSwitchHorizontal className="w-5 h-5" /> },
-    { id: 'separator', label: 'Separator', icon: <HiAdjustments className="w-5 h-5" /> },
+  const molecules: { id: MoleculeType; label: string }[] = [
+    { id: 'badge', label: 'Badge' },
+    { id: 'button', label: 'Button' },
+    { id: 'checkbox', label: 'Checkbox' },
+    { id: 'input', label: 'Input' },
+    { id: 'label', label: 'Label' },
+    { id: 'pill', label: 'Pill' },
+    { id: 'progress', label: 'Progress' },
+    { id: 'radio', label: 'Radio' },
+    { id: 'select', label: 'Select' },
+    { id: 'slider', label: 'Slider' },
+    { id: 'switch', label: 'Switch' },
+    { id: 'tag', label: 'Tag' },
+    { id: 'textarea', label: 'Textarea' },
   ];
 
-  const organisms: { id: OrganismType; label: string; icon: React.ReactNode }[] = [
-    { id: 'accordion', label: 'Accordion', icon: <HiFolder className="w-5 h-5" /> },
-    { id: 'alert-dialog', label: 'Alert Dialog', icon: <HiExclamationCircle className="w-5 h-5" /> },
-    { id: 'aspect-ratio', label: 'Aspect Ratio', icon: <HiImage className="w-5 h-5" /> },
-    { id: 'avatar', label: 'Avatar', icon: <HiUserCircle className="w-5 h-5" /> },
-    { id: 'collapsible', label: 'Collapsible', icon: <HiFolderOpen className="w-5 h-5" /> },
-    { id: 'context-menu', label: 'Context Menu', icon: <HiDotsVertical className="w-5 h-5" /> },
-    { id: 'dialog', label: 'Dialog', icon: <HiTemplate className="w-5 h-5" /> },
-    { id: 'dropdown-menu', label: 'Dropdown Menu', icon: <HiMenu className="w-5 h-5" /> },
-    { id: 'form', label: 'Form', icon: <HiDocument className="w-5 h-5" /> },
-    { id: 'hover-card', label: 'Hover Card', icon: <HiCursorArrow className="w-5 h-5" /> },
-    { id: 'menubar', label: 'Menubar', icon: <HiViewList className="w-5 h-5" /> },
-    { id: 'navigation-menu', label: 'Navigation Menu', icon: <HiCollection className="w-5 h-5" /> },
-    { id: 'popover', label: 'Popover', icon: <HiCursorClick className="w-5 h-5" /> },
-    { id: 'radio-group', label: 'Radio Group', icon: <HiSwitchHorizontal className="w-5 h-5" /> },
-    { id: 'scroll-area', label: 'Scroll Area', icon: <HiViewGrid className="w-5 h-5" /> },
-    { id: 'tabs', label: 'Tabs', icon: <HiViewList className="w-5 h-5" /> },
-    { id: 'toast', label: 'Toast', icon: <HiBell className="w-5 h-5" /> },
-    { id: 'toggle-group', label: 'Toggle Group', icon: <HiViewGrid className="w-5 h-5" /> },
-    { id: 'toolbar', label: 'Toolbar', icon: <HiCog className="w-5 h-5" /> },
-    { id: 'tooltip', label: 'Tooltip', icon: <HiInformationCircle className="w-5 h-5" /> },
+  const organisms: { id: OrganismType; label: string }[] = [
+    { id: 'accordion', label: 'Accordion' },
+    { id: 'alert-dialog', label: 'Alert Dialog' },
+    { id: 'aspect-ratio', label: 'Aspect Ratio' },
+    { id: 'avatar', label: 'Avatar' },
+    { id: 'collapsible', label: 'Collapsible' },
+    { id: 'context-menu', label: 'Context Menu' },
+    { id: 'dialog', label: 'Dialog' },
+    { id: 'dropdown-menu', label: 'Dropdown Menu' },
+    { id: 'form', label: 'Form' },
+    { id: 'hover-card', label: 'Hover Card' },
+    { id: 'menubar', label: 'Menubar' },
+    { id: 'navigation-menu', label: 'Navigation Menu' },
+    { id: 'popover', label: 'Popover' },
+    { id: 'radio-group', label: 'Radio Group' },
+    { id: 'scroll-area', label: 'Scroll Area' },
+    { id: 'tabs', label: 'Tabs' },
+    { id: 'toast', label: 'Toast' },
+    { id: 'toolbar', label: 'Toolbar' },
+    { id: 'tooltip', label: 'Tooltip' },
   ];
 
   // --- 3. COMPONENT VIEWS ---
@@ -222,8 +237,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     Primary Button
                   </button>
                   <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all opacity-50 cursor-not-allowed"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all cursor-not-allowed"
+                    style={{ backgroundColor: theme.disabled.bg, color: theme.disabled.text }}
                   >
                     Disabled
                   </button>
@@ -241,29 +256,25 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>Secondary</h4>
                 <div className="flex flex-wrap gap-4">
                   <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all border"
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
                     style={{ 
                       backgroundColor: theme.action.secondaryBg, 
-                      color: theme.action.secondaryText,
-                      borderColor: theme.border.default
+                      color: theme.action.secondaryText
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = theme.bg.input;
-                      e.currentTarget.style.borderColor = theme.border.focus;
+                      e.currentTarget.style.backgroundColor = theme.action.secondaryHover;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
-                      e.currentTarget.style.borderColor = theme.border.default;
                     }}
                   >
                     Secondary Button
                   </button>
                   <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all border opacity-50 cursor-not-allowed"
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all cursor-not-allowed"
                     style={{ 
-                      backgroundColor: theme.action.secondaryBg, 
-                      color: theme.action.secondaryText,
-                      borderColor: theme.border.default
+                      backgroundColor: theme.disabled.bg, 
+                      color: theme.disabled.text
                     }}
                   >
                     Disabled
@@ -278,14 +289,16 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                   <button 
                     className="px-6 py-3 rounded-lg text-sm font-medium transition-all"
                     style={{ color: theme.action.primary }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.bg.input; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.secondaryBg; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    onMouseDown={(e) => { e.currentTarget.style.backgroundColor = theme.action.secondaryBg; }}
+                    onMouseUp={(e) => { e.currentTarget.style.backgroundColor = theme.action.secondaryBg; }}
                   >
                     Tertiary Button
                   </button>
                   <button 
-                    className="px-6 py-3 rounded-lg text-sm font-medium transition-all opacity-50 cursor-not-allowed"
-                    style={{ color: theme.action.primary }}
+                    className="px-6 py-3 rounded-lg text-sm font-medium transition-all cursor-not-allowed"
+                    style={{ color: theme.disabled.text }}
                   >
                     Disabled
                   </button>
@@ -305,8 +318,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     Link Button
                   </button>
                   <button 
-                    className="px-0 py-2 text-sm font-medium transition-all underline decoration-2 underline-offset-4 opacity-50 cursor-not-allowed"
-                    style={{ color: theme.action.primary }}
+                    className="px-0 py-2 text-sm font-medium transition-all underline decoration-2 underline-offset-4 cursor-not-allowed"
+                    style={{ color: theme.disabled.text }}
                   >
                     Disabled
                   </button>
@@ -326,8 +339,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     +
                   </button>
                   <button 
-                    className="w-14 h-14 rounded-full text-lg font-bold shadow-lg transition-all opacity-50 cursor-not-allowed"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
+                    className="w-14 h-14 rounded-full text-lg font-bold shadow-lg transition-all cursor-not-allowed"
+                    style={{ backgroundColor: theme.disabled.bg, color: theme.disabled.text }}
                   >
                     +
                   </button>
@@ -347,28 +360,82 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     <HiSearch className="w-5 h-5" />
                   </button>
                   <button 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-all border"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-all"
                     style={{ 
                       backgroundColor: theme.action.secondaryBg, 
-                      color: theme.action.secondaryText,
-                      borderColor: theme.border.default
+                      color: theme.action.secondaryText
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = theme.bg.input;
-                      e.currentTarget.style.borderColor = theme.border.focus;
+                      e.currentTarget.style.backgroundColor = theme.action.secondaryHover;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
-                      e.currentTarget.style.borderColor = theme.border.default;
                     }}
                   >
                     <HiSearch className="w-5 h-5" />
                   </button>
                   <button 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-all opacity-50 cursor-not-allowed"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-all cursor-not-allowed"
+                    style={{ backgroundColor: theme.disabled.bg, color: theme.disabled.text }}
                   >
                     <HiSearch className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Buttons with Icons */}
+              <div className="mb-8">
+                <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>With Icons</h4>
+                <div className="flex flex-wrap gap-4">
+                  <button 
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.primaryHover; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.action.primary; }}
+                  >
+                    <HiSearch className="w-4 h-4" />
+                    <span>Label + Icon Left</span>
+                  </button>
+                  <button 
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.primaryHover; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.action.primary; }}
+                  >
+                    <span>Label + Icon Right</span>
+                    <HiSearch className="w-4 h-4" />
+                  </button>
+                  <button 
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                    style={{ 
+                      backgroundColor: theme.action.secondaryBg, 
+                      color: theme.action.secondaryText
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = theme.action.secondaryHover;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
+                    }}
+                  >
+                    <HiSearch className="w-4 h-4" />
+                    <span>Label + Icon Left</span>
+                  </button>
+                  <button 
+                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                    style={{ 
+                      backgroundColor: theme.action.secondaryBg, 
+                      color: theme.action.secondaryText
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = theme.action.secondaryHover;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
+                    }}
+                  >
+                    <span>Label + Icon Right</span>
+                    <HiSearch className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -437,11 +504,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                   type="text" 
                   placeholder="Disabled input"
                   disabled
-                  className="w-full px-4 py-2 rounded-lg text-sm border opacity-50 cursor-not-allowed"
+                  className="w-full px-4 py-2 rounded-lg text-sm border cursor-not-allowed"
                   style={{ 
-                    backgroundColor: theme.bg.input, 
-                    color: theme.text.main,
-                    borderColor: theme.border.default
+                    backgroundColor: theme.disabled.bg, 
+                    color: theme.disabled.text,
+                    borderColor: theme.disabled.border
                   }}
                 />
               </div>
@@ -477,9 +544,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 />
               </div>
 
-              {/* Input with Icon */}
+              {/* Input with Icon Left */}
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>With Icon</label>
+                <label className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>Label + Icon Left</label>
                 <div className="relative">
                   <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.text.secondary }} />
                   <input 
@@ -494,6 +561,26 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
                     onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                   />
+                </div>
+              </div>
+
+              {/* Input with Icon Right */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>Label + Icon Right</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Search..."
+                    className="w-full pl-4 pr-10 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
+                    style={{ 
+                      backgroundColor: theme.bg.input, 
+                      color: theme.text.main,
+                      borderColor: theme.border.default
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
+                  />
+                  <HiSearch className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.text.secondary }} />
                 </div>
               </div>
             </div>
@@ -527,11 +614,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     rows={4}
                     placeholder="Disabled textarea"
                     disabled
-                    className="w-full px-4 py-2 rounded-lg text-sm border opacity-50 cursor-not-allowed resize-none"
+                    className="w-full px-4 py-2 rounded-lg text-sm border cursor-not-allowed resize-none"
                     style={{ 
-                      backgroundColor: theme.bg.input, 
-                      color: theme.text.main,
-                      borderColor: theme.border.default
+                      backgroundColor: theme.disabled.bg, 
+                      color: theme.disabled.text,
+                      borderColor: theme.disabled.border
                     }}
                   />
                 </div>
@@ -681,26 +768,29 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-6" style={{ color: theme.text.main }}>Radio Buttons</h3>
               <div className="space-y-4">
                 {[
-                  { label: 'Selected', checked: true, disabled: false },
-                  { label: 'Unselected', checked: false, disabled: false },
-                  { label: 'Disabled Selected', checked: true, disabled: true },
-                  { label: 'Disabled Unselected', checked: false, disabled: true },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  { label: 'Option 1', value: 'option1', disabled: false },
+                  { label: 'Option 2', value: 'option2', disabled: false },
+                  { label: 'Option 3', value: 'option3', disabled: false },
+                  { label: 'Disabled Option', value: 'option4', disabled: true },
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center gap-3">
                     <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      onClick={() => !item.disabled && setRadioState(item.value)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${item.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                       style={{
-                        borderColor: item.checked ? theme.action.primary : theme.border.default,
+                        borderColor: item.disabled 
+                          ? theme.disabled.border 
+                          : (radioState === item.value ? theme.action.primary : theme.border.default),
                       }}
                     >
-                      {item.checked && (
+                      {radioState === item.value && (
                         <div 
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: theme.action.primary }}
+                          style={{ backgroundColor: item.disabled ? theme.disabled.text : theme.action.primary }}
                         />
                       )}
                     </div>
-                    <Label.Root className="text-sm" style={{ color: item.disabled ? theme.text.tertiary : theme.text.main }}>
+                    <Label.Root className="text-sm" style={{ color: item.disabled ? theme.disabled.text : theme.text.main }}>
                       {item.label}
                     </Label.Root>
                   </div>
@@ -856,26 +946,31 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Checkbox States</h3>
               <div className="space-y-4">
                 {[
-                  { label: 'Checked', checked: true, disabled: false },
-                  { label: 'Unchecked', checked: false, disabled: false },
-                  { label: 'Disabled Checked', checked: true, disabled: true },
-                  { label: 'Disabled Unchecked', checked: false, disabled: true },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  { label: 'Option 1', id: 0, disabled: false },
+                  { label: 'Option 2', id: 1, disabled: false },
+                  { label: 'Option 3', id: 2, disabled: false },
+                  { label: 'Disabled Option', id: 3, disabled: true },
+                ].map((item) => (
+                  <div key={item.id} className="flex items-center gap-3">
                     <Checkbox.Root
-                      className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      checked={item.checked}
+                      className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all disabled:cursor-not-allowed"
+                      checked={checkboxStates[item.id] || false}
                       disabled={item.disabled}
+                      onCheckedChange={(checked) => !item.disabled && setCheckboxStates({ ...checkboxStates, [item.id]: checked as boolean })}
                       style={{
-                        backgroundColor: item.checked ? theme.action.primary : theme.bg.input,
-                        borderColor: item.checked ? theme.action.primary : theme.border.default,
+                        backgroundColor: item.disabled 
+                          ? theme.disabled.bg 
+                          : (checkboxStates[item.id] ? theme.action.primary : theme.bg.input),
+                        borderColor: item.disabled 
+                          ? theme.disabled.border 
+                          : (checkboxStates[item.id] ? theme.action.primary : theme.border.default),
                       }}
                     >
                       <Checkbox.Indicator>
-                        <HiCheck className="w-4 h-4" style={{ color: theme.text.onPrimary }} />
+                        <HiCheck className="w-4 h-4" style={{ color: item.disabled ? theme.disabled.text : theme.text.onPrimary }} />
                       </Checkbox.Indicator>
                     </Checkbox.Root>
-                    <Label.Root className="text-sm" style={{ color: item.disabled ? theme.text.tertiary : theme.text.main }}>
+                    <Label.Root className="text-sm" style={{ color: item.disabled ? theme.disabled.text : theme.text.main }}>
                       {item.label}
                     </Label.Root>
                   </div>
@@ -1186,45 +1281,57 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Label Variants</h3>
               <div className="space-y-4 max-w-md">
                 <div>
-                  <Label.Root className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>
+                  <Label.Root htmlFor="default-input" className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>
                     Default Label
                   </Label.Root>
                   <input 
-                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    id="default-input"
+                    type="text"
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
                     placeholder="Input with label"
                     style={{ 
                       backgroundColor: theme.bg.input, 
                       color: theme.text.main,
-                      border: `1px solid ${theme.border.default}`
+                      borderColor: theme.border.default
                     }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                   />
                 </div>
                 <div>
-                  <Label.Root className="block text-sm font-bold mb-2" style={{ color: theme.text.secondary }}>
+                  <Label.Root htmlFor="secondary-input" className="block text-sm font-bold mb-2" style={{ color: theme.text.secondary }}>
                     Secondary Label
                   </Label.Root>
                   <input 
-                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    id="secondary-input"
+                    type="text"
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
                     placeholder="Input with secondary label"
                     style={{ 
                       backgroundColor: theme.bg.input, 
                       color: theme.text.main,
-                      border: `1px solid ${theme.border.default}`
+                      borderColor: theme.border.default
                     }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                   />
                 </div>
                 <div>
-                  <Label.Root className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: theme.text.tertiary }}>
+                  <Label.Root htmlFor="small-input" className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: theme.text.tertiary }}>
                     Small Uppercase Label
                   </Label.Root>
                   <input 
-                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    id="small-input"
+                    type="text"
+                    className="w-full px-3 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
                     placeholder="Input with small label"
                     style={{ 
                       backgroundColor: theme.bg.input, 
                       color: theme.text.main,
-                      border: `1px solid ${theme.border.default}`
+                      borderColor: theme.border.default
                     }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
+                    onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                   />
                 </div>
               </div>
@@ -1318,37 +1425,40 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
           <div className="space-y-8">
             <div>
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Popover</h3>
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button 
-                    className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
-                  >
-                    Open Popover
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content 
-                    className="w-64 rounded-lg p-4 shadow-lg border"
-                    style={{ backgroundColor: theme.bg.card, borderColor: theme.border.subtle }}
-                  >
-                    <Popover.Close asChild>
-                      <button 
-                        className="absolute top-2 right-2 p-1 rounded"
-                        style={{ color: theme.text.secondary }}
-                      >
-                        <HiX className="w-4 h-4" />
-                      </button>
-                    </Popover.Close>
-                    <div className="font-bold mb-2" style={{ color: theme.text.main }}>Dimensions</div>
-                    <div className="text-sm mb-4" style={{ color: theme.text.secondary }}>
-                      Width: 100px<br />
-                      Height: 100px
-                    </div>
-                    <Popover.Arrow style={{ fill: theme.bg.card }} />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
+              <div className="flex justify-center">
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button 
+                      className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                      style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
+                    >
+                      Open Popover
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content 
+                      className="w-64 rounded-lg p-4 shadow-lg border"
+                      style={{ backgroundColor: theme.bg.card, borderColor: theme.border.subtle }}
+                      sideOffset={5}
+                    >
+                      <Popover.Close asChild>
+                        <button 
+                          className="absolute top-2 right-2 p-1 rounded"
+                          style={{ color: theme.text.secondary }}
+                        >
+                          <HiX className="w-4 h-4" />
+                        </button>
+                      </Popover.Close>
+                      <div className="font-bold mb-2" style={{ color: theme.text.main }}>Dimensions</div>
+                      <div className="text-sm mb-4" style={{ color: theme.text.secondary }}>
+                        Width: 100px<br />
+                        Height: 100px
+                      </div>
+                      <Popover.Arrow style={{ fill: theme.bg.card }} />
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              </div>
             </div>
           </div>
         );
@@ -1453,11 +1563,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Disabled Radio</h3>
-              <div className="flex items-center gap-3 opacity-50">
-                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: theme.border.default }}>
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.action.primary }} />
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: theme.disabled.border }}>
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.disabled.text }} />
                 </div>
-                <Label.Root className="text-sm" style={{ color: theme.text.tertiary }}>
+                <Label.Root className="text-sm" style={{ color: theme.disabled.text }}>
                   Disabled Option
                 </Label.Root>
               </div>
@@ -1556,11 +1666,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     Disabled Select
                   </Label.Root>
                   <div
-                    className="w-full px-3 py-2 rounded-lg text-sm flex items-center justify-between opacity-50 cursor-not-allowed"
+                    className="w-full px-3 py-2 rounded-lg text-sm flex items-center justify-between cursor-not-allowed"
                     style={{
-                      backgroundColor: theme.bg.input,
-                      color: theme.text.tertiary,
-                      border: `1px solid ${theme.border.subtle}`,
+                      backgroundColor: theme.disabled.bg,
+                      color: theme.disabled.text,
+                      border: `1px solid ${theme.disabled.border}`,
                     }}
                   >
                     <span>Disabled option</span>
@@ -1571,27 +1681,6 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             </div>
       </div>
   );
-
-      case 'separator':
-        return (
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Separator</h3>
-              <div className="space-y-4 max-w-md">
-                <div>
-                  <div className="text-sm mb-2" style={{ color: theme.text.main }}>Section 1</div>
-                  <Separator.Root className="h-px my-4" style={{ backgroundColor: theme.border.subtle }} />
-                  <div className="text-sm" style={{ color: theme.text.main }}>Section 2</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-sm" style={{ color: theme.text.main }}>Left</div>
-                  <Separator.Root className="h-4 w-px" style={{ backgroundColor: theme.border.subtle }} />
-                  <div className="text-sm" style={{ color: theme.text.main }}>Right</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
 
       case 'slider':
         return (
@@ -1674,27 +1763,31 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Switch States</h3>
               <div className="space-y-4">
                 {[
-                  { label: 'Enabled Switch', checked: true, disabled: false },
-                  { label: 'Disabled Switch', checked: false, disabled: false },
-                  { label: 'Disabled (On)', checked: true, disabled: true },
-                  { label: 'Disabled (Off)', checked: false, disabled: true },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <Label.Root className="text-sm" style={{ color: item.disabled ? theme.text.tertiary : theme.text.main }}>
+                  { label: 'Switch 1', id: 0, disabled: false },
+                  { label: 'Switch 2', id: 1, disabled: false },
+                  { label: 'Disabled (On)', id: 2, disabled: true },
+                  { label: 'Disabled (Off)', id: 3, disabled: true },
+                ].map((item) => (
+                  <div key={item.id} className="flex items-center justify-between">
+                    <Label.Root className="text-sm" style={{ color: item.disabled ? theme.disabled.text : theme.text.main }}>
                       {item.label}
                     </Label.Root>
                     <Switch.Root
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                      checked={item.checked}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                      checked={switchStates[item.id] || false}
                       disabled={item.disabled}
+                      onCheckedChange={(checked) => !item.disabled && setSwitchStates({ ...switchStates, [item.id]: checked as boolean })}
                       style={{
-                        backgroundColor: item.checked ? theme.action.primary : theme.bg.input,
+                        backgroundColor: item.disabled 
+                          ? theme.disabled.bg 
+                          : (switchStates[item.id] ? theme.action.primary : theme.bg.input),
                       }}
                     >
                       <Switch.Thumb
                         className="inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out"
                         style={{
-                          transform: item.checked ? 'translateX(24px)' : 'translateX(4px)',
+                          transform: switchStates[item.id] ? 'translateX(24px)' : 'translateX(4px)',
+                          backgroundColor: item.disabled ? theme.disabled.text : 'white',
                         }}
                       />
                     </Switch.Root>
@@ -1710,34 +1803,34 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
           <div className="space-y-8">
             <div>
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Tabs</h3>
-              <Tabs.Root defaultValue="tab1" className="w-full max-w-md">
+              <Tabs.Root value={activeTabValue} onValueChange={setActiveTabValue} className="w-full max-w-md">
                 <Tabs.List className="flex border-b" style={{ borderColor: theme.border.subtle }}>
                   <Tabs.Trigger 
                     value="tab1"
-                    className="px-4 py-2 text-sm font-medium border-b-2 transition-all"
+                    className="px-4 py-2 text-sm font-medium border-b-2 transition-all hover:bg-black/5"
                     style={{ 
-                      color: theme.text.main,
-                      borderBottomColor: 'transparent'
+                      color: activeTabValue === 'tab1' ? theme.action.primary : theme.text.main,
+                      borderBottomColor: activeTabValue === 'tab1' ? theme.action.primary : 'transparent'
                     }}
                   >
                     Account
                   </Tabs.Trigger>
                   <Tabs.Trigger 
                     value="tab2"
-                    className="px-4 py-2 text-sm font-medium border-b-2 transition-all"
+                    className="px-4 py-2 text-sm font-medium border-b-2 transition-all hover:bg-black/5"
                     style={{ 
-                      color: theme.text.main,
-                      borderBottomColor: 'transparent'
+                      color: activeTabValue === 'tab2' ? theme.action.primary : theme.text.main,
+                      borderBottomColor: activeTabValue === 'tab2' ? theme.action.primary : 'transparent'
                     }}
                   >
                     Password
                   </Tabs.Trigger>
                   <Tabs.Trigger 
                     value="tab3"
-                    className="px-4 py-2 text-sm font-medium border-b-2 transition-all"
+                    className="px-4 py-2 text-sm font-medium border-b-2 transition-all hover:bg-black/5"
                     style={{ 
-                      color: theme.text.main,
-                      borderBottomColor: 'transparent'
+                      color: activeTabValue === 'tab3' ? theme.action.primary : theme.text.main,
+                      borderBottomColor: activeTabValue === 'tab3' ? theme.action.primary : 'transparent'
                     }}
                   >
                     Settings
@@ -1800,85 +1893,6 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
           </div>
         );
 
-      case 'toggle':
-        return (
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Toggle</h3>
-              <div className="flex flex-wrap gap-4">
-                <Toggle.Root
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all data-[state=on]:shadow-md"
-                  style={{
-                    backgroundColor: theme.bg.input,
-                    color: theme.text.main,
-                  }}
-                >
-                  Bold
-                </Toggle.Root>
-                <Toggle.Root
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all data-[state=on]:shadow-md"
-                  style={{
-                    backgroundColor: theme.bg.input,
-                    color: theme.text.main,
-                  }}
-                >
-                  Italic
-                </Toggle.Root>
-                <Toggle.Root
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all data-[state=on]:shadow-md"
-                  aria-label="Toggle underline"
-                  style={{
-                    backgroundColor: theme.action.primary,
-                    color: theme.text.onPrimary,
-                  }}
-                >
-                  <span className="underline">U</span>
-                </Toggle.Root>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'toggle-group':
-        return (
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Toggle Group</h3>
-              <ToggleGroup.Root type="single" className="flex gap-2">
-                <ToggleGroup.Item
-                  value="left"
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all data-[state=on]:shadow-md"
-                  style={{
-                    backgroundColor: theme.bg.input,
-                    color: theme.text.main,
-                  }}
-                >
-                  Left
-                </ToggleGroup.Item>
-                <ToggleGroup.Item
-                  value="center"
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all data-[state=on]:shadow-md"
-                  style={{
-                    backgroundColor: theme.bg.input,
-                    color: theme.text.main,
-                  }}
-                >
-                  Center
-                </ToggleGroup.Item>
-                <ToggleGroup.Item
-                  value="right"
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all data-[state=on]:shadow-md"
-                  style={{
-                    backgroundColor: theme.bg.input,
-                    color: theme.text.main,
-                  }}
-                >
-                  Right
-                </ToggleGroup.Item>
-              </ToggleGroup.Root>
-            </div>
-          </div>
-        );
 
       case 'toolbar':
         return (
@@ -1984,77 +1998,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full max-h-screen overflow-hidden">
+    <div className="flex flex-col h-full max-h-screen overflow-hidden">
         
-        {/* --- COMPONENT MENU SIDEBAR --- */}
-        <div className="w-full md:w-[280px] bg-slate-900 border-r border-white/5 flex flex-col shrink-0 overflow-y-auto custom-scrollbar z-10 shadow-2xl">
-            <div className="p-6 border-b border-white/5">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <HiPuzzle className="w-4 h-4 text-indigo-500" />
-                    UI Components
-                </h3>
-                <p className="text-xs text-slate-500 mt-2">
-                    Browse components with your color tokens.
-                </p>
+        {/* --- TOP BAR: THEME CONTROLS --- */}
+        <div className="w-full bg-slate-900 border-b border-white/5 flex items-center justify-between px-6 py-4 shrink-0 z-20 shadow-lg">
+            <div className="flex items-center gap-6">
             </div>
 
-            {/* TABS */}
-            <div className="px-4 pt-4 border-b border-white/5">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setActiveTab('molecules');
-                    setSelectedComponent('button');
-                  }}
-                  className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
-                    activeTab === 'molecules'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  Molecules
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('organisms');
-                    setSelectedComponent('accordion');
-                  }}
-                  className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
-                    activeTab === 'organisms'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  Organisms
-                </button>
-              </div>
-            </div>
-
-            {/* COMPONENT LIST */}
-            <div className="p-4 space-y-1">
-                {(activeTab === 'molecules' ? molecules : organisms).map((comp) => (
-                    <button
-                        key={comp.id}
-                        onClick={() => setSelectedComponent(comp.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
-                            selectedComponent === comp.id
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
-                    >
-                        <span style={{ color: selectedComponent === comp.id ? 'white' : 'inherit' }}>
-                            {comp.icon}
-                        </span>
-                        <span>{comp.label}</span>
-                    </button>
-                ))}
-            </div>
-
-            <div className="p-6 border-t border-white/5 space-y-6">
-                
+            <div className="flex items-center gap-6 flex-wrap">
                 {/* 1. Dark Mode Toggle */}
-                <div className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-white/5">
-                    <span className="text-xs font-bold text-slate-300 uppercase">Appearance</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-300 uppercase whitespace-nowrap">Appearance</span>
                     <button 
                         onClick={() => onConfigChange({ ...config, isDarkMode: !config.isDarkMode })}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.isDarkMode ? 'bg-indigo-600' : 'bg-slate-700'}`}
@@ -2064,9 +2018,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 </div>
 
                 {/* 2. Primary Color Selection */}
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-3">Primary Color</label>
-                    <div className="flex gap-2 flex-wrap">
+                <div className="flex items-center gap-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Primary Color</label>
+                    <div className="flex gap-2">
                         {brandPalette.map((color, idx) => (
                             <button
                                 key={idx}
@@ -2082,18 +2036,18 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 </div>
 
                 {/* 3. Surface Mapping */}
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-3">Background</label>
+                <div className="flex items-center gap-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Background</label>
                     <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5">
                         <button 
                             onClick={() => onConfigChange({ ...config, surfaceMode: 'neutral' })}
-                            className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'neutral' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'neutral' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
                         >
                             Neutral
                         </button>
                         <button 
                             onClick={() => onConfigChange({ ...config, surfaceMode: 'brand' })}
-                            className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'brand' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'brand' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
                         >
                             Brand
                         </button>
@@ -2101,45 +2055,124 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 </div>
 
                 {/* 4. Text Mapping */}
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-3">Typography</label>
+                <div className="flex items-center gap-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Typography</label>
                     <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5">
                         <button 
                             onClick={() => onConfigChange({ ...config, textMode: 'base' })}
-                            className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'base' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'base' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
                         >
                             Gray
                         </button>
                         <button 
                             onClick={() => onConfigChange({ ...config, textMode: 'tinted' })}
-                            className={`flex-1 py-2 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'tinted' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'tinted' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
                         >
                             Tinted
                         </button>
                     </div>
                 </div>
 
+                {/* 5. Disabled Mode */}
+                <div className="flex items-center gap-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Disabled</label>
+                    <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5">
+                        <button 
+                            onClick={() => onConfigChange({ ...config, disabledMode: 'base' })}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.disabledMode === 'base' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                        >
+                            Base
+                        </button>
+                        <button 
+                            onClick={() => onConfigChange({ ...config, disabledMode: 'tinted' })}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.disabledMode === 'tinted' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                        >
+                            Tinted
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        {/* --- COMPONENT PREVIEW AREA --- */}
-        <div 
-            className="flex-1 overflow-hidden relative transition-colors duration-500"
-            style={{ backgroundColor: theme.bg.page }}
-        >
-            <div className="h-full w-full overflow-y-auto p-6 md:p-8">
-                <div className="max-w-4xl mx-auto">
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold tracking-tight transition-colors mb-2" style={{ color: theme.text.main }}>
-                            {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label}
-                        </h2>
-                        <p className="text-sm transition-colors" style={{ color: theme.text.secondary }}>
-                            Explore all variants and states of {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label.toLowerCase()}
-                        </p>
+        {/* --- MAIN CONTENT AREA --- */}
+        <div className="flex flex-row flex-1 overflow-hidden">
+            {/* --- COMPONENT MENU SIDEBAR --- */}
+            <div className="w-full md:w-[280px] bg-slate-900 border-r border-white/5 flex flex-col shrink-0 overflow-y-auto custom-scrollbar z-10 shadow-2xl">
+                <div className="p-6 border-b border-white/5">
+                    <p className="text-xs text-slate-500">
+                        Browse components with your color tokens.
+                    </p>
+                </div>
+
+                {/* TABS */}
+                <div className="px-4 pt-4 border-b border-white/5">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setActiveTab('molecules');
+                        setSelectedComponent('button');
+                      }}
+                      className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                        activeTab === 'molecules'
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      Molecules
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('organisms');
+                        setSelectedComponent('accordion');
+                      }}
+                      className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                        activeTab === 'organisms'
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      Organisms
+                    </button>
+                  </div>
+                </div>
+
+                {/* COMPONENT LIST */}
+                <div className="p-4 space-y-1">
+                    {(activeTab === 'molecules' ? molecules : organisms).map((comp) => (
+                        <button
+                            key={comp.id}
+                            onClick={() => setSelectedComponent(comp.id)}
+                            className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
+                                selectedComponent === comp.id
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                        >
+                            {comp.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* --- COMPONENT PREVIEW AREA --- */}
+            <div 
+                className="flex-1 overflow-hidden relative transition-colors duration-500"
+                style={{ backgroundColor: theme.bg.page }}
+            >
+                <div className="h-full w-full overflow-y-auto p-6 md:p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-bold tracking-tight transition-colors mb-2" style={{ color: theme.text.main }}>
+                                {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label}
+                            </h2>
+                            <p className="text-sm transition-colors" style={{ color: theme.text.secondary }}>
+                                Explore all variants and states of {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label.toLowerCase()}
+                            </p>
                         </div>
-                    {renderComponentView()}
-                        </div>
+                        {renderComponentView()}
                     </div>
+                </div>
+            </div>
         </div>
     </div>
   );

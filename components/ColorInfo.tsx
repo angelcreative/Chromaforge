@@ -1,6 +1,6 @@
 import React from 'react';
 import { ColorData } from '../types';
-import { getLuminance, rgbToLab, rgbToCmyk } from '../utils/colorUtils';
+import { getLuminance, rgbToLab, rgbToCmyk, rgbToOklch } from '../utils/colorUtils';
 
 interface ColorInfoProps {
   color: ColorData;
@@ -10,6 +10,7 @@ interface ColorInfoProps {
 const ColorInfo: React.FC<ColorInfoProps> = ({ color, onClose }) => {
   const lum = getLuminance(color.rgb.r, color.rgb.g, color.rgb.b) * 100;
   const cmyk = rgbToCmyk(color.rgb.r, color.rgb.g, color.rgb.b);
+  const oklch = rgbToOklch(color.rgb.r, color.rgb.g, color.rgb.b);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -58,6 +59,10 @@ const ColorInfo: React.FC<ColorInfoProps> = ({ color, onClose }) => {
                 <div className="flex justify-between border-b border-slate-800 pb-2">
                     <span className="text-slate-500">LAB (Approx)</span>
                     <span>{rgbToLab(color.rgb.r, color.rgb.g, color.rgb.b)}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2">
+                    <span className="text-slate-500">OKLCH</span>
+                    <span>{oklch.l.toFixed(2)}, {oklch.c.toFixed(2)}, {oklch.h.toFixed(2)}</span>
                 </div>
             </div>
         </div>
