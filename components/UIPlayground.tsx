@@ -94,6 +94,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [toastMessage, setToastMessage] = useState('');
   const [aiGeneratedComponent, setAiGeneratedComponent] = useState<{ code: string; componentName: string } | null>(null);
   const [originalTheme, setOriginalTheme] = useState<any>(null);
+  const [savedGeneratedComponent, setSavedGeneratedComponent] = useState<{ code: string; componentName: string } | null>(null);
   const aiMessagesEndRef = useRef<HTMLDivElement>(null);
   const aiPromptRef = useRef<HTMLTextAreaElement>(null);
   
@@ -120,23 +121,52 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     setTimeout(() => setToastOpen(false), 3000);
   };
 
+  // Función para eliminar TODOS los imports
+  const removeAllImports = (code: string): string => {
+    if (!code) return code;
+    
+    let cleaned = code;
+    
+    // Eliminar imports multilínea y single line
+    cleaned = cleaned.replace(/import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)(?:\s*,\s*(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))*\s+from\s+['"][^'"]+['"];?|type\s+.*?\s+from\s+['"][^'"]+['"];?)/gs, '');
+    
+    // Eliminar cualquier línea que empiece con "import"
+    cleaned = cleaned.split('\n').filter(line => {
+      const trimmed = line.trim();
+      return !trimmed.startsWith('import ') && !trimmed.startsWith('import\t');
+    }).join('\n');
+    
+    // Limpiar líneas vacías múltiples
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    
+    return cleaned.trim();
+  };
+
   // Función para detectar qué componentes de Radix UI se usan en el código
   const detectRadixComponents = (code: string): string[] => {
     const components: string[] = [];
-    const radixComponents = [
-      'AspectRatio', 'Avatar', 'Card', 'Button', 'Dialog', 'Popover',
-      'Select', 'Checkbox', 'RadioGroup', 'Switch', 'Tabs', 'Accordion',
-      'AlertDialog', 'DropdownMenu', 'HoverCard', 'Tooltip', 'Progress',
-      'Slider', 'Separator', 'ScrollArea', 'Label', 'Toast'
+    const allRadixComponents = [
+      'AspectRatio', 'Avatar', 'ScrollArea', 'Toolbar', 'Tabs', 'Popover',
+      'Card', 'Dialog', 'Select', 'Checkbox', 'RadioGroup', 'Switch',
+      'Accordion', 'AlertDialog', 'DropdownMenu', 'HoverCard', 'Tooltip',
+      'Progress', 'Slider', 'Separator', 'Label', 'Toast', 'Collapsible',
+      'ContextMenu', 'NavigationMenu', 'Menubar'
     ];
     
-    radixComponents.forEach(comp => {
-      if (code.includes(`${comp}.`) || code.includes(`<${comp}.`) || code.includes(`import.*${comp}`)) {
+    allRadixComponents.forEach(comp => {
+      const patterns = [
+        new RegExp(`${comp}\\.`, 'g'),
+        new RegExp(`<${comp}\\.`, 'g'),
+        new RegExp(`import.*${comp}`, 'gi'),
+        new RegExp(`from.*react-${comp.toLowerCase().replace(/([A-Z])/g, '-$1')}`, 'gi')
+      ];
+      
+      if (patterns.some(p => p.test(code))) {
         components.push(comp);
       }
     });
     
-    return components;
+    return [...new Set(components)];
   };
 
   // Función para reemplazar referencias de theme con valores actuales
@@ -195,6 +225,42 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
       const directRegex = new RegExp(`(\\w+):\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!['"])`, 'g');
       updatedCode = updatedCode.replace(directRegex, `$1: '${themeMap[key]}'`);
     });
+    
+    // NUEVO: Detectar y reemplazar objeto theme hardcodeado
+    // Buscar patrones como: const theme = { primary: '#FF8C69', ... }
+    const themeObjectRegex = /const\s+theme\s*=\s*\{([^}]+)\}/s;
+    const themeMatch = updatedCode.match(themeObjectRegex);
+    
+    if (themeMatch) {
+      // Mapear propiedades comunes del objeto theme a valores del tema actual
+      const propertyMappings: { [key: string]: string } = {
+        'primary': currentTheme.action.primary,
+        'primaryLight': currentTheme.action.primaryHover || currentTheme.action.primary + '20',
+        'primaryDark': currentTheme.action.primaryHover || currentTheme.action.primary,
+        'bg': currentTheme.bg.page,
+        'card': currentTheme.bg.card,
+        'text': currentTheme.text.main,
+        'textSecondary': currentTheme.text.secondary,
+        'border': currentTheme.border.default,
+        'success': currentTheme.semantic.success.main,
+        'error': currentTheme.semantic.error.main,
+        'warning': currentTheme.semantic.warning.main,
+        'info': currentTheme.semantic.info.main,
+      };
+      
+      // Reemplazar cada propiedad del objeto theme
+      Object.keys(propertyMappings).forEach(prop => {
+        // Buscar: primary: '#FF8C69' o primary: "#FF8C69" o 'primary': '#FF8C69'
+        const propRegex = new RegExp(`(['"]?)${prop}\\1\\s*:\\s*['"](#?[0-9A-Fa-f]{6}|[^'"]+)['"]`, 'g');
+        updatedCode = updatedCode.replace(propRegex, (match, quote, value) => {
+          // Solo reemplazar si el valor es un color hex
+          if (/^#?[0-9A-Fa-f]{6}$/i.test(value)) {
+            return `${quote || ''}${prop}${quote || ''}: '${propertyMappings[prop]}'`;
+          }
+          return match;
+        });
+      });
+    }
     
     // Si tenemos el tema original, detectar y reemplazar colores hardcodeados
     if (originalTheme) {
@@ -2368,6 +2434,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 </div>
                                 <button
                                     onClick={() => {
+                                        if (aiGeneratedComponent) {
+                                            setSavedGeneratedComponent(aiGeneratedComponent);
+                                        }
                                         setAiGeneratedComponent(null);
                                         setOriginalTheme(null);
                                     }}
@@ -2393,74 +2462,230 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                     <div className="bg-white rounded-lg p-6 min-h-[600px] overflow-auto border" style={{ borderColor: theme.border.subtle }}>
                                         <iframe
                                             key={`preview-${config.primaryIndex}-${config.isDarkMode}-${JSON.stringify(theme?.action?.primary)}`}
-                                            srcDoc={`
-                                                <!DOCTYPE html>
-                                                <html>
-                                                <head>
-                                                    <meta charset="UTF-8">
-                                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                                    <style>
-                                                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                                                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
-                                                    </style>
-                                                    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-                                                    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-                                                    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-                                                    <script src="https://unpkg.com/@radix-ui/react-aspect-ratio@1.1.8/dist/index.umd.js"></script>
-                                                    <script src="https://unpkg.com/@radix-ui/react-avatar@1.1.1/dist/index.umd.js"></script>
-                                                </head>
-                                                <body>
-                                                    <div id="root"></div>
-                                                    <script type="text/babel">
-                                                        const { useState, useEffect, useRef, useMemo } = React;
-                                                        // Radix UI Components with fallbacks
-                                                        const AspectRatio = window.RadixUIAspectRatio || { Root: ({ ratio, children }) => React.createElement('div', { style: { aspectRatio: ratio, width: '100%' } }, children) };
-                                                        
-                                                        // Avatar component - check all possible global variable names
-                                                        let AvatarModule = null;
-                                                        // Try different possible global variable names
-                                                        if (typeof window !== 'undefined') {
-                                                            AvatarModule = window.RadixUIAvatar || 
-                                                                          window.RadixUI?.Avatar || 
-                                                                          window['@radix-ui/react-avatar'] ||
-                                                                          (window.RadixUI && window.RadixUI.react && window.RadixUI.react.avatar) ||
-                                                                          null;
-                                                        }
-                                                        
-                                                        // Create Avatar component with proper fallback
-                                                        const Avatar = (AvatarModule && typeof AvatarModule === 'object' && AvatarModule.Root) ? AvatarModule : {
-                                                            Root: ({ children, className, style, ...props }) => {
-                                                                return React.createElement('div', { 
-                                                                    className: className || '', 
-                                                                    style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', ...style },
-                                                                    ...props 
-                                                                }, children);
-                                                            },
-                                                            Image: ({ src, alt, className, style, ...props }) => {
-                                                                return React.createElement('img', { 
-                                                                    src, 
-                                                                    alt: alt || '', 
-                                                                    className: className || '',
-                                                                    style: { width: '100%', height: '100%', objectFit: 'cover', ...style },
-                                                                    ...props 
-                                                                });
-                                                            },
-                                                            Fallback: ({ children, className, style, ...props }) => {
-                                                                return React.createElement('div', { 
-                                                                    className: className || '',
-                                                                    style: { display: 'flex', alignItems: 'center', justifyContent: 'center', ...style },
-                                                                    ...props 
-                                                                }, children);
-                                                            }
-                                                        };
-                                                        ${replaceThemeReferences(aiGeneratedComponent.code, theme).replace(/export\s+default\s+\w+;?/g, '').replace(/import\s+.*from\s+['"].*['"];?/g, '')}
-                                                        const ComponentName = ${aiGeneratedComponent.componentName};
-                                                        const root = ReactDOM.createRoot(document.getElementById('root'));
-                                                        root.render(React.createElement(ComponentName));
-                                                    </script>
-                                                </body>
-                                                </html>
-                                            `}
+                                            srcDoc={(() => {
+                                                const code = removeAllImports(replaceThemeReferences(aiGeneratedComponent.code, theme));
+                                                const usedComponents = detectRadixComponents(aiGeneratedComponent.code);
+                                                
+                                                // Mapa de scripts UMD de Radix UI
+                                                const componentScripts: { [key: string]: string } = {
+                                                    'AspectRatio': 'https://unpkg.com/@radix-ui/react-aspect-ratio@1.1.8/dist/index.umd.js',
+                                                    'Avatar': 'https://unpkg.com/@radix-ui/react-avatar@1.1.1/dist/index.umd.js',
+                                                    'ScrollArea': 'https://unpkg.com/@radix-ui/react-scroll-area@1.1.0/dist/index.umd.js',
+                                                    'Toolbar': 'https://unpkg.com/@radix-ui/react-toolbar@1.1.0/dist/index.umd.js',
+                                                    'Tabs': 'https://unpkg.com/@radix-ui/react-tabs@1.1.0/dist/index.umd.js',
+                                                    'Popover': 'https://unpkg.com/@radix-ui/react-popover@1.1.0/dist/index.umd.js',
+                                                    'Card': 'https://unpkg.com/@radix-ui/react-card@1.0.0/dist/index.umd.js',
+                                                    'Dialog': 'https://unpkg.com/@radix-ui/react-dialog@1.1.0/dist/index.umd.js',
+                                                    'Select': 'https://unpkg.com/@radix-ui/react-select@2.1.0/dist/index.umd.js',
+                                                    'Checkbox': 'https://unpkg.com/@radix-ui/react-checkbox@1.1.0/dist/index.umd.js',
+                                                    'RadioGroup': 'https://unpkg.com/@radix-ui/react-radio-group@1.2.0/dist/index.umd.js',
+                                                    'Switch': 'https://unpkg.com/@radix-ui/react-switch@1.1.0/dist/index.umd.js',
+                                                    'Accordion': 'https://unpkg.com/@radix-ui/react-accordion@1.2.0/dist/index.umd.js',
+                                                    'AlertDialog': 'https://unpkg.com/@radix-ui/react-alert-dialog@1.1.0/dist/index.umd.js',
+                                                    'DropdownMenu': 'https://unpkg.com/@radix-ui/react-dropdown-menu@2.1.0/dist/index.umd.js',
+                                                    'HoverCard': 'https://unpkg.com/@radix-ui/react-hover-card@1.1.0/dist/index.umd.js',
+                                                    'Tooltip': 'https://unpkg.com/@radix-ui/react-tooltip@1.1.0/dist/index.umd.js',
+                                                    'Progress': 'https://unpkg.com/@radix-ui/react-progress@1.1.0/dist/index.umd.js',
+                                                    'Slider': 'https://unpkg.com/@radix-ui/react-slider@1.2.0/dist/index.umd.js',
+                                                    'Separator': 'https://unpkg.com/@radix-ui/react-separator@1.1.0/dist/index.umd.js',
+                                                    'Label': 'https://unpkg.com/@radix-ui/react-label@2.1.0/dist/index.umd.js',
+                                                    'Toast': 'https://unpkg.com/@radix-ui/react-toast@1.2.0/dist/index.umd.js',
+                                                    'Collapsible': 'https://unpkg.com/@radix-ui/react-collapsible@1.1.0/dist/index.umd.js',
+                                                    'ContextMenu': 'https://unpkg.com/@radix-ui/react-context-menu@2.2.0/dist/index.umd.js',
+                                                    'NavigationMenu': 'https://unpkg.com/@radix-ui/react-navigation-menu@1.2.0/dist/index.umd.js',
+                                                    'Menubar': 'https://unpkg.com/@radix-ui/react-menubar@1.1.0/dist/index.umd.js'
+                                                };
+                                                
+                                                const scripts = usedComponents
+                                                    .map(comp => componentScripts[comp])
+                                                    .filter(Boolean)
+                                                    .map(url => `<script src="${url}"></script>`)
+                                                    .join('\n                                                    ');
+                                                
+                                                return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+    </style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    ${scripts}
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, createElement } = React;
+        
+        // ===== FILTER DOM PROPS =====
+        const filterDOMProps = (props) => {
+            if (!props) return {};
+            
+            const invalidProps = [
+                'asChild', 'delayMs', 'delayDuration', 'skipDelayDuration',
+                'disableHoverableContent', 'forceMount', 'defaultOpen', 'open',
+                'onOpenChange', 'modal', 'defaultChecked', 'checked', 'onCheckedChange',
+                'disabled', 'required', 'name', 'value', 'defaultValue', 'onValueChange',
+                'orientation', 'dir', 'loop', 'collapsible', 'type', 'variant',
+                'side', 'sideOffset', 'align', 'alignOffset', 'sticky', 'hideWhenDetached',
+                'trigger', 'onSelect', 'onEscapeKeyDown', 'onPointerDownOutside',
+                'onInteractOutside', 'onFocusOutside', 'radixPortalClassName'
+            ];
+            
+            const filtered = {};
+            Object.keys(props).forEach(key => {
+                if (
+                    !invalidProps.includes(key) &&
+                    (key === 'className' ||
+                     key === 'style' ||
+                     key === 'id' ||
+                     key === 'children' ||
+                     key.startsWith('data-') ||
+                     key.startsWith('aria-') ||
+                     (key.startsWith('on') && typeof props[key] === 'function' && 
+                      ['onClick', 'onMouseEnter', 'onMouseLeave', 'onFocus', 'onBlur', 'onKeyDown', 'onKeyUp', 'onChange', 'onSubmit'].some(valid => key === valid || key.toLowerCase().includes(valid.toLowerCase()))) ||
+                     ['src', 'alt', 'href', 'target', 'rel', 'type', 'role', 'tabIndex', 'title', 'placeholder'].includes(key))
+                ) {
+                    filtered[key] = props[key];
+                }
+            });
+            
+            return filtered;
+        };
+        
+        // ===== UNIVERSAL FALLBACK SYSTEM =====
+        
+        const createFallbackComponent = (name, defaultProps = {}) => {
+            return (props) => {
+                const { children, ...restProps } = props || {};
+                const filteredProps = filterDOMProps(restProps);
+                return createElement('div', { ...defaultProps, ...filteredProps }, children);
+            };
+        };
+        
+        const createComponentNamespace = (name, subComponents = []) => {
+            const namespace = {};
+            subComponents.forEach(sub => {
+                namespace[sub] = createFallbackComponent(\`\${name}.\${sub}\`);
+            });
+            namespace.Root = createFallbackComponent(\`\${name}.Root\`);
+            return namespace;
+        };
+        
+        const radixComponentMap = {
+            AspectRatio: ['Root'],
+            Avatar: ['Root', 'Image', 'Fallback'],
+            ScrollArea: ['Root', 'Viewport', 'Scrollbar', 'Thumb'],
+            Toolbar: ['Root', 'Button', 'Separator'],
+            Tabs: ['Root', 'List', 'Trigger', 'Content'],
+            Popover: ['Root', 'Trigger', 'Content', 'Close'],
+            Card: ['Root', 'Header', 'Title', 'Description', 'Content', 'Footer'],
+            Dialog: ['Root', 'Trigger', 'Content', 'Title', 'Description', 'Close'],
+            Select: ['Root', 'Trigger', 'Content', 'Item'],
+            Checkbox: ['Root', 'Indicator'],
+            RadioGroup: ['Root', 'Item', 'Indicator'],
+            Switch: ['Root', 'Thumb'],
+            Accordion: ['Root', 'Item', 'Trigger', 'Content'],
+            AlertDialog: ['Root', 'Trigger', 'Content', 'Title', 'Description', 'Action', 'Cancel'],
+            DropdownMenu: ['Root', 'Trigger', 'Content', 'Item'],
+            HoverCard: ['Root', 'Trigger', 'Content'],
+            Tooltip: ['Root', 'Trigger', 'Content', 'Arrow'],
+            Progress: ['Root', 'Indicator'],
+            Slider: ['Root', 'Track', 'Range', 'Thumb'],
+            Separator: ['Root'],
+            Label: ['Root'],
+            Toast: ['Root', 'Title', 'Description', 'Close', 'Viewport'],
+            Collapsible: ['Root', 'Trigger', 'Content'],
+            ContextMenu: ['Root', 'Trigger', 'Content', 'Item'],
+            NavigationMenu: ['Root', 'List', 'Item', 'Trigger', 'Content'],
+            Menubar: ['Root', 'Menu', 'Trigger', 'Content', 'Item']
+        };
+        
+        const loadRadixComponent = (name) => {
+            const possibleNames = [
+                \`RadixUI\${name}\`,
+                \`RadixUI\${name.replace(/([A-Z])/g, '-$1').toLowerCase()}\`,
+                \`@radix-ui/react-\${name.replace(/([A-Z])/g, '-$1').toLowerCase()}\`
+            ];
+            
+            for (const possibleName of possibleNames) {
+                if (window[possibleName]) return window[possibleName];
+                if (window.RadixUI && window.RadixUI[name]) return window.RadixUI[name];
+            }
+            
+            const subComponents = radixComponentMap[name] || ['Root'];
+            return createComponentNamespace(name, subComponents);
+        };
+        
+        const RadixComponents = {};
+        Object.keys(radixComponentMap).forEach(name => {
+            RadixComponents[name] = loadRadixComponent(name);
+        });
+        
+        Object.keys(RadixComponents).forEach(name => {
+            window[name] = RadixComponents[name];
+        });
+        
+        const {
+            AspectRatio, Avatar, ScrollArea, Toolbar, Tabs, Popover,
+            Card, Dialog, Select, Checkbox, RadioGroup, Switch,
+            Accordion, AlertDialog, DropdownMenu, HoverCard, Tooltip,
+            Progress, Slider, Separator, Label, Toast, Collapsible,
+            ContextMenu, NavigationMenu, Menubar
+        } = RadixComponents;
+        
+        // ===== UNIVERSAL ICON SYSTEM =====
+        
+        const createIconFallback = (name) => {
+            return (props = {}) => {
+                const { size = 24, color = 'currentColor', ...rest } = props;
+                return createElement('svg', {
+                    width: size,
+                    height: size,
+                    viewBox: '0 0 24 24',
+                    fill: 'none',
+                    stroke: color,
+                    strokeWidth: 2,
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round',
+                    ...rest
+                }, createElement('circle', { cx: 12, cy: 12, r: 10 }));
+            };
+        };
+        
+        const ArrowLeft = createIconFallback('ArrowLeft');
+        const MoreVertical = createIconFallback('MoreVertical');
+        const Phone = createIconFallback('Phone');
+        const Video = createIconFallback('Video');
+        const Send = createIconFallback('Send');
+        const Plus = createIconFallback('Plus');
+        const Smile = createIconFallback('Smile');
+        const Camera = createIconFallback('Camera');
+        const Mic = createIconFallback('Mic');
+        const CheckCheck = createIconFallback('CheckCheck');
+        const Search = createIconFallback('Search');
+        
+        const lucideReact = new Proxy({}, {
+            get: (target, prop) => {
+                return createIconFallback(prop);
+            }
+        });
+        
+        // ===== GENERATED CODE =====
+        ${code.replace(/export\s+default\s+\w+;?/g, '')}
+        
+        // ===== RENDER =====
+        const ComponentName = ${aiGeneratedComponent.componentName};
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(createElement(ComponentName));
+    </script>
+</body>
+</html>`;
+                                            })()}
                                             className="w-full h-[600px] border-0 rounded"
                                             sandbox="allow-scripts allow-same-origin"
                                             title="Component Preview"
@@ -2476,7 +2701,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             <button
                                                 onClick={async () => {
                                                     try {
-                                                        await navigator.clipboard.writeText(replaceThemeReferences(aiGeneratedComponent.code, theme));
+                                                        await navigator.clipboard.writeText(removeAllImports(replaceThemeReferences(aiGeneratedComponent.code, theme)));
                                                         showToast('Code copied to clipboard!');
                                                     } catch (err) {
                                                         showToast('Failed to copy code');
@@ -2489,7 +2714,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             </button>
                                         </div>
                                         <pre className="flex-1 text-xs text-slate-300 overflow-auto">
-                                            <code>{replaceThemeReferences(aiGeneratedComponent.code, theme)}</code>
+                                            <code>{removeAllImports(replaceThemeReferences(aiGeneratedComponent.code, theme))}</code>
                                         </pre>
                                     </div>
                                 </div>
@@ -2513,13 +2738,37 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     ) : (
                         // Default Component View
                         <div className="max-w-4xl mx-auto">
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold tracking-tight transition-colors mb-2" style={{ color: theme.text.main }}>
-                                    {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label}
-                                </h2>
-                                <p className="text-sm transition-colors" style={{ color: theme.text.secondary }}>
-                                    Explore all variants and states of {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label.toLowerCase()}
-                                </p>
+                            <div className="mb-6 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-2xl font-bold tracking-tight transition-colors mb-2" style={{ color: theme.text.main }}>
+                                        {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label}
+                                    </h2>
+                                    <p className="text-sm transition-colors" style={{ color: theme.text.secondary }}>
+                                        Explore all variants and states of {(activeTab === 'molecules' ? molecules : organisms).find(c => c.id === selectedComponent)?.label.toLowerCase()}
+                                    </p>
+                                </div>
+                                {savedGeneratedComponent && isPremium && (
+                                    <button
+                                        onClick={() => {
+                                            setAiGeneratedComponent(savedGeneratedComponent);
+                                            setOriginalTheme(theme);
+                                        }}
+                                        className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                                        style={{ 
+                                            backgroundColor: theme.action.primary,
+                                            color: theme.text.onPrimary
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = theme.action.primaryHover;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = theme.action.primary;
+                                        }}
+                                    >
+                                        <HiSparkles className="w-4 h-4" />
+                                        View Generated Component
+                                    </button>
+                                )}
                             </div>
                             {renderComponentView()}
                         </div>
@@ -2593,7 +2842,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                 <button
                                                     onClick={async () => {
                                                         try {
-                                                            const updatedCode = replaceThemeReferences(msg.code || '', theme);
+                                                            const updatedCode = removeAllImports(replaceThemeReferences(msg.code || '', theme));
                                                             await navigator.clipboard.writeText(updatedCode);
                                                             showToast('Code copied to clipboard!');
                                                         } catch (err) {
@@ -2607,7 +2856,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                 </button>
                                             </div>
                                             <pre className="text-xs text-slate-300 overflow-x-auto max-h-[200px]">
-                                                <code>{replaceThemeReferences(msg.code || '', theme)}</code>
+                                                <code>{removeAllImports(replaceThemeReferences(msg.code || '', theme))}</code>
                                             </pre>
                                         </div>
                                         {!isPremium && (
@@ -2738,7 +2987,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             setAiGeneratedComponent({ code: result.code, componentName });
                                             setAiMessages(prev => [...prev, { 
                                                 role: 'assistant', 
-                                                text: "He generado lo que me has pedido y está en el canvas",
+                                                text: "I've generated what you requested and it's in the canvas",
                                                 code: result.code
                                             }]);
                                         } else {

@@ -1222,7 +1222,7 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="h-4 w-px bg-white/10 mx-2"></div>
-                <button onClick={() => setViewMode('playground')} className="h-full text-xs font-bold uppercase tracking-wider border-b-2 transition-all px-1 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-300">UI Kit</button>
+                <button onClick={() => setViewMode('playground')} className="h-full text-xs font-bold uppercase tracking-wider border-b-2 transition-all px-1 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-300">Palette Playground</button>
                 <div className="ml-auto flex items-center gap-3">
                     
                     {/* Compact View Toggle (Grid Mode Only) */}
