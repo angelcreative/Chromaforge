@@ -1,7 +1,8 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ColorData, PlaygroundConfig, GlobalCurveConfig } from '../types';
 import { generateShades, getContrastRatio, getLuminance, hexToRgb } from '../utils/colorUtils';
+import { generateUIFromPrompt } from '../services/uiDesignerService';
 import * as Accordion from '@radix-ui/react-accordion';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import * as AspectRatio from '@radix-ui/react-aspect-ratio';
@@ -30,13 +31,14 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { 
-  HiCheck, HiChevronDown, HiChevronUp, HiMenu, HiX, HiDotsVertical,
+  HiCheck, HiChevronDown, HiChevronUp, HiChevronLeft, HiChevronRight, HiMenu, HiX, HiDotsVertical,
   HiFolder, HiFolderOpen, HiUser, HiUserCircle, HiCog, HiBell,
   HiSearch, HiFilter, HiViewGrid, HiCollection, HiCursorClick,
   HiLockClosed, HiEye, HiEyeOff, HiChartBar, HiAdjustments,
   HiVolumeUp, HiVolumeOff, HiSwitchHorizontal, HiTag, HiInformationCircle,
   HiExclamationCircle, HiQuestionMarkCircle, HiClipboard, HiDocument,
-  HiPuzzle, HiCube, HiViewList, HiTemplate, HiCursorClick as HiCursorArrow, HiPhotograph as HiImage
+  HiPuzzle, HiCube, HiViewList, HiTemplate, HiCursorClick as HiCursorArrow, HiPhotograph as HiImage,
+  HiSparkles
 } from 'react-icons/hi';
 
 interface UIPlaygroundProps {
@@ -75,6 +77,31 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [radioState, setRadioState] = useState<string>('option1');
   const [switchStates, setSwitchStates] = useState<{ [key: number]: boolean }>({});
   const [activeTabValue, setActiveTabValue] = useState<string>('tab1');
+  const [isLeftSidebarExpanded, setIsLeftSidebarExpanded] = useState(true);
+  const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(true);
+  
+  // AI Assistant states
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiMessages, setAiMessages] = useState<Array<{ role: 'user' | 'assistant', text: string, code?: string }>>([]);
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string>('');
+  const [codeError, setCodeError] = useState<string>('');
+  const [toastMessage, setToastMessage] = useState('');
+  const aiMessagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToBottom = () => {
+    aiMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  useEffect(() => {
+    scrollToBottom();
+  }, [aiMessages]);
+  
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setToastOpen(true);
+    setTimeout(() => setToastOpen(false), 3000);
+  };
 
   // --- 1. THEME ENGINE LOGIC ---
   const theme = useMemo(() => {
@@ -2096,8 +2123,23 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 
         {/* --- MAIN CONTENT AREA --- */}
         <div className="flex flex-row flex-1 overflow-hidden">
-            {/* --- COMPONENT MENU SIDEBAR --- */}
-            <div className="w-full md:w-[280px] bg-slate-900 border-r border-white/5 flex flex-col shrink-0 overflow-y-auto custom-scrollbar z-10 shadow-2xl">
+            {/* --- COMPONENT MENU SIDEBAR (LEFT) --- */}
+            <div className={`relative bg-slate-900 border-r border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 ${isLeftSidebarExpanded ? 'w-full md:w-[280px]' : 'w-0 md:w-[24px]'} overflow-hidden`}>
+                {/* Toggle Button */}
+                <button
+                    onClick={() => setIsLeftSidebarExpanded(!isLeftSidebarExpanded)}
+                    className={`absolute z-40 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isLeftSidebarExpanded ? '-right-3 top-6' : 'right-1 top-6'}`}
+                    title={isLeftSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                >
+                    {isLeftSidebarExpanded ? (
+                        <HiChevronLeft className="w-4 h-4" />
+                    ) : (
+                        <HiChevronRight className="w-4 h-4" />
+                    )}
+                </button>
+                
+                {isLeftSidebarExpanded && (
+                <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                 <div className="p-6 border-b border-white/5">
                     <p className="text-xs text-slate-500">
                         Browse components with your color tokens.
@@ -2152,6 +2194,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         </button>
                     ))}
                 </div>
+                </div>
+                )}
             </div>
 
             {/* --- COMPONENT PREVIEW AREA --- */}
@@ -2173,7 +2217,223 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* --- AI ASSISTANT SIDEBAR (RIGHT) --- */}
+            <div className={`relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 ${isRightSidebarExpanded ? 'w-full md:w-[400px]' : 'w-0 md:w-[24px]'} overflow-hidden`}>
+                {/* Toggle Button */}
+                <button
+                    onClick={() => setIsRightSidebarExpanded(!isRightSidebarExpanded)}
+                    className={`absolute z-40 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isRightSidebarExpanded ? '-left-3 top-6' : 'left-1 top-6'}`}
+                    title={isRightSidebarExpanded ? 'Collapse AI Assistant' : 'Expand AI Assistant'}
+                >
+                    {isRightSidebarExpanded ? (
+                        <HiChevronRight className="w-4 h-4" />
+                    ) : (
+                        <HiChevronLeft className="w-4 h-4" />
+                    )}
+                </button>
+                
+                {isRightSidebarExpanded && (
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-white/5 shrink-0">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <HiSparkles className="w-4 h-4 text-indigo-500" />
+                            AI Designer
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-2">
+                            Generate UI components using your color palette.
+                        </p>
+                    </div>
+                    
+                    {/* Messages History */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+                        {aiMessages.length === 0 && (
+                            <div className="text-sm text-slate-400 text-center py-8">
+                                <HiSparkles className="w-8 h-8 mx-auto mb-3 text-indigo-500/50" />
+                                <p>Ask me to create UI components!</p>
+                                <p className="text-xs mt-2 text-slate-500">Example: "Create a card UI with primary-600"</p>
+                            </div>
+                        )}
+                        
+                        {aiMessages.map((msg, idx) => (
+                            <div key={idx} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                <div 
+                                    className={`max-w-[85%] rounded-lg px-4 py-2 text-sm ${
+                                        msg.role === 'user' 
+                                            ? 'bg-indigo-600 text-white' 
+                                            : 'bg-slate-800 text-slate-200'
+                                    }`}
+                                >
+                                    {msg.text}
+                                </div>
+                                {msg.code && (
+                                    <div className="w-full mt-2">
+                                        <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-xs text-slate-400">Generated Code</span>
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await navigator.clipboard.writeText(msg.code || '');
+                                                            showToast('Code copied to clipboard!');
+                                                        } catch (err) {
+                                                            showToast('Failed to copy code');
+                                                        }
+                                                    }}
+                                                    className="text-xs text-indigo-400 hover:text-indigo-300"
+                                                >
+                                                    <HiClipboard className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <pre className="text-xs text-slate-300 overflow-x-auto">
+                                                <code>{msg.code}</code>
+                                            </pre>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        
+                        {isAIGenerating && (
+                            <div className="flex items-center gap-2 text-slate-400 text-sm">
+                                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                                <span>Generating...</span>
+                            </div>
+                        )}
+                        
+                        <div ref={aiMessagesEndRef} />
+                    </div>
+                    
+                    {/* Input Area */}
+                    <div className="p-4 border-t border-white/5 shrink-0">
+                        <form 
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!aiPrompt.trim() || isAIGenerating) return;
+                                
+                                const userPrompt = aiPrompt.trim();
+                                setAiPrompt('');
+                                setAiMessages(prev => [...prev, { role: 'user', text: userPrompt }]);
+                                setIsAIGenerating(true);
+                                setCodeError('');
+                                
+                                try {
+                                    // Prepare palette with shades
+                                    const pShades = generateShades(brandPalette[config.primaryIndex] || brandPalette[0], globalConfig);
+                                    const brandWithShades = brandPalette.map(c => ({
+                                        name: c.name,
+                                        hex: c.hex,
+                                        shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
+                                    }));
+                                    const neutralWithShades = neutralPalette.map(c => ({
+                                        name: c.name,
+                                        hex: c.hex,
+                                        shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
+                                    }));
+                                    const semanticWithShades = semanticPalette.map(c => ({
+                                        name: c.name,
+                                        hex: c.hex,
+                                        shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
+                                    }));
+                                    
+                                    const result = await generateUIFromPrompt({
+                                        prompt: userPrompt,
+                                        palette: {
+                                            brand: brandWithShades,
+                                            neutral: neutralWithShades,
+                                            semantic: semanticWithShades
+                                        },
+                                        availableComponents: {
+                                            molecules: molecules.map(m => m.id),
+                                            organisms: organisms.map(o => o.id)
+                                        },
+                                        config
+                                    });
+                                    
+                                    if (result.code) {
+                                        setGeneratedCode(result.code);
+                                        setAiMessages(prev => [...prev, { 
+                                            role: 'assistant', 
+                                            text: result.description,
+                                            code: result.code
+                                        }]);
+                                    } else {
+                                        setCodeError(result.description);
+                                        setAiMessages(prev => [...prev, { 
+                                            role: 'assistant', 
+                                            text: result.description || 'Error generating component'
+                                        }]);
+                                    }
+                                } catch (error: any) {
+                                    setCodeError(error.message || 'Unknown error');
+                                    setAiMessages(prev => [...prev, { 
+                                        role: 'assistant', 
+                                        text: `Error: ${error.message || 'Unknown error'}`
+                                    }]);
+                                } finally {
+                                    setIsAIGenerating(false);
+                                }
+                            }}
+                            className="flex gap-2"
+                        >
+                            <input
+                                type="text"
+                                value={aiPrompt}
+                                onChange={(e) => setAiPrompt(e.target.value)}
+                                placeholder="e.g. Create a card UI with primary-600..."
+                                disabled={isAIGenerating}
+                                className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
+                                style={{ 
+                                    backgroundColor: theme.bg.input, 
+                                    color: theme.text.main,
+                                    borderColor: theme.border.default
+                                }}
+                                onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
+                                onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
+                            />
+                            <button
+                                type="submit"
+                                disabled={isAIGenerating || !aiPrompt.trim()}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ 
+                                    backgroundColor: isAIGenerating || !aiPrompt.trim() ? theme.disabled.bg : theme.action.primary, 
+                                    color: theme.text.onPrimary
+                                }}
+                            >
+                                <HiSparkles className="w-4 h-4" />
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                )}
+            </div>
         </div>
+        
+        {/* Global Toast */}
+        <Toast.Provider>
+            <Toast.Root 
+                open={toastOpen}
+                onOpenChange={setToastOpen}
+                className="fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border max-w-md z-50"
+                style={{ 
+                    backgroundColor: theme.bg.card, 
+                    borderColor: theme.border.subtle 
+                }}
+            >
+                <Toast.Title className="font-bold mb-1" style={{ color: theme.text.main }}>
+                    {toastMessage}
+                </Toast.Title>
+                <Toast.Close asChild>
+                    <button 
+                        className="absolute top-2 right-2 p-1 rounded"
+                        style={{ color: theme.text.secondary }}
+                    >
+                        <HiX className="w-4 h-4" />
+                    </button>
+                </Toast.Close>
+            </Toast.Root>
+            <Toast.Viewport />
+        </Toast.Provider>
     </div>
   );
 };
