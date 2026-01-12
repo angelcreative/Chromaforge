@@ -2248,8 +2248,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 {/* Toggle Button */}
                 <button
                     onClick={() => setIsLeftSidebarExpanded(!isLeftSidebarExpanded)}
-                    className={`absolute z-40 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isLeftSidebarExpanded ? '-right-3 top-6' : 'right-1 top-6'}`}
+                    className={`absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isLeftSidebarExpanded ? '-right-3 top-6' : 'right-1 top-6'}`}
                     title={isLeftSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                    style={{ pointerEvents: 'auto' }}
                 >
                     {isLeftSidebarExpanded ? (
                         <HiChevronLeft className="w-4 h-4" />
@@ -2320,7 +2321,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 
             {/* --- COMPONENT PREVIEW AREA --- */}
             <div 
-                className="flex-1 overflow-hidden relative transition-colors duration-500"
+                className="flex-1 overflow-hidden relative transition-colors duration-500 z-0"
                 style={{ backgroundColor: theme.bg.page }}
             >
                 <div className="h-full w-full overflow-y-auto p-6 md:p-8">
@@ -2462,8 +2463,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 {/* Toggle Button */}
                 <button
                     onClick={() => setIsRightSidebarExpanded(!isRightSidebarExpanded)}
-                    className={`absolute z-40 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isRightSidebarExpanded ? '-left-3 top-6' : 'left-1 top-6'}`}
+                    className={`absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isRightSidebarExpanded ? '-left-3 top-6' : 'left-1 top-6'}`}
                     title={isRightSidebarExpanded ? 'Collapse AI Assistant' : 'Expand AI Assistant'}
+                    style={{ pointerEvents: 'auto' }}
                 >
                     {isRightSidebarExpanded ? (
                         <HiChevronRight className="w-4 h-4" />

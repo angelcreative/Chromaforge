@@ -656,7 +656,7 @@ const App: React.FC = () => {
                         <button onClick={() => setViewMode('grid')} className="text-slate-400 hover:text-white transition">
                             <HiArrowRight className="w-5 h-5 rotate-180" />
                         </button>
-                        <h1 className="text-lg font-bold text-white">UI Playground</h1>
+                        <h1 className="text-lg font-bold text-white">Palette Playground</h1>
                    </div>
                    <div className="flex gap-3">
                        <button onClick={handleExportClick} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-500/20">Export Theme</button>
