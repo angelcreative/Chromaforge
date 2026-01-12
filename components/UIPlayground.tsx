@@ -2553,23 +2553,41 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
-    <script>
-        // Exponer iconos de lucide-react globalmente
-        (function() {
-            if (window.lucideReact) {
-                Object.keys(window.lucideReact).forEach(iconName => {
-                    if (typeof window.lucideReact[iconName] === 'function' && 
+    ${scripts}
+    <script type="module">
+        // Cargar lucide-react usando ES modules DESPUÉS de que React esté disponible
+        (async function() {
+            // Esperar a que React esté disponible
+            while (typeof React === 'undefined' || !React.forwardRef) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            try {
+                // Importar lucide-react desde CDN
+                const lucideModule = await import('https://cdn.skypack.dev/lucide-react');
+                const lucideReact = lucideModule;
+                
+                // Exponer TODOS los iconos de lucide-react globalmente
+                Object.keys(lucideReact).forEach(iconName => {
+                    // Solo exportar componentes (nombres que empiezan con mayúscula y son funciones)
+                    if (typeof lucideReact[iconName] === 'function' && 
                         iconName[0] === iconName[0].toUpperCase() &&
-                        iconName !== 'createLucideIcon') {
-                        window[iconName] = window.lucideReact[iconName];
+                        iconName !== 'createLucideIcon' &&
+                        iconName !== 'Icon') {
+                        window[iconName] = lucideReact[iconName];
                     }
                 });
-                console.log('Lucide icons loaded:', Object.keys(window).filter(k => window[k] && typeof window[k] === 'function' && k[0] === k[0].toUpperCase() && k.length > 2).length);
+                
+                // También hacer lucideReact disponible
+                window.lucideReact = lucideReact;
+                window.lucideReactReady = true;
+                console.log('✅ Lucide icons loaded:', Object.keys(window).filter(k => window[k] && typeof window[k] === 'function' && k[0] === k[0].toUpperCase() && k.length > 2).length);
+            } catch (e) {
+                console.error('❌ Error loading lucide-react:', e);
+                window.lucideReactReady = false;
             }
         })();
     </script>
-    ${scripts}
 </head>
 <body>
     <div id="root"></div>
@@ -2818,32 +2836,57 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         console.log('=== PREVIEW INIT ===');
         console.log('Component name:', '${aiGeneratedComponent.componentName}');
         console.log('Code length:', ${code.length});
+        console.log('React available:', typeof React !== 'undefined');
+        console.log('Lucide ready:', window.lucideReactReady);
         
-        try {
-            ${code.replace(/export\s+default\s+\w+;?/g, '')}
-            
-            // Después de ejecutar el código, exponer el componente en window
-            const componentName = '${aiGeneratedComponent.componentName}';
-            
-            // Intentar encontrar y exponer el componente
-            try {
-                const component = eval(componentName);
-                if (typeof component === 'function') {
-                    window[componentName] = component;
-                    window['__currentComponent'] = component;
-                    componentDefined = true;
-                    console.log('Component exposed to window:', componentName);
+        // Función para esperar a que lucide-react esté listo
+        const waitForLucide = (callback, maxWait = 3000) => {
+            const startTime = Date.now();
+            const check = () => {
+                if (window.lucideReactReady || Date.now() - startTime > maxWait) {
+                    callback();
                 } else {
-                    console.warn('Component is not a function:', typeof component);
+                    setTimeout(check, 50);
+                }
+            };
+            check();
+        };
+        
+        // Función para ejecutar el código
+        const executeCode = () => {
+            try {
+                ${code.replace(/export\s+default\s+\w+;?/g, '')}
+                
+                // Después de ejecutar el código, exponer el componente en window
+                const componentName = '${aiGeneratedComponent.componentName}';
+                
+                // Intentar encontrar y exponer el componente
+                try {
+                    const component = eval(componentName);
+                    if (typeof component === 'function') {
+                        window[componentName] = component;
+                        window['__currentComponent'] = component;
+                        componentDefined = true;
+                        console.log('✅ Component exposed to window:', componentName);
+                    } else {
+                        console.warn('Component is not a function:', typeof component);
+                    }
+                } catch (e) {
+                    console.warn('Could not expose component immediately:', e);
+                    // Intentar más tarde
                 }
             } catch (e) {
-                console.warn('Could not expose component immediately:', e);
-                // Intentar más tarde
+                executionError = e;
+                console.error('Error executing generated code:', e);
+                window['__executionError'] = e;
             }
-        } catch (e) {
-            executionError = e;
-            console.error('Error executing generated code:', e);
-            window['__executionError'] = e;
+        };
+        
+        // Ejecutar código después de que lucide-react esté listo (o timeout)
+        if (window.lucideReactReady) {
+            executeCode();
+        } else {
+            waitForLucide(executeCode);
         }
         
         // ===== RENDER =====
@@ -2895,20 +2938,27 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             ]);
         }
         
-        // Renderizar con delay para asegurar que todo esté cargado
-        setTimeout(() => {
+        // Función para renderizar el componente
+        const renderComponent = () => {
             try {
                 const root = ReactDOM.createRoot(document.getElementById('root'));
                 root.render(createElement(ComponentToRender));
-                console.log('Component rendered successfully');
+                console.log('✅ Component rendered successfully');
             } catch (e) {
                 console.error('Render error:', e);
                 const root = ReactDOM.createRoot(document.getElementById('root'));
                 root.render(createElement('div', { 
-                    style: { padding: '20px', color: 'red' } 
+                    style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
                 }, 'Render Error: ' + String(e)));
             }
-        }, 100);
+        };
+        
+        // Esperar a que lucide-react esté listo antes de renderizar (con timeout)
+        if (window.lucideReactReady) {
+            setTimeout(renderComponent, 100);
+        } else {
+            waitForLucide(() => setTimeout(renderComponent, 100));
+        }
     </script>
 </body>
 </html>`;
