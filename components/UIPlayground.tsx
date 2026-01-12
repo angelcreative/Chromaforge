@@ -95,6 +95,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [aiGeneratedComponent, setAiGeneratedComponent] = useState<{ code: string; componentName: string } | null>(null);
   const [originalTheme, setOriginalTheme] = useState<any>(null);
   const aiMessagesEndRef = useRef<HTMLDivElement>(null);
+  const aiPromptRef = useRef<HTMLTextAreaElement>(null);
   
   const scrollToBottom = () => {
     aiMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -103,6 +104,15 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [aiMessages]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = aiPromptRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`; // Max height 200px
+    }
+  }, [aiPrompt]);
   
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -2594,23 +2604,26 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     
                     {/* Input Area */}
                     <div className="p-4 border-t border-white/5 shrink-0">
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
+                        <div className="flex gap-2 items-end">
+                            <textarea
+                                ref={aiPromptRef}
                                 value={aiPrompt}
                                 onChange={(e) => setAiPrompt(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                    }
+                                    // Enter alone does nothing (allows line break)
+                                    // Only Shift+Enter also allows line break (default behavior)
+                                    // No preventDefault needed - Enter will naturally create line breaks
                                 }}
                                 placeholder="e.g. Create a card UI with primary-600..."
                                 disabled={isAIGenerating}
-                                className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2"
+                                rows={1}
+                                className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2 resize-none overflow-hidden"
                                 style={{ 
                                     backgroundColor: theme.bg.input, 
                                     color: theme.text.main,
-                                    borderColor: theme.border.default
+                                    borderColor: theme.border.default,
+                                    minHeight: '40px',
+                                    maxHeight: '200px'
                                 }}
                                 onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
                                 onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
