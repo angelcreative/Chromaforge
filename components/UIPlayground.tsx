@@ -181,6 +181,16 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     return cleaned.trim();
   };
 
+  // Función universal para escapar código antes de insertarlo en template literal
+  // Esto previene errores de sintaxis cuando el código generado contiene template literals
+  const escapeCodeForTemplate = (codeStr: string): string => {
+    if (!codeStr) return codeStr;
+    return codeStr
+      .replace(/\\/g, '\\\\')    // Escapar backslashes primero (importante: debe ser primero)
+      .replace(/`/g, '\\`')       // Escapar comillas invertidas
+      .replace(/\$\{/g, '\\${'); // Escapar ${ para que no se interprete como interpolación
+  };
+
   // Función para detectar qué componentes de Radix UI se usan en el código
   const detectRadixComponents = (code: string): string[] => {
     const components: string[] = [];
@@ -2502,7 +2512,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                         <iframe
                                             key={`preview-${aiGeneratedComponent.componentName}-${JSON.stringify(theme.action.primary)}`}
                                             srcDoc={(() => {
-                                                const code = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
+                                                const processedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
+                                                const code = escapeCodeForTemplate(processedCode);
                                                 const usedComponents = detectRadixComponents(aiGeneratedComponent.code);
                                                 
                                                 // Mapa de scripts UMD de Radix UI
@@ -2901,6 +2912,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             let ComponentToRender = null;
             
             try {
+                // El código ya está escapado desde TypeScript, solo necesitamos limpiar export default
+                // Nota: code ya viene escapado, así que podemos usarlo directamente después de limpiar export
                 const codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
                 
                 // PASO 1: Detectar y exponer iconos ANTES de ejecutar el código
