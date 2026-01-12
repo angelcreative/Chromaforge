@@ -120,6 +120,25 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     setTimeout(() => setToastOpen(false), 3000);
   };
 
+  // Función para detectar qué componentes de Radix UI se usan en el código
+  const detectRadixComponents = (code: string): string[] => {
+    const components: string[] = [];
+    const radixComponents = [
+      'AspectRatio', 'Avatar', 'Card', 'Button', 'Dialog', 'Popover',
+      'Select', 'Checkbox', 'RadioGroup', 'Switch', 'Tabs', 'Accordion',
+      'AlertDialog', 'DropdownMenu', 'HoverCard', 'Tooltip', 'Progress',
+      'Slider', 'Separator', 'ScrollArea', 'Label', 'Toast'
+    ];
+    
+    radixComponents.forEach(comp => {
+      if (code.includes(`${comp}.`) || code.includes(`<${comp}.`) || code.includes(`import.*${comp}`)) {
+        components.push(comp);
+      }
+    });
+    
+    return components;
+  };
+
   // Función para reemplazar referencias de theme con valores actuales
   const replaceThemeReferences = (code: string, currentTheme: any): string => {
     if (!code || !currentTheme) return code;
@@ -2388,12 +2407,52 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
                                                     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
                                                     <script src="https://unpkg.com/@radix-ui/react-aspect-ratio@1.1.8/dist/index.umd.js"></script>
+                                                    <script src="https://unpkg.com/@radix-ui/react-avatar@1.1.1/dist/index.umd.js"></script>
                                                 </head>
                                                 <body>
                                                     <div id="root"></div>
                                                     <script type="text/babel">
                                                         const { useState, useEffect, useRef, useMemo } = React;
+                                                        // Radix UI Components with fallbacks
                                                         const AspectRatio = window.RadixUIAspectRatio || { Root: ({ ratio, children }) => React.createElement('div', { style: { aspectRatio: ratio, width: '100%' } }, children) };
+                                                        
+                                                        // Avatar component - check all possible global variable names
+                                                        let AvatarModule = null;
+                                                        // Try different possible global variable names
+                                                        if (typeof window !== 'undefined') {
+                                                            AvatarModule = window.RadixUIAvatar || 
+                                                                          window.RadixUI?.Avatar || 
+                                                                          window['@radix-ui/react-avatar'] ||
+                                                                          (window.RadixUI && window.RadixUI.react && window.RadixUI.react.avatar) ||
+                                                                          null;
+                                                        }
+                                                        
+                                                        // Create Avatar component with proper fallback
+                                                        const Avatar = (AvatarModule && typeof AvatarModule === 'object' && AvatarModule.Root) ? AvatarModule : {
+                                                            Root: ({ children, className, style, ...props }) => {
+                                                                return React.createElement('div', { 
+                                                                    className: className || '', 
+                                                                    style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', ...style },
+                                                                    ...props 
+                                                                }, children);
+                                                            },
+                                                            Image: ({ src, alt, className, style, ...props }) => {
+                                                                return React.createElement('img', { 
+                                                                    src, 
+                                                                    alt: alt || '', 
+                                                                    className: className || '',
+                                                                    style: { width: '100%', height: '100%', objectFit: 'cover', ...style },
+                                                                    ...props 
+                                                                });
+                                                            },
+                                                            Fallback: ({ children, className, style, ...props }) => {
+                                                                return React.createElement('div', { 
+                                                                    className: className || '',
+                                                                    style: { display: 'flex', alignItems: 'center', justifyContent: 'center', ...style },
+                                                                    ...props 
+                                                                }, children);
+                                                            }
+                                                        };
                                                         ${replaceThemeReferences(aiGeneratedComponent.code, theme).replace(/export\s+default\s+\w+;?/g, '').replace(/import\s+.*from\s+['"].*['"];?/g, '')}
                                                         const ComponentName = ${aiGeneratedComponent.componentName};
                                                         const root = ReactDOM.createRoot(document.getElementById('root'));
