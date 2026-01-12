@@ -315,6 +315,15 @@ app.post('/api/ui-design', async (req, res) => {
     5. **Accessibility**: Ensure components are accessible (use proper ARIA attributes, keyboard navigation)
     6. **Styling**: Use inline styles with theme colors, or Tailwind classes where appropriate
     7. **Code Quality**: Write clean, readable, production-ready code
+    8. **Images**: 
+       - For user avatars, profile pictures, or card images, ALWAYS use Unsplash Source API
+       - Format: https://source.unsplash.com/random/400x300/?[keyword] or https://source.unsplash.com/400x300/?portrait for avatars
+       - Examples: 
+         * Avatar: https://source.unsplash.com/100x100/?portrait
+         * Card image: https://source.unsplash.com/400x300/?nature
+         * Product image: https://source.unsplash.com/600x400/?product
+       - Use descriptive keywords that match the context (e.g., "portrait" for avatars, "nature" for landscapes, "product" for e-commerce)
+       - NEVER use placeholder.com or other placeholder services
     
     === OUTPUT FORMAT ===
     Return ONLY valid JSX/TSX code. Do not include markdown code blocks, explanations, or comments outside the code.

@@ -38,7 +38,7 @@ import {
   HiVolumeUp, HiVolumeOff, HiSwitchHorizontal, HiTag, HiInformationCircle,
   HiExclamationCircle, HiQuestionMarkCircle, HiClipboard, HiDocument,
   HiPuzzle, HiCube, HiViewList, HiTemplate, HiCursorClick as HiCursorArrow, HiPhotograph as HiImage,
-  HiSparkles
+  HiSparkles, HiArrowLeft
 } from 'react-icons/hi';
 import { FaPaperPlane } from 'react-icons/fa';
 
@@ -93,6 +93,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [codeError, setCodeError] = useState<string>('');
   const [toastMessage, setToastMessage] = useState('');
   const [aiGeneratedComponent, setAiGeneratedComponent] = useState<{ code: string; componentName: string } | null>(null);
+  const [originalTheme, setOriginalTheme] = useState<any>(null);
   const aiMessagesEndRef = useRef<HTMLDivElement>(null);
   
   const scrollToBottom = () => {
@@ -165,6 +166,59 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
       const directRegex = new RegExp(`(\\w+):\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!['"])`, 'g');
       updatedCode = updatedCode.replace(directRegex, `$1: '${themeMap[key]}'`);
     });
+    
+    // Si tenemos el tema original, detectar y reemplazar colores hardcodeados
+    if (originalTheme) {
+      const originalThemeMap: { [key: string]: string } = {
+        'theme.action.primary': originalTheme.action.primary,
+        'theme.action.primaryHover': originalTheme.action.primaryHover,
+        'theme.action.secondaryBg': originalTheme.action.secondaryBg,
+        'theme.action.secondaryHover': originalTheme.action.secondaryHover,
+        'theme.action.secondaryText': originalTheme.action.secondaryText,
+        'theme.bg.page': originalTheme.bg.page,
+        'theme.bg.card': originalTheme.bg.card,
+        'theme.bg.sidebar': originalTheme.bg.sidebar,
+        'theme.bg.input': originalTheme.bg.input,
+        'theme.text.main': originalTheme.text.main,
+        'theme.text.secondary': originalTheme.text.secondary,
+        'theme.text.tertiary': originalTheme.text.tertiary,
+        'theme.text.onPrimary': originalTheme.text.onPrimary,
+        'theme.border.subtle': originalTheme.border.subtle,
+        'theme.border.default': originalTheme.border.default,
+        'theme.border.focus': originalTheme.border.focus,
+        'theme.disabled.bg': originalTheme.disabled.bg,
+        'theme.disabled.text': originalTheme.disabled.text,
+        'theme.disabled.border': originalTheme.disabled.border,
+        'theme.semantic.success.main': originalTheme.semantic.success.main,
+        'theme.semantic.success.bg': originalTheme.semantic.success.bg,
+        'theme.semantic.success.text': originalTheme.semantic.success.text,
+        'theme.semantic.warning.main': originalTheme.semantic.warning.main,
+        'theme.semantic.warning.bg': originalTheme.semantic.warning.bg,
+        'theme.semantic.warning.text': originalTheme.semantic.warning.text,
+        'theme.semantic.error.main': originalTheme.semantic.error.main,
+        'theme.semantic.error.bg': originalTheme.semantic.error.bg,
+        'theme.semantic.error.text': originalTheme.semantic.error.text,
+        'theme.semantic.info.main': originalTheme.semantic.info.main,
+        'theme.semantic.info.bg': originalTheme.semantic.info.bg,
+        'theme.semantic.info.text': originalTheme.semantic.info.text,
+      };
+      
+      // Reemplazar valores hex hardcodeados que coincidan con el tema original
+      Object.keys(originalThemeMap).forEach(key => {
+        const originalHex = originalThemeMap[key].toUpperCase();
+        const currentHex = themeMap[key].toUpperCase();
+        
+        // Buscar el hex original en el código (con o sin #, mayúsculas o minúsculas)
+        const hexRegex = new RegExp(`(['"#]?)${originalHex.replace('#', '')}(['"]?)`, 'gi');
+        updatedCode = updatedCode.replace(hexRegex, (match, prefix, suffix) => {
+          // Solo reemplazar si el match completo es el hex (no parte de otro hex más largo)
+          if (match.length === originalHex.length + (prefix ? 1 : 0) + (suffix ? 1 : 0)) {
+            return (prefix || '#') + currentHex.replace('#', '') + (suffix || '');
+          }
+          return match;
+        });
+      });
+    }
     
     return updatedCode;
   };
@@ -2273,13 +2327,35 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     {aiGeneratedComponent && isPremium ? (
                         // AI Generated Component View (2/3 preview + 1/3 code)
                         <div className="max-w-7xl mx-auto">
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold tracking-tight transition-colors mb-2" style={{ color: theme.text.main }}>
-                                    {aiGeneratedComponent.componentName}
-                                </h2>
-                                <p className="text-sm transition-colors" style={{ color: theme.text.secondary }}>
-                                    Component generated by AI - Preview updates automatically when theme changes
-                                </p>
+                            <div className="mb-6 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-2xl font-bold tracking-tight transition-colors mb-2" style={{ color: theme.text.main }}>
+                                        {aiGeneratedComponent.componentName}
+                                    </h2>
+                                    <p className="text-sm transition-colors" style={{ color: theme.text.secondary }}>
+                                        Component generated by AI - Preview updates automatically when theme changes
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setAiGeneratedComponent(null);
+                                        setOriginalTheme(null);
+                                    }}
+                                    className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                                    style={{ 
+                                        backgroundColor: theme.action.secondaryBg,
+                                        color: theme.action.secondaryText
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = theme.action.secondaryHover;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
+                                    }}
+                                >
+                                    <HiArrowLeft className="w-4 h-4" />
+                                    Back to Components
+                                </button>
                             </div>
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Preview - 2/3 width */}
@@ -2584,6 +2660,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                         if (result.code) {
                                             setGeneratedCode(result.code);
                                             const componentName = result.code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/)?.[1] || 'Component';
+                                            setOriginalTheme(theme); // Guardar el tema original cuando se genera el componente
                                             setAiGeneratedComponent({ code: result.code, componentName });
                                             setAiMessages(prev => [...prev, { 
                                                 role: 'assistant', 
