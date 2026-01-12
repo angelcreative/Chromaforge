@@ -2852,112 +2852,59 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             check();
         };
         
-        // Función para ejecutar el código
-        const executeCode = () => {
+        // Función para ejecutar el código y renderizar
+        const executeCodeAndRender = () => {
+            const componentName = '${aiGeneratedComponent.componentName}';
+            let ComponentToRender = null;
+            
             try {
+                // Ejecutar el código generado (sin export default)
                 ${code.replace(/export\s+default\s+\w+;?/g, '')}
                 
-                // Después de ejecutar el código, exponer el componente en window
-                const componentName = '${aiGeneratedComponent.componentName}';
-                
-                // Intentar encontrar y exponer el componente
-                try {
-                    const component = eval(componentName);
-                    if (typeof component === 'function') {
-                        window[componentName] = component;
-                        window['__currentComponent'] = component;
-                        componentDefined = true;
-                        console.log('✅ Component exposed to window:', componentName);
-                    } else {
-                        console.warn('Component is not a function:', typeof component);
-                    }
-                } catch (e) {
-                    console.warn('Could not expose component immediately:', e);
-                    // Intentar más tarde
-                }
-            } catch (e) {
-                executionError = e;
-                console.error('Error executing generated code:', e);
-                window['__executionError'] = e;
-            }
-        };
-        
-        // Ejecutar código después de que lucide-react esté listo (o timeout)
-        if (window.lucideReactReady) {
-            executeCode();
-        } else {
-            waitForLucide(executeCode);
-        }
-        
-        // ===== RENDER =====
-        const componentName = '${aiGeneratedComponent.componentName}';
-        let ComponentToRender = null;
-        let renderError = null;
-        
-        // Estrategia 1: Buscar en window (más confiable)
-        if (window[componentName] && typeof window[componentName] === 'function') {
-            ComponentToRender = window[componentName];
-            console.log('Component found in window:', componentName);
-        }
-        // Estrategia 2: Buscar __currentComponent
-        else if (window['__currentComponent'] && typeof window['__currentComponent'] === 'function') {
-            ComponentToRender = window['__currentComponent'];
-            console.log('Component found as __currentComponent');
-        }
-        // Estrategia 3: Intentar eval
-        else {
-            try {
+                // El componente ahora está en el scope local, exponerlo a window y renderizar
                 ComponentToRender = eval(componentName);
+                
                 if (typeof ComponentToRender !== 'function') {
                     throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
                 }
-                console.log('Component found via eval:', componentName);
+                
+                // Exponer a window para futuras referencias
+                window[componentName] = ComponentToRender;
+                window['__currentComponent'] = ComponentToRender;
+                console.log('✅ Component found and exposed:', componentName);
+                
+                // Renderizar inmediatamente después de exponer
+                setTimeout(() => {
+                    try {
+                        const root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(createElement(ComponentToRender));
+                        console.log('✅ Component rendered successfully');
+                    } catch (e) {
+                        console.error('Render error:', e);
+                        const root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(createElement('div', { 
+                            style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+                        }, 'Render Error: ' + String(e)));
+                    }
+                }, 100);
+                
             } catch (e) {
-                renderError = e;
-                console.error('Component not found:', componentName, e);
-            }
-        }
-        
-        // Si hay error de ejecución, mostrarlo
-        if (window['__executionError']) {
-            ComponentToRender = () => createElement('div', { 
-                style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-            }, [
-                createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
-                createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(window['__executionError']))
-            ]);
-        }
-        // Si no se encontró el componente
-        else if (!ComponentToRender || typeof ComponentToRender !== 'function') {
-            ComponentToRender = () => createElement('div', { 
-                style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-            }, [
-                createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Error: Component "' + componentName + '" not found'),
-                createElement('div', { key: 'info', style: { fontSize: '10px', marginBottom: '10px', opacity: 0.7 } }, 'Available in window: ' + Object.keys(window).filter(k => k[0] === k[0].toUpperCase() && k.length > 2).slice(0, 20).join(', ')),
-                createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, renderError ? String(renderError) : 'Component not accessible')
-            ]);
-        }
-        
-        // Función para renderizar el componente
-        const renderComponent = () => {
-            try {
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(createElement(ComponentToRender));
-                console.log('✅ Component rendered successfully');
-            } catch (e) {
-                console.error('Render error:', e);
+                console.error('Error executing or rendering code:', e);
                 const root = ReactDOM.createRoot(document.getElementById('root'));
                 root.render(createElement('div', { 
                     style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                }, 'Render Error: ' + String(e)));
+                }, [
+                    createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Error'),
+                    createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
+                ]));
             }
         };
         
-        // Esperar a que lucide-react esté listo antes de renderizar (con timeout)
+        // Ejecutar código y renderizar después de que lucide-react esté listo (o timeout)
         if (window.lucideReactReady) {
-            setTimeout(renderComponent, 100);
+            executeCodeAndRender();
         } else {
-            waitForLucide(() => setTimeout(renderComponent, 100));
+            waitForLucide(executeCodeAndRender);
         }
     </script>
 </body>
