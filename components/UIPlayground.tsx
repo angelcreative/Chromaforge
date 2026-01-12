@@ -2638,6 +2638,34 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             ContextMenu, NavigationMenu, Menubar
         } = RadixComponents;
         
+        // Make components available globally for the generated code
+        window.Avatar = Avatar;
+        window.ScrollArea = ScrollArea;
+        window.Tabs = Tabs;
+        window.AspectRatio = AspectRatio;
+        window.Toolbar = Toolbar;
+        window.Popover = Popover;
+        window.Card = Card;
+        window.Dialog = Dialog;
+        window.Select = Select;
+        window.Checkbox = Checkbox;
+        window.RadioGroup = RadioGroup;
+        window.Switch = Switch;
+        window.Accordion = Accordion;
+        window.AlertDialog = AlertDialog;
+        window.DropdownMenu = DropdownMenu;
+        window.HoverCard = HoverCard;
+        window.Tooltip = Tooltip;
+        window.Progress = Progress;
+        window.Slider = Slider;
+        window.Separator = Separator;
+        window.Label = Label;
+        window.Toast = Toast;
+        window.Collapsible = Collapsible;
+        window.ContextMenu = ContextMenu;
+        window.NavigationMenu = NavigationMenu;
+        window.Menubar = Menubar;
+        
         // ===== UNIVERSAL ICON SYSTEM =====
         
         const createIconFallback = (name) => {
@@ -2657,6 +2685,21 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             };
         };
         
+        // Create all common lucide-react icons
+        const iconNames = [
+            'ArrowLeft', 'MoreVertical', 'Phone', 'Video', 'Send', 'Plus', 'Smile',
+            'Camera', 'Mic', 'CheckCheck', 'Search', 'MapPin', 'ShoppingCart',
+            'Menu', 'Heart', 'Star', 'Clock', 'Home', 'User', 'ChevronDown',
+            'ChevronUp', 'ChevronLeft', 'ChevronRight', 'X', 'Check', 'AlertCircle',
+            'Info', 'Warning', 'Trash', 'Edit', 'Copy', 'Download', 'Upload',
+            'Filter', 'Settings', 'Bell', 'Mail', 'Lock', 'Unlock', 'Eye', 'EyeOff'
+        ];
+        
+        iconNames.forEach(name => {
+            window[name] = createIconFallback(name);
+        });
+        
+        // Also make them available as const for direct use
         const ArrowLeft = createIconFallback('ArrowLeft');
         const MoreVertical = createIconFallback('MoreVertical');
         const Phone = createIconFallback('Phone');
@@ -2668,20 +2711,65 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         const Mic = createIconFallback('Mic');
         const CheckCheck = createIconFallback('CheckCheck');
         const Search = createIconFallback('Search');
+        const MapPin = createIconFallback('MapPin');
+        const ShoppingCart = createIconFallback('ShoppingCart');
+        const Menu = createIconFallback('Menu');
+        const Heart = createIconFallback('Heart');
+        const Star = createIconFallback('Star');
+        const Clock = createIconFallback('Clock');
+        const Home = createIconFallback('Home');
+        const User = createIconFallback('User');
         
+        // Proxy for any icon not explicitly defined
         const lucideReact = new Proxy({}, {
             get: (target, prop) => {
+                if (window[prop]) return window[prop];
                 return createIconFallback(prop);
             }
         });
         
+        // Make lucide-react available globally
+        window.lucideReact = lucideReact;
+        
+        // Make useState, useEffect, etc. available globally
+        window.useState = useState;
+        window.useEffect = useEffect;
+        window.useRef = useRef;
+        window.useMemo = useMemo;
+        window.React = React;
+        window.ReactDOM = ReactDOM;
+        
         // ===== GENERATED CODE =====
-        ${code.replace(/export\s+default\s+\w+;?/g, '')}
+        // Execute the generated code in current scope (not IIFE) so components are accessible
+        try {
+            ${code.replace(/export\s+default\s+\w+;?/g, '')}
+        } catch (e) {
+            console.error('Error executing generated code:', e);
+        }
         
         // ===== RENDER =====
-        const ComponentName = ${aiGeneratedComponent.componentName};
+        // Get the component - it should be in current scope now
+        const componentName = '${aiGeneratedComponent.componentName}';
+        let ComponentToRender = null;
+        
+        // Try to get component from current scope
+        try {
+            ComponentToRender = eval(componentName);
+            if (typeof ComponentToRender !== 'function') {
+                throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
+            }
+        } catch (e) {
+            console.error('Component not found or invalid:', componentName, e);
+            ComponentToRender = () => createElement('div', { 
+                style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+            }, [
+                createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Error: Component "' + componentName + '" not found'),
+                createElement('div', { key: 'error', style: { fontSize: '10px', opacity: 0.7 } }, String(e))
+            ]);
+        }
+        
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(createElement(ComponentName));
+        root.render(createElement(ComponentToRender));
     </script>
 </body>
 </html>`;
