@@ -2815,13 +2815,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     // Prepend icon helpers
                     codeStr = iconHelper + codeStr;
                     
-                    // Eliminar imports problemáticos - usar espacios literales en lugar de \\s en template literals
-                    codeStr = codeStr.replace(/import [^'"]*from ['"]@mui\/icons-material['"];?/g, '// Icons available as components');
+                    // Eliminar imports problemáticos - usar RegExp constructor para evitar problemas con espacios en template literals anidados
+                    const importIconsPattern = new RegExp("import\\s+.*from\\s+['\"]@mui/icons-material['\"];?", 'g');
+                    codeStr = codeStr.replace(importIconsPattern, '// Icons available as components');
                     
-                    // NO reemplazar creación de theme - dejar que el código use createTheme que ya está disponible
+                    // NO reemplazar creación de theme - dejar que el código use createTheme que ya está disponible globalmente
                     // Solo eliminar imports de createTheme si están solos
-                    codeStr = codeStr.replace(/import \{ createTheme \} from ['"]@mui\/material\/styles['"];?/g, '// createTheme available globally');
-                    codeStr = codeStr.replace(/import \{ ThemeProvider, createTheme \} from ['"]@mui\/material\/styles['"];?/g, "import { ThemeProvider } from '@mui/material/styles'; // createTheme available globally");
+                    const importCreateThemePattern = new RegExp("import\\s+\\{\\s*createTheme\\s*\\}\\s+from\\s+['\"]@mui/material/styles['\"];?", 'g');
+                    codeStr = codeStr.replace(importCreateThemePattern, '// createTheme available globally');
+                    
+                    const importThemeProviderCreateThemePattern = new RegExp("import\\s+\\{\\s*ThemeProvider\\s*,\\s*createTheme\\s*\\}\\s+from\\s+['\"]@mui/material/styles['\"];?", 'g');
+                    codeStr = codeStr.replace(importThemeProviderCreateThemePattern, "import { ThemeProvider } from '@mui/material/styles'; // createTheme available globally");
                     
                     console.log('=== PREVIEW INIT ===');
                     console.log('Component name:', componentName);
