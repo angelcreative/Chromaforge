@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
+import { compileComponent, cleanupOldBundles } from './services/componentCompiler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -456,10 +457,61 @@ app.post('/api/ui-design', async (req, res) => {
     const componentNameMatch = code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/);
     const componentName = componentNameMatch ? componentNameMatch[1] : 'GeneratedComponent';
 
+    // Construir tema para inyección
+    const theme = {
+      action: {
+        primary: primaryColor,
+        primaryHover: primaryShade700,
+        secondary: secondaryColor,
+        secondaryBg: secondaryShade300,
+      },
+      bg: {
+        page: bgDefault,
+        card: bgPaper,
+      },
+      text: {
+        main: textPrimary,
+        secondary: textSecondary,
+      },
+      disabled: {
+        bg: palette.neutral[Math.floor(palette.neutral.length / 2) - 1]?.hex || palette.neutral[0]?.hex || '#cccccc',
+        text: palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999',
+        border: palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999',
+      },
+      semantic: {
+        error: { main: errorColor },
+        warning: { main: warningColor },
+        info: { main: infoColor },
+        success: { main: successColor },
+      },
+    };
+
+    // Compilar componente
+    const compileResult = await compileComponent({
+      code,
+      componentName,
+      theme,
+    });
+
+    if (compileResult.error) {
+      console.error('[Backend] Compilation error:', compileResult.error);
+      // Devolver código sin compilar como fallback
+      return res.json({
+        code: code,
+        description: `Generated ${componentName} based on your request. (Compilation failed: ${compileResult.error})`,
+        componentName: componentName,
+        bundleId: null,
+      });
+    }
+
+    // Limpiar bundles antiguos (en background)
+    cleanupOldBundles();
+
     return res.json({
-      code: code,
+      code: code, // Mantener código original para mostrar en el editor
       description: `Generated ${componentName} based on your request.`,
-      componentName: componentName
+      componentName: componentName,
+      bundleId: compileResult.bundleId, // ID del bundle compilado
     });
   } catch (error: any) {
     console.error("[Backend] Gemini API Error:", error);
@@ -484,6 +536,26 @@ app.post('/api/ui-design', async (req, res) => {
       code: '',
       description: userMessage 
     });
+  }
+});
+
+// Endpoint para servir bundles compilados
+app.get('/api/bundles/:bundleId.js', (req, res) => {
+  try {
+    const { bundleId } = req.params;
+    const bundlePath = join(process.cwd(), 'dist-server', 'bundles', `${bundleId}.js`);
+    
+    try {
+      const bundle = readFileSync(bundlePath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 hora
+      res.send(bundle);
+    } catch (error) {
+      res.status(404).json({ error: 'Bundle not found' });
+    }
+  } catch (error: any) {
+    console.error('[Server] Error serving bundle:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
+import { compileComponent, cleanupOldBundles } from './services/componentCompiler.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Resolver la ruta base: si estamos en dist-server, subir un nivel
@@ -238,14 +239,29 @@ app.post('/api/ui-design', async (req, res) => {
             const shades = c.shades?.map((s) => `${s.level}: ${s.hex}`).join(', ') || 'no shades';
             return `- ${c.name}: ${c.hex} (shades: ${shades})`;
         }).join('\n    ');
+        // Get primary color from palette
+        const primaryColor = palette.brand[config.primaryIndex]?.hex || palette.brand[0]?.hex || '#1976d2';
+        const primaryShade300 = palette.brand[config.primaryIndex]?.shades?.find((s) => s.level === 300)?.hex || primaryColor;
+        const primaryShade700 = palette.brand[config.primaryIndex]?.shades?.find((s) => s.level === 700)?.hex || primaryColor;
+        const secondaryColor = palette.brand[1]?.hex || palette.brand[0]?.hex || '#dc004e';
+        const secondaryShade300 = palette.brand[1]?.shades?.find((s) => s.level === 300)?.hex || secondaryColor;
+        const secondaryShade700 = palette.brand[1]?.shades?.find((s) => s.level === 700)?.hex || secondaryColor;
+        const bgDefault = palette.neutral[0]?.hex || '#ffffff';
+        const bgPaper = palette.neutral[1]?.hex || palette.neutral[0]?.hex || '#f5f5f5';
+        const textPrimary = palette.neutral[palette.neutral.length - 1]?.hex || '#000000';
+        const textSecondary = palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#666666';
+        const errorColor = palette.semantic.find((c) => c.name.toLowerCase().includes('error') || c.name.toLowerCase().includes('danger'))?.hex || '#d32f2f';
+        const warningColor = palette.semantic.find((c) => c.name.toLowerCase().includes('warning'))?.hex || '#ed6c02';
+        const infoColor = palette.semantic.find((c) => c.name.toLowerCase().includes('info'))?.hex || '#0288d1';
+        const successColor = palette.semantic.find((c) => c.name.toLowerCase().includes('success'))?.hex || '#2e7d32';
+        const primaryShade600 = palette.brand[config.primaryIndex]?.shades?.find((s) => s.level === 600)?.hex || primaryColor;
         const context = `
-    You are a professional UI Designer and React Developer specializing in Design Systems.
+    You are a professional UI Designer and React Developer specializing in Google Material Design.
     
-    === AVAILABLE COMPONENTS ===
-    Molecules: ${availableComponents.molecules.join(', ')}
-    Organisms: ${availableComponents.organisms.join(', ')}
+    === CRITICAL: ALWAYS USE CHROMAFORGE PALETTE COLORS ===
+    You MUST use colors from the provided ChromaForge palette. NEVER use hardcoded colors like "#FF5733", "blue", "red", "#1976d2", etc.
     
-    === CURRENT COLOR PALETTE ===
+    === CURRENT COLOR PALETTE FROM CHROMAFORGE ===
     Brand Colors:
     ${brandPaletteContext || 'No brand colors'}
     
@@ -266,49 +282,128 @@ app.post('/api/ui-design', async (req, res) => {
     "${prompt}"
     
     === TASK ===
-    Generate a React/JSX component using Radix UI primitives that matches the user's request.
+    Generate a React/JSX component using Material-UI (MUI) that matches the user's request.
     
-    === RULES ===
-    1. **Use Radix UI**: Import and use only Radix UI components (e.g., @radix-ui/react-button, @radix-ui/react-card, etc.)
-    2. **Color References**: 
-       - When user says "primary-600", use the shade level 600 from the primary brand color
-       - When user says "use color X", find that color in the palette
-       - Use theme variables: theme.action.primary, theme.action.secondaryBg, theme.bg.card, theme.text.main, etc.
-    3. **Shade Modifications**: If user asks to change shade (e.g., "change to 600"), use the appropriate shade from the palette
-    4. **Component Structure**: Create complete, functional React components with proper imports
-    5. **Accessibility**: Ensure components are accessible (use proper ARIA attributes, keyboard navigation)
-    6. **Styling**: Use inline styles with theme colors, or Tailwind classes where appropriate
-    7. **Code Quality**: Write clean, readable, production-ready code
+    === CRITICAL RULES ===
+    1. **ALWAYS USE COLORS FROM CHROMAFORGE PALETTE**: 
+       - NEVER use hardcoded colors like "#FF5733", "blue", "red", "#1976d2", etc.
+       - ALWAYS reference colors from the provided ChromaForge palette above
+       - Create a theme object that maps ChromaForge colors to Material Design:
+         const theme = createTheme({
+           palette: {
+             primary: { 
+               main: '${primaryColor}',
+               light: '${primaryShade300}',
+               dark: '${primaryShade700}'
+             },
+             secondary: { 
+               main: '${secondaryColor}',
+               light: '${secondaryShade300}',
+               dark: '${secondaryShade700}'
+             },
+             background: { 
+               default: '${bgDefault}',
+               paper: '${bgPaper}'
+             },
+             text: {
+               primary: '${textPrimary}',
+               secondary: '${textSecondary}',
+               disabled: '${palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999'}'
+             },
+             error: { main: '${errorColor}' },
+             warning: { main: '${warningColor}' },
+             info: { main: '${infoColor}' },
+             success: { main: '${successColor}' },
+             action: {
+               disabled: '${palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999'}',
+               disabledBackground: '${palette.neutral[Math.floor(palette.neutral.length / 2) - 1]?.hex || palette.neutral[0]?.hex || '#cccccc'}'
+             }
+           }
+         });
+       - When user says "primary-600", use: '${primaryShade600}'
+       - When user says "use color X", find that color in the ChromaForge palette above
+       - **DISABLED COLORS**: ALWAYS use neutral colors from the palette for disabled states. NEVER use hardcoded gray colors.
+       - **SEMANTIC COLORS**: Use the semantic colors from the ChromaForge palette (error, warning, info, success) shown above.
+    
+    2. **Material-UI Components**: 
+       - Import from @mui/material (e.g., import { Button, Card, TextField, ThemeProvider, createTheme } from '@mui/material')
+       - Use Material Design patterns and spacing (8px grid)
+       - Follow Material Design elevation system
+       - Wrap component in ThemeProvider with the theme created from ChromaForge colors
+    
+    3. **Google Fonts**: 
+       - Use Google Fonts (Roboto is default)
+       - Material-UI uses Roboto by default, no need to import
+    
+    4. **Material Icons**: 
+       - Material Icons are available as helper functions (ShoppingCart, Home, Search, Menu, Favorite, Add, Delete, Edit, etc.)
+       - DO NOT import from @mui/icons-material - icons are provided as React components
+       - Examples: <ShoppingCart />, <Home />, <Search />, <Menu />, <Favorite />, <Add />, <Delete />, <Edit />
+       - These icon components are already available in the environment
+       - DO NOT use lucide-react icons
+    
+    5. **Component Structure**: 
+       - Create complete, functional React components
+       - You can create your own theme using createTheme() OR use the existing 'chromaForgePaletteTheme'
+       - If you create a theme, use the ChromaForge palette colors provided above
+       - Use sx prop or styled components for styling
+       - Example:
+         import { ThemeProvider, createTheme } from '@mui/material/styles';
+         import { Button, Card, CardContent, Typography } from '@mui/material';
+         // Icons are available as components (Favorite, Star, ShoppingCart, etc.)
+         
+         const theme = createTheme({
+           palette: {
+             primary: { main: '${primaryColor}' },
+             // ... use ChromaForge colors
+           }
+         });
+         
+         const GeneratedComponent = () => {
+           return (
+             <ThemeProvider theme={theme}>
+               <Card>
+                 <CardContent>
+                   <Typography variant="h5" color="text.primary">
+                     Title
+                   </Typography>
+                   <Button variant="contained" color="primary" startIcon={<ShoppingCart />}>
+                     Action
+                   </Button>
+                 </CardContent>
+               </Card>
+             </ThemeProvider>
+           );
+         };
+       - IMPORTANT: If creating a theme, ALWAYS use colors from ChromaForge palette above
+       - IMPORTANT: Icons are available as React components (Favorite, Star, ShoppingCart, etc.) - do NOT import them
+    
+    6. **Images**: 
+       - Use Picsum Photos: https://picsum.photos/[width]/[height]?random=[seed]
+       - Use descriptive seeds: portrait, nature, product, kitchen, etc.
+    
+    7. **Code Quality**: 
+       - Clean, readable, production-ready code
+       - Proper Material Design spacing and typography
+       - Accessible components with ARIA attributes
+       - NO hardcoded colors - ALWAYS use theme colors from ChromaForge palette
     
     === OUTPUT FORMAT ===
-    Return ONLY valid JSX/TSX code. Do not include markdown code blocks, explanations, or comments outside the code.
-    The code should be a complete, self-contained React component that can be directly rendered.
-    
-    Example structure:
-    import * as Card from '@radix-ui/react-card';
-    import * as Button from '@radix-ui/react-button';
-    
-    const GeneratedComponent = () => {
-      return (
-        <Card.Root style={{ backgroundColor: theme.bg.card }}>
-          <Card.Header>
-            <Card.Title style={{ color: theme.text.main }}>Title</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <Button.Root style={{ backgroundColor: theme.action.primary }}>
-              Action
-            </Button.Root>
-          </Card.Content>
-        </Card.Root>
-      );
-    };
+    Return ONLY valid JSX/TSX code. No markdown code blocks, no explanations.
+    The code must:
+    - Import Material-UI components from @mui/material
+    - Import Material Icons from @mui/icons-material
+    - Create a theme using ChromaForge palette colors (NEVER hardcoded)
+    - Use ThemeProvider to wrap the component
+    - Reference colors from the theme, NEVER hardcoded colors
+    - Export the component as default or named export
     `;
         // Call Gemini API
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: context,
             config: {
-                systemInstruction: "You are a React/JSX code generator. You output only valid, executable React component code. No explanations, no markdown, just code.",
+                systemInstruction: "You are a React/JSX code generator specializing in Material Design. You output only valid, executable React component code using Material-UI. Always use colors from the ChromaForge palette provided. No explanations, no markdown, just code.",
             }
         });
         let code = response.text;
@@ -320,10 +415,57 @@ app.post('/api/ui-design', async (req, res) => {
         // Extract component name if possible
         const componentNameMatch = code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/);
         const componentName = componentNameMatch ? componentNameMatch[1] : 'GeneratedComponent';
+        // Construir tema para inyección
+        const theme = {
+            action: {
+                primary: primaryColor,
+                primaryHover: primaryShade700,
+                secondary: secondaryColor,
+                secondaryBg: secondaryShade300,
+            },
+            bg: {
+                page: bgDefault,
+                card: bgPaper,
+            },
+            text: {
+                main: textPrimary,
+                secondary: textSecondary,
+            },
+            disabled: {
+                bg: palette.neutral[Math.floor(palette.neutral.length / 2) - 1]?.hex || palette.neutral[0]?.hex || '#cccccc',
+                text: palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999',
+                border: palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999',
+            },
+            semantic: {
+                error: { main: errorColor },
+                warning: { main: warningColor },
+                info: { main: infoColor },
+                success: { main: successColor },
+            },
+        };
+        // Compilar componente
+        const compileResult = await compileComponent({
+            code,
+            componentName,
+            theme,
+        });
+        if (compileResult.error) {
+            console.error('[Backend] Compilation error:', compileResult.error);
+            // Devolver código sin compilar como fallback
+            return res.json({
+                code: code,
+                description: `Generated ${componentName} based on your request. (Compilation failed: ${compileResult.error})`,
+                componentName: componentName,
+                bundleId: null,
+            });
+        }
+        // Limpiar bundles antiguos (en background)
+        cleanupOldBundles();
         return res.json({
-            code: code,
+            code: code, // Mantener código original para mostrar en el editor
             description: `Generated ${componentName} based on your request.`,
-            componentName: componentName
+            componentName: componentName,
+            bundleId: compileResult.bundleId, // ID del bundle compilado
         });
     }
     catch (error) {
@@ -350,6 +492,26 @@ app.post('/api/ui-design', async (req, res) => {
             code: '',
             description: userMessage
         });
+    }
+});
+// Endpoint para servir bundles compilados
+app.get('/api/bundles/:bundleId.js', (req, res) => {
+    try {
+        const { bundleId } = req.params;
+        const bundlePath = join(process.cwd(), 'dist-server', 'bundles', `${bundleId}.js`);
+        try {
+            const bundle = readFileSync(bundlePath, 'utf-8');
+            res.setHeader('Content-Type', 'application/javascript');
+            res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 hora
+            res.send(bundle);
+        }
+        catch (error) {
+            res.status(404).json({ error: 'Bundle not found' });
+        }
+    }
+    catch (error) {
+        console.error('[Server] Error serving bundle:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 // Serve SPA - serve index.html for all routes

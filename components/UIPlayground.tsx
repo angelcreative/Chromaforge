@@ -92,7 +92,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [codeError, setCodeError] = useState<string>('');
   const [toastMessage, setToastMessage] = useState('');
-  const [aiGeneratedComponent, setAiGeneratedComponent] = useState<{ code: string; componentName: string } | null>(null);
+  const [aiGeneratedComponent, setAiGeneratedComponent] = useState<{ code: string; componentName: string; bundleId?: string | null } | null>(null);
   const [originalTheme, setOriginalTheme] = useState<any>(null);
   const [savedGeneratedComponent, setSavedGeneratedComponent] = useState<{ code: string; componentName: string } | null>(null);
   const aiMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -2510,31 +2510,169 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 <div className="lg:col-span-2">
                                     <div className="bg-white rounded-lg p-6 min-h-[600px] overflow-auto border" style={{ borderColor: theme.border.subtle }}>
                                         <iframe
-                                            key={`preview-${aiGeneratedComponent.componentName}-${config.primaryIndex}-${config.isDarkMode}-${theme.action.primary}-${theme.bg.page}`}
+                                            key={`preview-${aiGeneratedComponent.componentName}-${aiGeneratedComponent.bundleId || 'fallback'}-${config.primaryIndex}-${config.isDarkMode}-${theme.action.primary}-${theme.bg.page}`}
                                             srcDoc={(() => {
-                                                const processedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
-                                                const code = escapeCodeForTemplate(processedCode);
-                                                
-                                                // Obtener TODOS los colores de la paleta actual para inyectarlos en el tema
-                                                const primaryColor = theme.action.primary;
-                                                const primaryHover = theme.action.primaryHover;
-                                                const secondaryColor = theme.action.secondary || theme.action.primary;
-                                                const secondaryBg = theme.action.secondaryBg;
-                                                const bgDefault = theme.bg.page;
-                                                const bgPaper = theme.bg.card;
-                                                const textPrimary = theme.text.main;
-                                                const textSecondary = theme.text.secondary;
-                                                // Disabled siempre usa neutrales
-                                                const disabledBg = theme.disabled.bg;
-                                                const disabledText = theme.disabled.text;
-                                                const disabledBorder = theme.disabled.border;
-                                                // Semantic colors
-                                                const errorColor = theme.semantic.error.main;
-                                                const warningColor = theme.semantic.warning.main;
-                                                const infoColor = theme.semantic.info.main;
-                                                const successColor = theme.semantic.success.main;
-                                                
-                                                return `<!DOCTYPE html>
+                                                // Si tenemos bundleId, usar bundle compilado
+                                                if (aiGeneratedComponent.bundleId) {
+                                                    // Obtener TODOS los colores de la paleta actual para inyectarlos en el tema
+                                                    const primaryColor = theme.action.primary;
+                                                    const primaryHover = theme.action.primaryHover;
+                                                    const secondaryColor = theme.action.secondary || theme.action.primary;
+                                                    const bgDefault = theme.bg.page;
+                                                    const bgPaper = theme.bg.card;
+                                                    const textPrimary = theme.text.main;
+                                                    const textSecondary = theme.text.secondary;
+                                                    const disabledBg = theme.disabled.bg;
+                                                    const disabledText = theme.disabled.text;
+                                                    const disabledBorder = theme.disabled.border;
+                                                    const errorColor = theme.semantic.error.main;
+                                                    const warningColor = theme.semantic.warning.main;
+                                                    const infoColor = theme.semantic.info.main;
+                                                    const successColor = theme.semantic.success.main;
+                                                    
+                                                    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <style>
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: ${bgDefault};
+        }
+    </style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"></script>
+    <script src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"></script>
+    <script src="https://unpkg.com/@mui/material@5/dist/material-ui.development.js"></script>
+    <script>
+        // Wait for Material-UI to be available
+        const waitForMaterialUI = (callback, maxWait = 5000) => {
+            const startTime = Date.now();
+            const check = () => {
+                if (typeof MaterialUI !== 'undefined' && MaterialUI.createTheme && Date.now() - startTime < maxWait) {
+                    callback();
+                } else if (Date.now() - startTime >= maxWait) {
+                    console.error('Material-UI failed to load');
+                    callback();
+                } else {
+                    setTimeout(check, 50);
+                }
+            };
+            check();
+        };
+        
+        waitForMaterialUI(() => {
+            const { ThemeProvider, createTheme } = MaterialUI;
+            
+            // Make Material-UI available globally
+            window.MaterialUI = MaterialUI;
+            window.React = React;
+            window.ReactDOM = ReactDOM;
+            window.createTheme = createTheme;
+            
+            // Create theme from ChromaForge palette
+            const chromaForgePaletteTheme = createTheme({
+                palette: {
+                    primary: { main: '${primaryColor}', dark: '${primaryHover}' },
+                    secondary: { main: '${secondaryColor}' },
+                    background: { default: '${bgDefault}', paper: '${bgPaper}' },
+                    text: { primary: '${textPrimary}', secondary: '${textSecondary}', disabled: '${disabledText}' },
+                    error: { main: '${errorColor}' },
+                    warning: { main: '${warningColor}' },
+                    info: { main: '${infoColor}' },
+                    success: { main: '${successColor}' },
+                    action: { disabled: '${disabledText}', disabledBackground: '${disabledBg}' },
+                },
+                components: {
+                    MuiButton: {
+                        styleOverrides: {
+                            root: {
+                                '&.Mui-disabled': {
+                                    backgroundColor: '${disabledBg}',
+                                    color: '${disabledText}',
+                                    borderColor: '${disabledBorder}',
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+            
+            window.chromaForgePaletteTheme = chromaForgePaletteTheme;
+            
+            // Load and execute compiled bundle
+            const script = document.createElement('script');
+            script.src = '/api/bundles/${aiGeneratedComponent.bundleId}.js';
+            script.onload = () => {
+                try {
+                    const ComponentToRender = window['${aiGeneratedComponent.componentName}'];
+                    if (typeof ComponentToRender === 'function') {
+                        const root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(
+                            React.createElement(ThemeProvider, { theme: chromaForgePaletteTheme },
+                                React.createElement(ComponentToRender)
+                            )
+                        );
+                    } else {
+                        throw new Error('Component not found: ${aiGeneratedComponent.componentName}');
+                    }
+                } catch (e) {
+                    console.error('Error rendering component:', e);
+                    document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + String(e) + '</div>';
+                }
+            };
+            script.onerror = () => {
+                document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Failed to load bundle</div>';
+            };
+            document.head.appendChild(script);
+        });
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>`;
+                                                } else {
+                                                    // Fallback: usar código inline (método antiguo)
+                                                    const processedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
+                                                    const code = escapeCodeForTemplate(processedCode);
+                                                    
+                                                    const primaryColor = theme.action.primary;
+                                                    const primaryHover = theme.action.primaryHover;
+                                                    const secondaryColor = theme.action.secondary || theme.action.primary;
+                                                    const bgDefault = theme.bg.page;
+                                                    const bgPaper = theme.bg.card;
+                                                    const textPrimary = theme.text.main;
+                                                    const textSecondary = theme.text.secondary;
+                                                    const disabledBg = theme.disabled.bg;
+                                                    const disabledText = theme.disabled.text;
+                                                    const disabledBorder = theme.disabled.border;
+                                                    const errorColor = theme.semantic.error.main;
+                                                    const warningColor = theme.semantic.warning.main;
+                                                    const infoColor = theme.semantic.info.main;
+                                                    const successColor = theme.semantic.success.main;
+                                                    
+                                                    return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -3251,7 +3389,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             }
                                             
                                             setOriginalTheme(theme); // Guardar el tema original cuando se genera el componente
-                                            setAiGeneratedComponent({ code: result.code, componentName });
+                                            setAiGeneratedComponent({ 
+                                                code: result.code, 
+                                                componentName,
+                                                bundleId: (result as any).bundleId || null
+                                            });
                                             setAiMessages(prev => [...prev, { 
                                                 role: 'assistant', 
                                                 text: "I've generated what you requested and it's in the canvas",
