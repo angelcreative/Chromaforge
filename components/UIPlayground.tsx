@@ -41,6 +41,8 @@ import {
   HiSparkles, HiArrowLeft
 } from 'react-icons/hi';
 import { FaPaperPlane } from 'react-icons/fa';
+import { CardsSidebar } from './cards/CardsSidebar';
+import { CardsViewer } from './cards/CardsViewer';
 
 interface UIPlaygroundProps {
   brandPalette: ColorData[];
@@ -83,7 +85,10 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
   const [switchStates, setSwitchStates] = useState<{ [key: number]: boolean }>({});
   const [activeTabValue, setActiveTabValue] = useState<string>('tab1');
   const [isLeftSidebarExpanded, setIsLeftSidebarExpanded] = useState(true);
-  const [isRightSidebarExpanded, setIsRightSidebarExpanded] = useState(true);
+  
+  // Cards Library states
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isCardsSidebarExpanded, setIsCardsSidebarExpanded] = useState(true);
   
   // AI Assistant states
   const [aiPrompt, setAiPrompt] = useState('');
@@ -367,6 +372,187 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     return updatedCode;
   };
 
+  // Función helper para generar el HTML del iframe
+  const getIframeSrcDoc = (): string => {
+    if (!aiGeneratedComponent) return '';
+    
+    // SOLO usar bundle compilado - NO fallback con Babel
+    if (!aiGeneratedComponent.bundleId || aiGeneratedComponent.bundleId === 'null' || aiGeneratedComponent.bundleId === 'undefined') {
+      return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        .error-box {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        h2 { color: #d32f2f; margin: 0 0 16px; }
+        p { color: #666; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <h2>⚠️ Bundle no disponible</h2>
+        <p>El componente no pudo ser compilado. Por favor, intenta generar el componente nuevamente.</p>
+    </div>
+</body>
+</html>`;
+    }
+    
+    // Bundle compilado disponible - cargar normalmente
+    const primaryColor = theme.action.primary;
+    const primaryHover = theme.action.primaryHover;
+    const secondaryColor = theme.action.secondary || theme.action.primary;
+    const bgDefault = theme.bg.page;
+    const bgPaper = theme.bg.card;
+    const textPrimary = theme.text.main;
+    const textSecondary = theme.text.secondary;
+    const disabledBg = theme.disabled.bg;
+    const disabledText = theme.disabled.text;
+    const disabledBorder = theme.disabled.border;
+    const errorColor = theme.semantic.error.main;
+    const warningColor = theme.semantic.warning.main;
+    const infoColor = theme.semantic.info.main;
+    const successColor = theme.semantic.success.main;
+    
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <style>
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: ${bgDefault};
+        }
+    </style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"></script>
+    <script src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"></script>
+    <script src="https://unpkg.com/@mui/material@5/dist/material-ui.development.js"></script>
+    <script>
+        // Wait for Material-UI to be available
+        const waitForMaterialUI = (callback, maxWait = 5000) => {
+            const startTime = Date.now();
+            const check = () => {
+                if (typeof MaterialUI !== 'undefined' && MaterialUI.createTheme && Date.now() - startTime < maxWait) {
+                    callback();
+                } else if (Date.now() - startTime >= maxWait) {
+                    console.error('Material-UI failed to load');
+                    callback();
+                } else {
+                    setTimeout(check, 50);
+                }
+            };
+            check();
+        };
+        
+        waitForMaterialUI(() => {
+            const { ThemeProvider, createTheme } = MaterialUI;
+            
+            // Make Material-UI available globally
+            window.MaterialUI = MaterialUI;
+            window.React = React;
+            window.ReactDOM = ReactDOM;
+            window.createTheme = createTheme;
+            
+            // Create theme from ChromaForge palette
+            const chromaForgePaletteTheme = createTheme({
+                palette: {
+                    primary: { main: '${primaryColor}', dark: '${primaryHover}' },
+                    secondary: { main: '${secondaryColor}' },
+                    background: { default: '${bgDefault}', paper: '${bgPaper}' },
+                    text: { primary: '${textPrimary}', secondary: '${textSecondary}', disabled: '${disabledText}' },
+                    error: { main: '${errorColor}' },
+                    warning: { main: '${warningColor}' },
+                    info: { main: '${infoColor}' },
+                    success: { main: '${successColor}' },
+                    action: { disabled: '${disabledText}', disabledBackground: '${disabledBg}' },
+                },
+                components: {
+                    MuiButton: {
+                        styleOverrides: {
+                            root: {
+                                '&.Mui-disabled': {
+                                    backgroundColor: '${disabledBg}',
+                                    color: '${disabledText}',
+                                    borderColor: '${disabledBorder}',
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+            
+            window.chromaForgePaletteTheme = chromaForgePaletteTheme;
+            
+            // Load and execute compiled bundle
+            const script = document.createElement('script');
+            script.src = '/api/bundles/${aiGeneratedComponent.bundleId}.js';
+            script.onload = () => {
+                try {
+                    const ComponentToRender = window['${aiGeneratedComponent.componentName}'];
+                    if (typeof ComponentToRender === 'function') {
+                        const root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(
+                            React.createElement(ThemeProvider, { theme: chromaForgePaletteTheme },
+                                React.createElement(ComponentToRender)
+                            )
+                        );
+                    } else {
+                        throw new Error('Component not found: ${aiGeneratedComponent.componentName}');
+                    }
+                } catch (e) {
+                    console.error('Error rendering component:', e);
+                    document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + String(e) + '</div>';
+                }
+            };
+            script.onerror = () => {
+                document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Failed to load bundle</div>';
+            };
+            document.head.appendChild(script);
+        });
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>`;
+  };
+
   // --- 1. THEME ENGINE LOGIC ---
   const theme = useMemo(() => {
       const primarySource = brandPalette[config.primaryIndex] || brandPalette[0];
@@ -405,7 +591,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
       const primaryBtn = getAccessiblePrimary();
       const secondaryBg = isDark ? get(pShades, 900) : get(pShades, 100);
       const secondaryHover = isDark ? get(pShades, 700) : get(pShades, 300); // 2 shades más oscuro
-      const secondaryTextRaw = isDark ? get(pShades, 100) : get(pShades, 900);
+      // Secondary text: máximo shade 700-800 (no más oscuro que 800)
+      const secondaryTextRaw = isDark ? get(pShades, 100) : (get(pShades, 800) || get(pShades, 700) || get(pShades, 600));
       
       // Disabled colors always use neutrals
       const disabledBg = isDark ? get(dShades, 800) : get(dShades, 100);
@@ -429,6 +616,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               subtle: isDark ? get(tShades, 800) : get(tShades, 100),
               default: isDark ? get(tShades, 700) : get(tShades, 200),
               focus: get(pShades, 500),
+          },
+          switch: {
+              off: isDark ? get(tShades, 700) : get(tShades, 400),
           },
           action: {
               primary: primaryBtn.bg,
@@ -460,6 +650,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                   text: txt, 
                   border: isDark ? get(family.shades, 700) : get(family.shades, 200)
               };
+          },
+          shades: {
+              primary: pShades
           }
       };
   }, [brandPalette, neutralPalette, semanticPalette, config, globalConfig]);
@@ -2071,11 +2264,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       style={{
                         backgroundColor: item.disabled 
                           ? theme.disabled.bg 
-                          : (switchStates[item.id] ? theme.action.primary : theme.bg.input),
+                          : (switchStates[item.id] ? theme.action.primary : (theme.switch?.off || theme.border.default || '#9CA3AF')),
                       }}
                     >
                       <Switch.Thumb
-                        className="inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out"
+                        className="inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out shadow-sm"
                         style={{
                           transform: switchStates[item.id] ? 'translateX(24px)' : 'translateX(4px)',
                           backgroundColor: item.disabled ? theme.disabled.text : 'white',
@@ -2421,9 +2614,12 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       }}
                       className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                         activeTab === 'molecules'
-                          ? 'bg-indigo-600 text-white'
+                          ? 'text-white'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
+                      style={{
+                        backgroundColor: activeTab === 'molecules' ? theme.action.primary : 'transparent',
+                      }}
                     >
                       Molecules
                     </button>
@@ -2434,9 +2630,12 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       }}
                       className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                         activeTab === 'organisms'
-                          ? 'bg-indigo-600 text-white'
+                          ? 'text-white'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
+                      style={{
+                        backgroundColor: activeTab === 'organisms' ? theme.action.primary : 'transparent',
+                      }}
                     >
                       Organisms
                     </button>
@@ -2448,12 +2647,18 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     {(activeTab === 'molecules' ? molecules : organisms).map((comp) => (
                         <button
                             key={comp.id}
-                            onClick={() => setSelectedComponent(comp.id)}
+                            onClick={() => {
+                                setSelectedComponent(comp.id);
+                                setSelectedCardId(null);
+                            }}
                             className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
                                 selectedComponent === comp.id
-                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    ? 'text-white shadow-md'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                             }`}
+                            style={{
+                                backgroundColor: selectedComponent === comp.id ? theme.action.primary : 'transparent',
+                            }}
                         >
                             {comp.label}
                         </button>
@@ -2468,6 +2673,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 className="flex-1 overflow-hidden relative transition-colors duration-500 z-0"
                 style={{ backgroundColor: theme.bg.page }}
             >
+                {/* Show Cards Viewer when a card is selected and no component is active */}
+                {selectedCardId && !selectedComponent && !aiGeneratedComponent ? (
+                    <CardsViewer 
+                        selectedCardId={selectedCardId} 
+                        theme={theme as any}
+                    />
+                ) : (
                 <div className="h-full w-full overflow-y-auto p-6 md:p-8">
                     {aiGeneratedComponent && isPremium ? (
                         // AI Generated Component View (2/3 preview + 1/3 code)
@@ -2510,550 +2722,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 <div className="lg:col-span-2">
                                     <div className="bg-white rounded-lg p-6 min-h-[600px] overflow-auto border" style={{ borderColor: theme.border.subtle }}>
                                         <iframe
-                                            key={`preview-${aiGeneratedComponent.componentName}-${aiGeneratedComponent.bundleId || 'fallback'}-${config.primaryIndex}-${config.isDarkMode}-${theme.action.primary}-${theme.bg.page}`}
-                                            srcDoc={(() => {
-                                                // Si tenemos bundleId, usar bundle compilado
-                                                if (aiGeneratedComponent.bundleId && aiGeneratedComponent.bundleId !== 'null' && aiGeneratedComponent.bundleId !== 'undefined') {
-                                                    // Obtener TODOS los colores de la paleta actual para inyectarlos en el tema
-                                                    const primaryColor = theme.action.primary;
-                                                    const primaryHover = theme.action.primaryHover;
-                                                    const secondaryColor = theme.action.secondary || theme.action.primary;
-                                                    const bgDefault = theme.bg.page;
-                                                    const bgPaper = theme.bg.card;
-                                                    const textPrimary = theme.text.main;
-                                                    const textSecondary = theme.text.secondary;
-                                                    const disabledBg = theme.disabled.bg;
-                                                    const disabledText = theme.disabled.text;
-                                                    const disabledBorder = theme.disabled.border;
-                                                    const errorColor = theme.semantic.error.main;
-                                                    const warningColor = theme.semantic.warning.main;
-                                                    const infoColor = theme.semantic.info.main;
-                                                    const successColor = theme.semantic.success.main;
-                                                    
-                                                    return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <style>
-        .material-icons {
-            font-family: 'Material Icons';
-            font-weight: normal;
-            font-style: normal;
-            font-size: 24px;
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-feature-settings: 'liga';
-            -webkit-font-smoothing: antialiased;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: ${bgDefault};
-        }
-    </style>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"></script>
-    <script src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"></script>
-    <script src="https://unpkg.com/@mui/material@5/dist/material-ui.development.js"></script>
-    <script>
-        // Wait for Material-UI to be available
-        const waitForMaterialUI = (callback, maxWait = 5000) => {
-            const startTime = Date.now();
-            const check = () => {
-                if (typeof MaterialUI !== 'undefined' && MaterialUI.createTheme && Date.now() - startTime < maxWait) {
-                    callback();
-                } else if (Date.now() - startTime >= maxWait) {
-                    console.error('Material-UI failed to load');
-                    callback();
-                } else {
-                    setTimeout(check, 50);
-                }
-            };
-            check();
-        };
-        
-        waitForMaterialUI(() => {
-            const { ThemeProvider, createTheme } = MaterialUI;
-            
-            // Make Material-UI available globally
-            window.MaterialUI = MaterialUI;
-            window.React = React;
-            window.ReactDOM = ReactDOM;
-            window.createTheme = createTheme;
-            
-            // Create theme from ChromaForge palette
-            const chromaForgePaletteTheme = createTheme({
-                palette: {
-                    primary: { main: '${primaryColor}', dark: '${primaryHover}' },
-                    secondary: { main: '${secondaryColor}' },
-                    background: { default: '${bgDefault}', paper: '${bgPaper}' },
-                    text: { primary: '${textPrimary}', secondary: '${textSecondary}', disabled: '${disabledText}' },
-                    error: { main: '${errorColor}' },
-                    warning: { main: '${warningColor}' },
-                    info: { main: '${infoColor}' },
-                    success: { main: '${successColor}' },
-                    action: { disabled: '${disabledText}', disabledBackground: '${disabledBg}' },
-                },
-                components: {
-                    MuiButton: {
-                        styleOverrides: {
-                            root: {
-                                '&.Mui-disabled': {
-                                    backgroundColor: '${disabledBg}',
-                                    color: '${disabledText}',
-                                    borderColor: '${disabledBorder}',
-                                },
-                            },
-                        },
-                    },
-                },
-            });
-            
-            window.chromaForgePaletteTheme = chromaForgePaletteTheme;
-            
-            // Load and execute compiled bundle
-            const script = document.createElement('script');
-            script.src = '/api/bundles/${aiGeneratedComponent.bundleId}.js';
-            script.onload = () => {
-                try {
-                    const ComponentToRender = window['${aiGeneratedComponent.componentName}'];
-                    if (typeof ComponentToRender === 'function') {
-                        const root = ReactDOM.createRoot(document.getElementById('root'));
-                        root.render(
-                            React.createElement(ThemeProvider, { theme: chromaForgePaletteTheme },
-                                React.createElement(ComponentToRender)
-                            )
-                        );
-                    } else {
-                        throw new Error('Component not found: ${aiGeneratedComponent.componentName}');
-                    }
-                } catch (e) {
-                    console.error('Error rendering component:', e);
-                    document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + String(e) + '</div>';
-                }
-            };
-            script.onerror = () => {
-                document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Failed to load bundle</div>';
-            };
-            document.head.appendChild(script);
-        });
-    </script>
-</head>
-<body>
-    <div id="root"></div>
-</body>
-</html>`;
-                                                } else {
-                                                    // Fallback: usar código inline (método antiguo)
-                                                    const processedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
-                                                    const code = escapeCodeForTemplate(processedCode);
-                                                    
-                                                    const primaryColor = theme.action.primary;
-                                                    const primaryHover = theme.action.primaryHover;
-                                                    const secondaryColor = theme.action.secondary || theme.action.primary;
-                                                    const bgDefault = theme.bg.page;
-                                                    const bgPaper = theme.bg.card;
-                                                    const textPrimary = theme.text.main;
-                                                    const textSecondary = theme.text.secondary;
-                                                    const disabledBg = theme.disabled.bg;
-                                                    const disabledText = theme.disabled.text;
-                                                    const disabledBorder = theme.disabled.border;
-                                                    const errorColor = theme.semantic.error.main;
-                                                    const warningColor = theme.semantic.warning.main;
-                                                    const infoColor = theme.semantic.info.main;
-                                                    const successColor = theme.semantic.success.main;
-                                                    
-                                                    return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <style>
-        .material-icons {
-            font-family: 'Material Icons';
-            font-weight: normal;
-            font-style: normal;
-            font-size: 24px;
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-feature-settings: 'liga';
-            -webkit-font-smoothing: antialiased;
-        }
-    </style>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: ${bgDefault};
-        }
-    </style>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"></script>
-    <script src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"></script>
-    <script src="https://unpkg.com/@mui/material@5/dist/material-ui.development.js"></script>
-    <script type="text/babel">
-        // Wait for Material-UI to be available
-        const waitForMaterialUI = (callback, maxWait = 5000) => {
-            const startTime = Date.now();
-            const check = () => {
-                if (typeof MaterialUI !== 'undefined' && MaterialUI.createTheme && Date.now() - startTime < maxWait) {
-                    callback();
-                } else if (Date.now() - startTime >= maxWait) {
-                    console.error('Material-UI failed to load');
-                    callback(); // Execute anyway
-                } else {
-                    setTimeout(check, 50);
-                }
-            };
-            check();
-        };
-        
-        waitForMaterialUI(() => {
-            const { useState, useEffect, useRef, useMemo, createElement } = React;
-            const { ThemeProvider, createTheme } = MaterialUI;
-            
-            // Make Material-UI available globally
-            window.MaterialUI = MaterialUI;
-            window.React = React;
-            window.ReactDOM = ReactDOM;
-            window.useState = useState;
-            window.useEffect = useEffect;
-            window.useRef = useRef;
-            window.useMemo = useMemo;
-            
-            // Create theme from ChromaForge palette colors - SIEMPRE usar colores de la paleta
-            // Usar nombre único para evitar conflictos con código generado
-            const chromaForgePaletteTheme = createTheme({
-            palette: {
-                primary: {
-                    main: '${primaryColor}',
-                    dark: '${primaryHover}',
-                },
-                secondary: {
-                    main: '${secondaryColor}',
-                },
-                background: {
-                    default: '${bgDefault}',
-                    paper: '${bgPaper}',
-                },
-                text: {
-                    primary: '${textPrimary}',
-                    secondary: '${textSecondary}',
-                    disabled: '${disabledText}',
-                },
-                error: {
-                    main: '${errorColor}',
-                },
-                warning: {
-                    main: '${warningColor}',
-                },
-                info: {
-                    main: '${infoColor}',
-                },
-                success: {
-                    main: '${successColor}',
-                },
-                action: {
-                    disabled: '${disabledText}',
-                    disabledBackground: '${disabledBg}',
-                },
-            },
-            components: {
-                MuiButton: {
-                    styleOverrides: {
-                        root: {
-                            '&.Mui-disabled': {
-                                backgroundColor: '${disabledBg}',
-                                color: '${disabledText}',
-                                borderColor: '${disabledBorder}',
-                            },
-                        },
-                    },
-                },
-                MuiTextField: {
-                    styleOverrides: {
-                        root: {
-                            '& .MuiInputBase-root.Mui-disabled': {
-                                backgroundColor: '${disabledBg}',
-                                color: '${disabledText}',
-                            },
-                        },
-                    },
-                },
-            },
-            });
-            
-            // Make theme and createTheme available globally BEFORE executing any code
-            window.chromaForgePaletteTheme = chromaForgePaletteTheme;
-            window.__cfTheme = chromaForgePaletteTheme; // Alias corto
-            window.createTheme = createTheme; // Make createTheme available globally
-            
-            // ===== GENERATED CODE =====
-            const executeCodeAndRender = () => {
-                const componentName = '${aiGeneratedComponent.componentName}';
-                let ComponentToRender = null;
-                
-                try {
-                    // Limpiar export default del código
-                    let codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
-                    
-                    // Crear funciones helper para TODOS los iconos Material comunes
-                    const iconHelper = \`
-                    // Helper para crear iconos Material simples
-                    const createMaterialIcon = (name, props = {}) => {
-                        const { sx, color, fontSize, ...rest } = props;
-                        const style = {
-                            fontSize: fontSize || 24,
-                            color: color || 'currentColor',
-                            ...(sx || {})
-                        };
-                        return React.createElement('span', { 
-                            className: 'material-icons', 
-                            style: style,
-                            ...rest
-                        }, name);
-                    };
-                    // Iconos comunes
-                    const ShoppingCart = (props) => createMaterialIcon('shopping_cart', props);
-                    const Home = (props) => createMaterialIcon('home', props);
-                    const Search = (props) => createMaterialIcon('search', props);
-                    const Menu = (props) => createMaterialIcon('menu', props);
-                    const Favorite = (props) => createMaterialIcon('favorite', props);
-                    const Add = (props) => createMaterialIcon('add', props);
-                    const Delete = (props) => createMaterialIcon('delete', props);
-                    const Edit = (props) => createMaterialIcon('edit', props);
-                    const Close = (props) => createMaterialIcon('close', props);
-                    const Check = (props) => createMaterialIcon('check', props);
-                    const ArrowBack = (props) => createMaterialIcon('arrow_back', props);
-                    const ArrowForward = (props) => createMaterialIcon('arrow_forward', props);
-                    const Star = (props) => createMaterialIcon('star', props);
-                    const Share = (props) => createMaterialIcon('share', props);
-                    const AccessTime = (props) => createMaterialIcon('access_time', props);
-                    const SignalCellularAlt = (props) => createMaterialIcon('signal_cellular_alt', props);
-                    const Restaurant = (props) => createMaterialIcon('restaurant', props);
-                    const MoreVert = (props) => createMaterialIcon('more_vert', props);
-                    const MoreHoriz = (props) => createMaterialIcon('more_horiz', props);
-                    const Settings = (props) => createMaterialIcon('settings', props);
-                    const Notifications = (props) => createMaterialIcon('notifications', props);
-                    const Person = (props) => createMaterialIcon('person', props);
-                    const Email = (props) => createMaterialIcon('email', props);
-                    const Phone = (props) => createMaterialIcon('phone', props);
-                    const LocationOn = (props) => createMaterialIcon('location_on', props);
-                    const CalendarToday = (props) => createMaterialIcon('calendar_today', props);
-                    const Lock = (props) => createMaterialIcon('lock', props);
-                    const LockOpen = (props) => createMaterialIcon('lock_open', props);
-                    const Visibility = (props) => createMaterialIcon('visibility', props);
-                    const VisibilityOff = (props) => createMaterialIcon('visibility_off', props);
-                    const Download = (props) => createMaterialIcon('download', props);
-                    const Upload = (props) => createMaterialIcon('upload', props);
-                    const FilterList = (props) => createMaterialIcon('filter_list', props);
-                    const Sort = (props) => createMaterialIcon('sort', props);
-                    const Refresh = (props) => createMaterialIcon('refresh', props);
-                    const PlayArrow = (props) => createMaterialIcon('play_arrow', props);
-                    const Pause = (props) => createMaterialIcon('pause', props);
-                    const Stop = (props) => createMaterialIcon('stop', props);
-                    const SkipNext = (props) => createMaterialIcon('skip_next', props);
-                    const SkipPrevious = (props) => createMaterialIcon('skip_previous', props);
-                    const VolumeUp = (props) => createMaterialIcon('volume_up', props);
-                    const VolumeDown = (props) => createMaterialIcon('volume_down', props);
-                    const VolumeOff = (props) => createMaterialIcon('volume_off', props);
-                    const Fullscreen = (props) => createMaterialIcon('fullscreen', props);
-                    const FullscreenExit = (props) => createMaterialIcon('fullscreen_exit', props);
-                    const ExpandMore = (props) => createMaterialIcon('expand_more', props);
-                    const ExpandLess = (props) => createMaterialIcon('expand_less', props);
-                    const ChevronLeft = (props) => createMaterialIcon('chevron_left', props);
-                    const ChevronRight = (props) => createMaterialIcon('chevron_right', props);
-                    const ChevronUp = (props) => createMaterialIcon('chevron_up', props);
-                    const ChevronDown = (props) => createMaterialIcon('chevron_down', props);
-                    const ArrowUpward = (props) => createMaterialIcon('arrow_upward', props);
-                    const ArrowDownward = (props) => createMaterialIcon('arrow_downward', props);
-                    const ArrowLeft = (props) => createMaterialIcon('arrow_back', props);
-                    const ArrowRight = (props) => createMaterialIcon('arrow_forward', props);
-                    const Info = (props) => createMaterialIcon('info', props);
-                    const Warning = (props) => createMaterialIcon('warning', props);
-                    const Error = (props) => createMaterialIcon('error', props);
-                    const CheckCircle = (props) => createMaterialIcon('check_circle', props);
-                    const Cancel = (props) => createMaterialIcon('cancel', props);
-                    const Help = (props) => createMaterialIcon('help', props);
-                    const HelpOutline = (props) => createMaterialIcon('help_outline', props);
-                    const QuestionAnswer = (props) => createMaterialIcon('question_answer', props);
-                    const Chat = (props) => createMaterialIcon('chat', props);
-                    const Comment = (props) => createMaterialIcon('comment', props);
-                    const ThumbUp = (props) => createMaterialIcon('thumb_up', props);
-                    const ThumbDown = (props) => createMaterialIcon('thumb_down', props);
-                    const Bookmark = (props) => createMaterialIcon('bookmark', props);
-                    const BookmarkBorder = (props) => createMaterialIcon('bookmark_border', props);
-                    const Flag = (props) => createMaterialIcon('flag', props);
-                    const Report = (props) => createMaterialIcon('report', props);
-                    const Block = (props) => createMaterialIcon('block', props);
-                    const ReportProblem = (props) => createMaterialIcon('report_problem', props);
-                    const NewReleases = (props) => createMaterialIcon('new_releases', props);
-                    const Update = (props) => createMaterialIcon('update', props);
-                    const Build = (props) => createMaterialIcon('build', props);
-                    const Code = (props) => createMaterialIcon('code', props);
-                    const BugReport = (props) => createMaterialIcon('bug_report', props);
-                    const Extension = (props) => createMaterialIcon('extension', props);
-                    const ExtensionOff = (props) => createMaterialIcon('extension_off', props);
-                    const Dashboard = (props) => createMaterialIcon('dashboard', props);
-                    const ViewModule = (props) => createMaterialIcon('view_module', props);
-                    const ViewList = (props) => createMaterialIcon('view_list', props);
-                    const ViewComfy = (props) => createMaterialIcon('view_comfy', props);
-                    const ViewCompact = (props) => createMaterialIcon('view_compact', props);
-                    const GridView = (props) => createMaterialIcon('grid_view', props);
-                    const TableView = (props) => createMaterialIcon('table_view', props);
-                    const ViewAgenda = (props) => createMaterialIcon('view_agenda', props);
-                    const ViewWeek = (props) => createMaterialIcon('view_week', props);
-                    const ViewDay = (props) => createMaterialIcon('view_day', props);
-                    const ViewHeadline = (props) => createMaterialIcon('view_headline', props);
-                    const ViewQuilt = (props) => createMaterialIcon('view_quilt', props);
-                    const ViewStream = (props) => createMaterialIcon('view_stream', props);
-                    const ViewColumn = (props) => createMaterialIcon('view_column', props);
-                    const ViewCarousel = (props) => createMaterialIcon('view_carousel', props);
-                    const ViewArray = (props) => createMaterialIcon('view_array', props);
-                    const ViewSidebar = (props) => createMaterialIcon('view_sidebar', props);
-                    // Rating component helper
-                    const Rating = (props) => {
-                        const { value = 0, max = 5, precision = 0.5, size = 'medium', sx, readOnly, ...rest } = props;
-                        const stars = [];
-                        const fullStars = Math.floor(value);
-                        const hasHalfStar = value % 1 >= precision;
-                        const starSize = size === 'small' ? 16 : size === 'large' ? 28 : 20;
-                        for (let i = 0; i < fullStars; i++) {
-                            stars.push(React.createElement(Star, { key: i, sx: { ...sx, fontSize: starSize } }));
-                        }
-                        if (hasHalfStar && fullStars < max) {
-                            stars.push(React.createElement(Star, { key: 'half', sx: { ...sx, fontSize: starSize, opacity: 0.5 } }));
-                        }
-                        const emptyStars = max - Math.ceil(value);
-                        for (let i = 0; i < emptyStars; i++) {
-                            stars.push(React.createElement(Star, { key: 'empty-' + i, sx: { ...sx, fontSize: starSize, opacity: 0.3 } }));
-                        }
-                        return React.createElement('div', { style: { display: 'flex', gap: '2px', alignItems: 'center' }, ...rest }, stars);
-                    };
-                    \`;
-                    
-                    // Prepend icon helpers
-                    codeStr = iconHelper + codeStr;
-                    
-                    // Eliminar imports problemáticos - usar replace con strings para evitar problemas de escape en template literals anidados
-                    // Reemplazar imports de iconos
-                    codeStr = codeStr.replace(new RegExp('import\\s+.*from\\s+[\'"]@mui/icons-material[\'"];?', 'g'), '// Icons available as components');
-                    
-                    // NO reemplazar creación de theme - dejar que el código use createTheme que ya está disponible globalmente
-                    // Solo eliminar imports de createTheme si están solos
-                    codeStr = codeStr.replace(new RegExp('import\\s+\\{\\s*createTheme\\s*\\}\\s+from\\s+[\'"]@mui/material/styles[\'"];?', 'g'), '// createTheme available globally');
-                    
-                    codeStr = codeStr.replace(new RegExp('import\\s+\\{\\s*ThemeProvider\\s*,\\s*createTheme\\s*\\}\\s+from\\s+[\'"]@mui/material/styles[\'"];?', 'g'), "import { ThemeProvider } from '@mui/material/styles'; // createTheme available globally");
-                    
-                    console.log('=== PREVIEW INIT ===');
-                    console.log('Component name:', componentName);
-                    console.log('Material-UI available:', typeof MaterialUI !== 'undefined');
-                    console.log('createTheme available:', typeof window.createTheme !== 'undefined');
-                    console.log('Theme created:', chromaForgePaletteTheme);
-                    
-                    // Ejecutar el código generado en un contexto con todas las dependencias
-                    (function() {
-                        // Proporcionar Material-UI y React en el scope
-                        const MaterialUI = window.MaterialUI;
-                        const React = window.React;
-                        const ReactDOM = window.ReactDOM;
-                        const { 
-                            ThemeProvider, createTheme, Box, Card, CardContent, CardActions, CardMedia, 
-                            Button, Typography, Chip, IconButton, Stack, Divider, Rating
-                        } = MaterialUI;
-                        const chromaForgePaletteTheme = window.chromaForgePaletteTheme;
-                        
-                        // Hacer createTheme y componentes disponibles globalmente ANTES de ejecutar código
-                        window.createTheme = createTheme;
-                        window.ThemeProvider = ThemeProvider;
-                        window.Box = Box;
-                        window.Card = Card;
-                        window.CardContent = CardContent;
-                        window.CardActions = CardActions;
-                        window.CardMedia = CardMedia;
-                        window.Button = Button;
-                        window.Typography = Typography;
-                        window.Chip = Chip;
-                        window.IconButton = IconButton;
-                        window.Stack = Stack;
-                        window.Divider = Divider;
-                        window.Rating = Rating || window.Rating; // Use helper if Material-UI Rating not available
-                        
-                        // Ejecutar código
-                        eval(codeStr);
-                    })();
-                    
-                    // Obtener el componente
-                    ComponentToRender = eval(componentName);
-                    
-                    if (typeof ComponentToRender !== 'function') {
-                        throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
-                    }
-                    
-                    // Exponer a window
-                    window[componentName] = ComponentToRender;
-                    window['__currentComponent'] = ComponentToRender;
-                    console.log('✅ Component found and exposed:', componentName);
-                    
-                    // Renderizar
-                    setTimeout(() => {
-                        try {
-                            const root = ReactDOM.createRoot(document.getElementById('root'));
-                            root.render(createElement(ComponentToRender));
-                            console.log('✅ Component rendered successfully');
-                        } catch (e) {
-                            console.error('Render error:', e);
-                            const root = ReactDOM.createRoot(document.getElementById('root'));
-                            root.render(createElement('div', { 
-                                style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                            }, 'Render Error: ' + String(e)));
-                        }
-                    }, 100);
-                    
-                } catch (e) {
-                    console.error('Error executing code:', e);
-                    const root = ReactDOM.createRoot(document.getElementById('root'));
-                    root.render(createElement('div', { 
-                        style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                    }, [
-                        createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
-                        createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
-                    ]));
-                }
-            };
-            
-            // Ejecutar inmediatamente ya que Material-UI está cargado
-            executeCodeAndRender();
-        });
-    </script>
-</head>
-<body>
-    <div id="root"></div>
-</body>
-</html>`;
-                                                }
-                                            })()}
-                                            className="w-full h-[600px] border-0 rounded"
-                                            sandbox="allow-scripts allow-same-origin"
-                                            title="Component Preview"
+                                            key={`preview-${aiGeneratedComponent.componentName}-${aiGeneratedComponent.bundleId || 'no-bundle'}-${config.primaryIndex}-${config.isDarkMode}-${theme.action.primary}-${theme.bg.page}`}
+                                            srcDoc={getIframeSrcDoc()}
+                                        className="w-full h-[600px] border-0 rounded"
+                                        sandbox="allow-scripts allow-same-origin allow-popups"
+                                        title="Component Preview"
                                         />
                                 </div>
                             </div>
@@ -3139,286 +2812,21 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                             </div>
                     )}
                             </div>
-            </div>
-
-            {/* --- AI ASSISTANT SIDEBAR (RIGHT) - MATERIAL DESIGN --- */}
-            <div className={`relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 ${isRightSidebarExpanded ? 'w-full md:w-[400px]' : 'w-0 md:w-[24px]'} overflow-hidden`}>
-                {/* Toggle Button */}
-                <button
-                    onClick={() => setIsRightSidebarExpanded(!isRightSidebarExpanded)}
-                    className={`absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isRightSidebarExpanded ? '-left-3 top-6' : 'left-1 top-6'}`}
-                    title={isRightSidebarExpanded ? 'Collapse AI Designer' : 'Expand AI Designer'}
-                    style={{ pointerEvents: 'auto' }}
-                >
-                    {isRightSidebarExpanded ? (
-                        <HiChevronRight className="w-4 h-4" />
-                    ) : (
-                        <HiChevronLeft className="w-4 h-4" />
-                    )}
-                </button>
-                
-                {isRightSidebarExpanded && (
-                <div className="flex-1 overflow-hidden flex flex-col">
-                    {/* Header - Material Design style */}
-                    <div className="p-6 border-b border-white/5 shrink-0">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                    <HiSparkles className="w-4 h-4 text-indigo-500" />
-                                    AI Designer
-                                </h3>
-                                <p className="text-xs text-slate-500 mt-2">
-                                    Powered by Google Material Design
-                                </p>
-                            </div>
-                            {!isPremium && (
-                                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded">
-                                    PRO
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {/* Messages History - Mantener funcionalidad */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
-                        {aiMessages.length === 0 && (
-                            <div className="text-sm text-slate-400 text-center py-8">
-                                <HiSparkles className="w-8 h-8 mx-auto mb-3 text-indigo-500/50" />
-                                <p>Ask me to create UI components!</p>
-                                <p className="text-xs mt-2 text-slate-500">Example: "Create a card UI with primary-600"</p>
-                            </div>
-                        )}
-                        
-                        {aiMessages.map((msg, idx) => (
-                            <div key={idx} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                <div 
-                                    className={`max-w-[85%] rounded-lg px-4 py-2 text-sm ${
-                                        msg.role === 'user' 
-                                            ? 'bg-indigo-600 text-white' 
-                                            : 'bg-slate-800 text-slate-200'
-                                    }`}
-                                >
-                                    {msg.text}
-                                </div>
-                                {msg.code && (
-                                    <div className="w-full mt-2">
-                                        <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs text-slate-400">Generated Code</span>
-                                                <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            const updatedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(msg.code || '', theme)));
-                                                            await navigator.clipboard.writeText(updatedCode);
-                                                            showToast('Code copied to clipboard!');
-                                                        } catch (err) {
-                                                            showToast('Failed to copy code');
-                                                        }
-                                                    }}
-                                                    className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-                                                >
-                                                    <HiClipboard className="w-4 h-4" />
-                                                    Copy
-                                                </button>
-                                            </div>
-                                            <pre className="text-xs text-slate-300 overflow-x-auto max-h-[200px]">
-                                                <code>{removeAllImports(replaceUnsplashUrls(replaceThemeReferences(msg.code || '', theme)))}</code>
-                                            </pre>
-                                        </div>
-                                        {!isPremium && (
-                                            <div className="mt-2 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-lg p-3">
-                                                <p className="text-xs text-slate-400">
-                                                    💡 Preview available in canvas for Pro users
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        
-                        {isAIGenerating && (
-                            <div className="flex flex-col items-start">
-                                <div className="px-3 py-2 rounded-lg text-xs bg-slate-800 text-slate-300 border border-slate-700">
-                                    <div className="flex items-center gap-2">
-                                        <div className="relative w-4 h-4">
-                                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <defs>
-                                                    <linearGradient id="mac-spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stopColor="#ff6b6b" />
-                                                        <stop offset="14.28%" stopColor="#ffa500" />
-                                                        <stop offset="28.57%" stopColor="#ffd700" />
-                                                        <stop offset="42.85%" stopColor="#90ee90" />
-                                                        <stop offset="57.14%" stopColor="#4ecdc4" />
-                                                        <stop offset="71.42%" stopColor="#45b7d1" />
-                                                        <stop offset="85.71%" stopColor="#96ceb4" />
-                                                        <stop offset="100%" stopColor="#ff6b6b" />
-                                                    </linearGradient>
-                                                </defs>
-                                                <circle cx="8" cy="8" r="6" stroke="url(#mac-spinner-gradient)" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 20" fill="none" opacity="0.8">
-                                                    <animateTransform
-                                                        attributeName="transform"
-                                                        type="rotate"
-                                                        from="0 8 8"
-                                                        to="360 8 8"
-                                                        dur="0.8s"
-                                                        repeatCount="indefinite"
-                                                    />
-                                                </circle>
-                                            </svg>
-                                        </div>
-                                        <span>Generating...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        
-                        <div ref={aiMessagesEndRef} />
-                    </div>
-                    
-                    {/* Input Area - Mantener funcionalidad */}
-                    <div className="p-4 border-t border-white/5 shrink-0">
-                        <div className="flex gap-2 items-end">
-                            <textarea
-                                ref={aiPromptRef}
-                                value={aiPrompt}
-                                onChange={(e) => setAiPrompt(e.target.value)}
-                                onKeyDown={(e) => {
-                                    // Enter alone does nothing (allows line break)
-                                }}
-                                placeholder="e.g. Create a card UI with primary-600..."
-                                disabled={isAIGenerating}
-                                rows={1}
-                                className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2 resize-none overflow-hidden bg-slate-800 text-white border-slate-700 placeholder-slate-500"
-                                style={{ 
-                                    minHeight: '40px',
-                                    maxHeight: '200px'
-                                }}
-                            />
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    if (!aiPrompt.trim() || isAIGenerating) return;
-                                    
-                                    const userPrompt = aiPrompt.trim();
-                                    setAiPrompt('');
-                                    setAiMessages(prev => [...prev, { role: 'user', text: userPrompt }]);
-                                    setIsAIGenerating(true);
-                                    setCodeError('');
-                                    
-                                    try {
-                                        // Prepare palette with shades
-                                        const pShades = generateShades(brandPalette[config.primaryIndex] || brandPalette[0], globalConfig);
-                                        const brandWithShades = brandPalette.map(c => ({
-                                            name: c.name,
-                                            hex: c.hex,
-                                            shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
-                                        }));
-                                        const neutralWithShades = neutralPalette.map(c => ({
-                                            name: c.name,
-                                            hex: c.hex,
-                                            shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
-                                        }));
-                                        const semanticWithShades = semanticPalette.map(c => ({
-                                            name: c.name,
-                                            hex: c.hex,
-                                            shades: generateShades(c, globalConfig).map(s => ({ level: s.level, hex: s.hex }))
-                                        }));
-                                        
-                                        const result = await generateUIFromPrompt({
-                                            prompt: userPrompt,
-                                            palette: {
-                                                brand: brandWithShades,
-                                                neutral: neutralWithShades,
-                                                semantic: semanticWithShades
-                                            },
-                                            availableComponents: {
-                                                molecules: molecules.map(m => m.id),
-                                                organisms: organisms.map(o => o.id)
-                                            },
-                                            config
-                                        });
-                                        
-                                        if (result.code) {
-                                            setGeneratedCode(result.code);
-                                            
-                                            // Validar que el código no esté vacío o sea solo comentarios
-                                            const codeWithoutComments = result.code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim();
-                                            if (!codeWithoutComments || codeWithoutComments.length < 50) {
-                                                setCodeError('Generated code is too short or empty. Please try rephrasing your request.');
-                                                setAiMessages(prev => [...prev, { 
-                                                    role: 'assistant', 
-                                                    text: 'The generated code appears to be empty or invalid. Please try rephrasing your request with more specific details.'
-                                                }]);
-                                                return;
-                                            }
-                                            
-                                            // Extracción inteligente del nombre del componente
-                                            let componentName = 'Component';
-                                            
-                                            // 1. Prioridad: Buscar export default
-                                            const exportDefaultMatch = result.code.match(/export\s+default\s+(\w+)/);
-                                            if (exportDefaultMatch) {
-                                                componentName = exportDefaultMatch[1];
-                                            } else {
-                                                // 2. Buscar componentes React (const ComponentName = () => {} o const ComponentName = function() {})
-                                                // Ignorar variables simples como 'theme', 'cardStyle', etc. (nombres que empiezan con minúscula)
-                                                const componentMatches = Array.from(result.code.matchAll(/(?:const|function)\s+([A-Z][a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)\s*)?(?:=>|function)/g));
-                                                
-                                                if (componentMatches.length > 0) {
-                                                    // Tomar el último match (el componente principal, no sub-componentes)
-                                                    componentName = componentMatches[componentMatches.length - 1][1];
-                                                } else {
-                                                    // 3. Fallback: buscar cualquier función con mayúscula inicial que no sea 'React', 'Component', etc.
-                                                    const fallbackMatch = result.code.match(/(?:const|function)\s+([A-Z][a-zA-Z0-9]+)(?:\s*=\s*(?:\([^)]*\)\s*)?=>|(?:\s*\{|\s*\([^)]*\)\s*\{))/);
-                                                    if (fallbackMatch && !['React', 'Component', 'Fragment'].includes(fallbackMatch[1])) {
-                                                        componentName = fallbackMatch[1];
-                                                    }
-                                                }
-                                            }
-                                            
-                                            setOriginalTheme(theme); // Guardar el tema original cuando se genera el componente
-                                            setAiGeneratedComponent({ 
-                                                code: result.code, 
-                                                componentName,
-                                                bundleId: (result as any).bundleId || null
-                                            });
-                                            setAiMessages(prev => [...prev, { 
-                                                role: 'assistant', 
-                                                text: "I've generated what you requested and it's in the canvas",
-                                                code: result.code
-                                            }]);
-                                        } else {
-                                            setCodeError(result.description);
-                                            setAiMessages(prev => [...prev, { 
-                                                role: 'assistant', 
-                                                text: result.description || 'Error generating component'
-                                            }]);
-                                        }
-                                    } catch (error: any) {
-                                        setCodeError(error.message || 'Unknown error');
-                                        setAiMessages(prev => [...prev, { 
-                                            role: 'assistant', 
-                                            text: `Error: ${error.message || 'Unknown error'}`
-                                        }]);
-                                    } finally {
-                                        setIsAIGenerating(false);
-                                    }
-                                }}
-                                disabled={isAIGenerating || !aiPrompt.trim()}
-                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
-                                    isAIGenerating || !aiPrompt.trim() 
-                                        ? 'bg-slate-700 text-slate-400' 
-                                        : 'bg-indigo-600 text-white hover:bg-indigo-500'
-                                }`}
-                            >
-                                <FaPaperPlane className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
                 )}
             </div>
+
+            {/* --- CARDS SIDEBAR (RIGHT) --- */}
+            <CardsSidebar
+                theme={theme as any}
+                selectedCardId={selectedCardId}
+                onSelectCard={(cardId) => {
+                    setSelectedCardId(cardId);
+                    setSelectedComponent(null as any);
+                    setAiGeneratedComponent(null);
+                }}
+                isExpanded={isCardsSidebarExpanded}
+                onToggle={() => setIsCardsSidebarExpanded(!isCardsSidebarExpanded)}
+            />
         </div>
         
         {/* Global Toast */}

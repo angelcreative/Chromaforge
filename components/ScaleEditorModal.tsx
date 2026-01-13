@@ -403,23 +403,6 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                      </div>
                                  </div>
                              </div>
-
-                             {/* Steps Slider */}
-                             <div className="mt-6">
-                                <div className="flex justify-between mb-2">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase">Steps</label>
-                                    <span className="text-[10px] font-mono text-slate-300">{config.linearConfig.steps}</span>
-                                </div>
-                                <input 
-                                    type="range" min="3" max="20" step="1"
-                                    value={config.linearConfig.steps}
-                                    onChange={(e) => setConfig({
-                                        ...config, 
-                                        linearConfig: { ...config.linearConfig!, steps: Number(e.target.value) }
-                                    })}
-                                    className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                                />
-                             </div>
                          </div>
                      </div>
                  )}
