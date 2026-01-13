@@ -19,8 +19,8 @@ WORKDIR /app
 # Copiar package files
 COPY package*.json ./
 
-# Instalar solo dependencias de producción
-RUN npm ci --only=production
+# Instalar dependencias (esbuild se necesita en runtime)
+RUN npm ci --production
 
 # Copiar archivos builded del frontend
 COPY --from=builder /app/dist ./dist
