@@ -380,23 +380,30 @@ app.post('/api/ui-design', async (req, res) => {
     
     5. **Component Structure**: 
        - Create complete, functional React components
-       - Use Material-UI's ThemeProvider - the theme is already created and available as 'chromaForgePaletteTheme'
-       - DO NOT create a new theme - use the existing chromaForgePaletteTheme
+       - You can create your own theme using createTheme() OR use the existing 'chromaForgePaletteTheme'
+       - If you create a theme, use the ChromaForge palette colors provided above
        - Use sx prop or styled components for styling
        - Example:
-         import { ThemeProvider } from '@mui/material/styles';
+         import { ThemeProvider, createTheme } from '@mui/material/styles';
          import { Button, Card, CardContent, Typography } from '@mui/material';
-         // Note: Material Icons are loaded via CDN, use them directly (e.g., <ShoppingCart />)
+         // Icons are available as components (Favorite, Star, ShoppingCart, etc.)
+         
+         const theme = createTheme({
+           palette: {
+             primary: { main: '${primaryColor}' },
+             // ... use ChromaForge colors
+           }
+         });
          
          const GeneratedComponent = () => {
            return (
-             <ThemeProvider theme={chromaForgePaletteTheme}>
+             <ThemeProvider theme={theme}>
                <Card>
                  <CardContent>
                    <Typography variant="h5" color="text.primary">
                      Title
                    </Typography>
-                   <Button variant="contained" color="primary">
+                   <Button variant="contained" color="primary" startIcon={<ShoppingCart />}>
                      Action
                    </Button>
                  </CardContent>
@@ -404,8 +411,8 @@ app.post('/api/ui-design', async (req, res) => {
              </ThemeProvider>
            );
          };
-       - IMPORTANT: Use 'chromaForgePaletteTheme' (already created) instead of creating a new theme
-       - IMPORTANT: Do NOT import from @mui/icons-material - icons are available globally
+       - IMPORTANT: If creating a theme, ALWAYS use colors from ChromaForge palette above
+       - IMPORTANT: Icons are available as React components (Favorite, Star, ShoppingCart, etc.) - do NOT import them
     
     6. **Images**: 
        - Use Picsum Photos: https://picsum.photos/[width]/[height]?random=[seed]

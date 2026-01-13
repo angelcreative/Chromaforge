@@ -2676,54 +2676,170 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     // Limpiar export default del código
                     let codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
                     
-                    // Reemplazar creación de theme por uso del tema existente
-                    codeStr = codeStr.replace(/const\s+theme\s*=\s*createTheme\([^)]+\);/g, '// Theme already created as chromaForgePaletteTheme');
-                    codeStr = codeStr.replace(/import\s+.*createTheme.*from\s+['"]@mui\/material\/styles['"];?/g, '// createTheme not needed, use chromaForgePaletteTheme');
-                    codeStr = codeStr.replace(/import\s+.*ThemeProvider.*createTheme.*from\s+['"]@mui\/material\/styles['"];?/g, "import { ThemeProvider } from '@mui/material/styles';");
+                    // Crear funciones helper para TODOS los iconos Material comunes
+                    const iconHelper = \`
+                    // Helper para crear iconos Material simples
+                    const createMaterialIcon = (name, props = {}) => {
+                        const { sx, color, fontSize, ...rest } = props;
+                        const style = {
+                            fontSize: fontSize || 24,
+                            color: color || 'currentColor',
+                            ...(sx || {})
+                        };
+                        return React.createElement('span', { 
+                            className: 'material-icons', 
+                            style: style,
+                            ...rest
+                        }, name);
+                    };
+                    // Iconos comunes
+                    const ShoppingCart = (props) => createMaterialIcon('shopping_cart', props);
+                    const Home = (props) => createMaterialIcon('home', props);
+                    const Search = (props) => createMaterialIcon('search', props);
+                    const Menu = (props) => createMaterialIcon('menu', props);
+                    const Favorite = (props) => createMaterialIcon('favorite', props);
+                    const Add = (props) => createMaterialIcon('add', props);
+                    const Delete = (props) => createMaterialIcon('delete', props);
+                    const Edit = (props) => createMaterialIcon('edit', props);
+                    const Close = (props) => createMaterialIcon('close', props);
+                    const Check = (props) => createMaterialIcon('check', props);
+                    const ArrowBack = (props) => createMaterialIcon('arrow_back', props);
+                    const ArrowForward = (props) => createMaterialIcon('arrow_forward', props);
+                    const Star = (props) => createMaterialIcon('star', props);
+                    const Share = (props) => createMaterialIcon('share', props);
+                    const AccessTime = (props) => createMaterialIcon('access_time', props);
+                    const SignalCellularAlt = (props) => createMaterialIcon('signal_cellular_alt', props);
+                    const Restaurant = (props) => createMaterialIcon('restaurant', props);
+                    const MoreVert = (props) => createMaterialIcon('more_vert', props);
+                    const MoreHoriz = (props) => createMaterialIcon('more_horiz', props);
+                    const Settings = (props) => createMaterialIcon('settings', props);
+                    const Notifications = (props) => createMaterialIcon('notifications', props);
+                    const Person = (props) => createMaterialIcon('person', props);
+                    const Email = (props) => createMaterialIcon('email', props);
+                    const Phone = (props) => createMaterialIcon('phone', props);
+                    const LocationOn = (props) => createMaterialIcon('location_on', props);
+                    const CalendarToday = (props) => createMaterialIcon('calendar_today', props);
+                    const Lock = (props) => createMaterialIcon('lock', props);
+                    const LockOpen = (props) => createMaterialIcon('lock_open', props);
+                    const Visibility = (props) => createMaterialIcon('visibility', props);
+                    const VisibilityOff = (props) => createMaterialIcon('visibility_off', props);
+                    const Download = (props) => createMaterialIcon('download', props);
+                    const Upload = (props) => createMaterialIcon('upload', props);
+                    const FilterList = (props) => createMaterialIcon('filter_list', props);
+                    const Sort = (props) => createMaterialIcon('sort', props);
+                    const Refresh = (props) => createMaterialIcon('refresh', props);
+                    const PlayArrow = (props) => createMaterialIcon('play_arrow', props);
+                    const Pause = (props) => createMaterialIcon('pause', props);
+                    const Stop = (props) => createMaterialIcon('stop', props);
+                    const SkipNext = (props) => createMaterialIcon('skip_next', props);
+                    const SkipPrevious = (props) => createMaterialIcon('skip_previous', props);
+                    const VolumeUp = (props) => createMaterialIcon('volume_up', props);
+                    const VolumeDown = (props) => createMaterialIcon('volume_down', props);
+                    const VolumeOff = (props) => createMaterialIcon('volume_off', props);
+                    const Fullscreen = (props) => createMaterialIcon('fullscreen', props);
+                    const FullscreenExit = (props) => createMaterialIcon('fullscreen_exit', props);
+                    const ExpandMore = (props) => createMaterialIcon('expand_more', props);
+                    const ExpandLess = (props) => createMaterialIcon('expand_less', props);
+                    const ChevronLeft = (props) => createMaterialIcon('chevron_left', props);
+                    const ChevronRight = (props) => createMaterialIcon('chevron_right', props);
+                    const ChevronUp = (props) => createMaterialIcon('chevron_up', props);
+                    const ChevronDown = (props) => createMaterialIcon('chevron_down', props);
+                    const ArrowUpward = (props) => createMaterialIcon('arrow_upward', props);
+                    const ArrowDownward = (props) => createMaterialIcon('arrow_downward', props);
+                    const ArrowLeft = (props) => createMaterialIcon('arrow_back', props);
+                    const ArrowRight = (props) => createMaterialIcon('arrow_forward', props);
+                    const Info = (props) => createMaterialIcon('info', props);
+                    const Warning = (props) => createMaterialIcon('warning', props);
+                    const Error = (props) => createMaterialIcon('error', props);
+                    const CheckCircle = (props) => createMaterialIcon('check_circle', props);
+                    const Cancel = (props) => createMaterialIcon('cancel', props);
+                    const Help = (props) => createMaterialIcon('help', props);
+                    const HelpOutline = (props) => createMaterialIcon('help_outline', props);
+                    const QuestionAnswer = (props) => createMaterialIcon('question_answer', props);
+                    const Chat = (props) => createMaterialIcon('chat', props);
+                    const Comment = (props) => createMaterialIcon('comment', props);
+                    const ThumbUp = (props) => createMaterialIcon('thumb_up', props);
+                    const ThumbDown = (props) => createMaterialIcon('thumb_down', props);
+                    const Bookmark = (props) => createMaterialIcon('bookmark', props);
+                    const BookmarkBorder = (props) => createMaterialIcon('bookmark_border', props);
+                    const Flag = (props) => createMaterialIcon('flag', props);
+                    const Report = (props) => createMaterialIcon('report', props);
+                    const Block = (props) => createMaterialIcon('block', props);
+                    const ReportProblem = (props) => createMaterialIcon('report_problem', props);
+                    const NewReleases = (props) => createMaterialIcon('new_releases', props);
+                    const Update = (props) => createMaterialIcon('update', props);
+                    const Build = (props) => createMaterialIcon('build', props);
+                    const Code = (props) => createMaterialIcon('code', props);
+                    const BugReport = (props) => createMaterialIcon('bug_report', props);
+                    const Extension = (props) => createMaterialIcon('extension', props);
+                    const ExtensionOff = (props) => createMaterialIcon('extension_off', props);
+                    const Dashboard = (props) => createMaterialIcon('dashboard', props);
+                    const ViewModule = (props) => createMaterialIcon('view_module', props);
+                    const ViewList = (props) => createMaterialIcon('view_list', props);
+                    const ViewComfy = (props) => createMaterialIcon('view_comfy', props);
+                    const ViewCompact = (props) => createMaterialIcon('view_compact', props);
+                    const GridView = (props) => createMaterialIcon('grid_view', props);
+                    const TableView = (props) => createMaterialIcon('table_view', props);
+                    const ViewAgenda = (props) => createMaterialIcon('view_agenda', props);
+                    const ViewWeek = (props) => createMaterialIcon('view_week', props);
+                    const ViewDay = (props) => createMaterialIcon('view_day', props);
+                    const ViewHeadline = (props) => createMaterialIcon('view_headline', props);
+                    const ViewQuilt = (props) => createMaterialIcon('view_quilt', props);
+                    const ViewStream = (props) => createMaterialIcon('view_stream', props);
+                    const ViewColumn = (props) => createMaterialIcon('view_column', props);
+                    const ViewCarousel = (props) => createMaterialIcon('view_carousel', props);
+                    const ViewArray = (props) => createMaterialIcon('view_array', props);
+                    const ViewSidebar = (props) => createMaterialIcon('view_sidebar', props);
+                    \`;
                     
-                    // Reemplazar referencias a variable 'theme' standalone (no theme.xxx) por chromaForgePaletteTheme
-                    codeStr = codeStr.replace(/\btheme\s*=\s*createTheme\(/g, 'chromaForgePaletteTheme = createTheme(');
+                    // Prepend icon helpers
+                    codeStr = iconHelper + codeStr;
+                    
+                    // Eliminar imports problemáticos
+                    codeStr = codeStr.replace(/import\s+.*from\s+['"]@mui\/icons-material['"];?/g, '// Icons available as components');
+                    
+                    // Reemplazar creación de theme - usar el tema existente
+                    codeStr = codeStr.replace(/const\s+chromaForgePaletteTheme\s*=\s*createTheme\(/g, '// Theme already created, using existing chromaForgePaletteTheme');
+                    codeStr = codeStr.replace(/const\s+theme\s*=\s*createTheme\(/g, '// Theme already created as chromaForgePaletteTheme');
+                    
+                    // Reemplazar imports de createTheme
+                    codeStr = codeStr.replace(/import\s+\{[^}]*createTheme[^}]*\}\s+from\s+['"]@mui\/material\/styles['"];?/g, "import { ThemeProvider } from '@mui/material/styles';");
+                    
+                    // Reemplazar uso de theme variable por chromaForgePaletteTheme
                     codeStr = codeStr.replace(/<ThemeProvider\s+theme\s*=\s*\{theme\}/g, '<ThemeProvider theme={chromaForgePaletteTheme}');
                     codeStr = codeStr.replace(/<ThemeProvider\s+theme\s*=\s*theme\s*>/g, '<ThemeProvider theme={chromaForgePaletteTheme}>');
-                    
-                    // Eliminar imports de @mui/icons-material (no funcionan en CDN)
-                    codeStr = codeStr.replace(/import\s+\{[^}]+\}\s+from\s+['"]@mui\/icons-material['"];?/g, '// Icons: Use Material Icons via <span className="material-icons">icon_name</span> or create simple SVG icons');
-                    
-                    // Crear funciones helper para iconos comunes si se usan
-                    const iconHelper = `
-                    // Helper para crear iconos Material simples
-                    const createMaterialIcon = (name) => {
-                        return React.createElement('span', { className: 'material-icons', style: { fontSize: 'inherit' } }, name);
-                    };
-                    const ShoppingCart = (props) => createMaterialIcon('shopping_cart');
-                    const Home = (props) => createMaterialIcon('home');
-                    const Search = (props) => createMaterialIcon('search');
-                    const Menu = (props) => createMaterialIcon('menu');
-                    const Favorite = (props) => createMaterialIcon('favorite');
-                    const Add = (props) => createMaterialIcon('add');
-                    const Delete = (props) => createMaterialIcon('delete');
-                    const Edit = (props) => createMaterialIcon('edit');
-                    const Close = (props) => createMaterialIcon('close');
-                    const Check = (props) => createMaterialIcon('check');
-                    const ArrowBack = (props) => createMaterialIcon('arrow_back');
-                    const ArrowForward = (props) => createMaterialIcon('arrow_forward');
-                    `;
-                    codeStr = iconHelper + codeStr;
+                    codeStr = codeStr.replace(/theme\s*=\s*\{theme\}/g, 'theme={chromaForgePaletteTheme}');
                     
                     console.log('=== PREVIEW INIT ===');
                     console.log('Component name:', componentName);
                     console.log('Material-UI available:', typeof MaterialUI !== 'undefined');
                     console.log('Theme created:', chromaForgePaletteTheme);
                     
-                    // Ejecutar el código generado en un contexto aislado
+                    // Ejecutar el código generado en un contexto con todas las dependencias
                     (function() {
                         // Proporcionar Material-UI y React en el scope
                         const MaterialUI = window.MaterialUI;
                         const React = window.React;
                         const ReactDOM = window.ReactDOM;
-                        const { ThemeProvider, createTheme } = MaterialUI;
+                        const { ThemeProvider, createTheme, Box, Card, CardContent, CardActions, CardMedia, Button, Typography, Chip, IconButton, Stack, Divider } = MaterialUI;
                         const chromaForgePaletteTheme = window.chromaForgePaletteTheme;
                         
+                        // Hacer createTheme y componentes disponibles globalmente
+                        window.createTheme = createTheme;
+                        window.ThemeProvider = ThemeProvider;
+                        window.Box = Box;
+                        window.Card = Card;
+                        window.CardContent = CardContent;
+                        window.CardActions = CardActions;
+                        window.CardMedia = CardMedia;
+                        window.Button = Button;
+                        window.Typography = Typography;
+                        window.Chip = Chip;
+                        window.IconButton = IconButton;
+                        window.Stack = Stack;
+                        window.Divider = Divider;
+                        
+                        // Ejecutar código
                         eval(codeStr);
                     })();
                     
