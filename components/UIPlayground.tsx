@@ -2510,395 +2510,192 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 <div className="lg:col-span-2">
                                     <div className="bg-white rounded-lg p-6 min-h-[600px] overflow-auto border" style={{ borderColor: theme.border.subtle }}>
                                         <iframe
-                                            key={`preview-${aiGeneratedComponent.componentName}-${JSON.stringify(theme.action.primary)}`}
+                                            key={`preview-${aiGeneratedComponent.componentName}-${config.primaryIndex}-${config.isDarkMode}-${theme.action.primary}-${theme.bg.page}`}
                                             srcDoc={(() => {
                                                 const processedCode = removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)));
                                                 const code = escapeCodeForTemplate(processedCode);
-                                                const usedComponents = detectRadixComponents(aiGeneratedComponent.code);
                                                 
-                                                // Mapa de scripts UMD de Radix UI
-                                                const componentScripts: { [key: string]: string } = {
-                                                    'AspectRatio': 'https://unpkg.com/@radix-ui/react-aspect-ratio@1.1.8/dist/index.umd.js',
-                                                    'Avatar': 'https://unpkg.com/@radix-ui/react-avatar@1.1.1/dist/index.umd.js',
-                                                    'ScrollArea': 'https://unpkg.com/@radix-ui/react-scroll-area@1.1.0/dist/index.umd.js',
-                                                    'Toolbar': 'https://unpkg.com/@radix-ui/react-toolbar@1.1.0/dist/index.umd.js',
-                                                    'Tabs': 'https://unpkg.com/@radix-ui/react-tabs@1.1.0/dist/index.umd.js',
-                                                    'Popover': 'https://unpkg.com/@radix-ui/react-popover@1.1.0/dist/index.umd.js',
-                                                    'Card': 'https://unpkg.com/@radix-ui/react-card@1.0.0/dist/index.umd.js',
-                                                    'Dialog': 'https://unpkg.com/@radix-ui/react-dialog@1.1.0/dist/index.umd.js',
-                                                    'Select': 'https://unpkg.com/@radix-ui/react-select@2.1.0/dist/index.umd.js',
-                                                    'Checkbox': 'https://unpkg.com/@radix-ui/react-checkbox@1.1.0/dist/index.umd.js',
-                                                    'RadioGroup': 'https://unpkg.com/@radix-ui/react-radio-group@1.2.0/dist/index.umd.js',
-                                                    'Switch': 'https://unpkg.com/@radix-ui/react-switch@1.1.0/dist/index.umd.js',
-                                                    'Accordion': 'https://unpkg.com/@radix-ui/react-accordion@1.2.0/dist/index.umd.js',
-                                                    'AlertDialog': 'https://unpkg.com/@radix-ui/react-alert-dialog@1.1.0/dist/index.umd.js',
-                                                    'DropdownMenu': 'https://unpkg.com/@radix-ui/react-dropdown-menu@2.1.0/dist/index.umd.js',
-                                                    'HoverCard': 'https://unpkg.com/@radix-ui/react-hover-card@1.1.0/dist/index.umd.js',
-                                                    'Tooltip': 'https://unpkg.com/@radix-ui/react-tooltip@1.1.0/dist/index.umd.js',
-                                                    'Progress': 'https://unpkg.com/@radix-ui/react-progress@1.1.0/dist/index.umd.js',
-                                                    'Slider': 'https://unpkg.com/@radix-ui/react-slider@1.2.0/dist/index.umd.js',
-                                                    'Separator': 'https://unpkg.com/@radix-ui/react-separator@1.1.0/dist/index.umd.js',
-                                                    'Label': 'https://unpkg.com/@radix-ui/react-label@2.1.0/dist/index.umd.js',
-                                                    'Toast': 'https://unpkg.com/@radix-ui/react-toast@1.2.0/dist/index.umd.js',
-                                                    'Collapsible': 'https://unpkg.com/@radix-ui/react-collapsible@1.1.0/dist/index.umd.js',
-                                                    'ContextMenu': 'https://unpkg.com/@radix-ui/react-context-menu@2.2.0/dist/index.umd.js',
-                                                    'NavigationMenu': 'https://unpkg.com/@radix-ui/react-navigation-menu@1.2.0/dist/index.umd.js',
-                                                    'Menubar': 'https://unpkg.com/@radix-ui/react-menubar@1.1.0/dist/index.umd.js'
-                                                };
-                                                
-                                                const scripts = usedComponents
-                                                    .map(comp => componentScripts[comp])
-                                                    .filter(Boolean)
-                                                    .map(url => `<script src="${url}"></script>`)
-                                                    .join('\n                                                    ');
+                                                // Obtener TODOS los colores de la paleta actual para inyectarlos en el tema
+                                                const primaryColor = theme.action.primary;
+                                                const primaryHover = theme.action.primaryHover;
+                                                const secondaryColor = theme.action.secondary || theme.action.primary;
+                                                const secondaryBg = theme.action.secondaryBg;
+                                                const bgDefault = theme.bg.page;
+                                                const bgPaper = theme.bg.card;
+                                                const textPrimary = theme.text.main;
+                                                const textSecondary = theme.text.secondary;
+                                                // Disabled siempre usa neutrales
+                                                const disabledBg = theme.disabled.bg;
+                                                const disabledText = theme.disabled.text;
+                                                const disabledBorder = theme.disabled.border;
+                                                // Semantic colors
+                                                const errorColor = theme.semantic.error.main;
+                                                const warningColor = theme.semantic.warning.main;
+                                                const infoColor = theme.semantic.info.main;
+                                                const successColor = theme.semantic.success.main;
                                                 
                                                 return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        body { 
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: ${bgDefault};
+        }
     </style>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    ${scripts}
-    <script type="module">
-        // Cargar lucide-react usando ES modules DESPUÉS de que React esté disponible
-        (async function() {
-            // Esperar a que React esté disponible
-            while (typeof React === 'undefined' || !React.forwardRef) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-            try {
-                // Importar lucide-react desde CDN
-                const lucideModule = await import('https://cdn.skypack.dev/lucide-react');
-                const lucideReact = lucideModule;
-                
-                // Exponer TODOS los iconos de lucide-react globalmente
-                Object.keys(lucideReact).forEach(iconName => {
-                    // Solo exportar componentes (nombres que empiezan con mayúscula y son funciones)
-                    if (typeof lucideReact[iconName] === 'function' && 
-                        iconName[0] === iconName[0].toUpperCase() &&
-                        iconName !== 'createLucideIcon' &&
-                        iconName !== 'Icon') {
-                        window[iconName] = lucideReact[iconName];
-                    }
-                });
-                
-                // También hacer lucideReact disponible
-                window.lucideReact = lucideReact;
-                window.lucideReactReady = true;
-                console.log('✅ Lucide icons loaded:', Object.keys(window).filter(k => window[k] && typeof window[k] === 'function' && k[0] === k[0].toUpperCase() && k.length > 2).length);
-            } catch (e) {
-                console.error('❌ Error loading lucide-react:', e);
-                window.lucideReactReady = false;
-            }
-        })();
-    </script>
-</head>
-<body>
-    <div id="root"></div>
+    <script src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"></script>
+    <script src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"></script>
+    <script src="https://unpkg.com/@mui/material@5/dist/material-ui.development.js"></script>
+    <script src="https://unpkg.com/@mui/icons-material@5/index.js"></script>
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, createElement } = React;
+        const { ThemeProvider, createTheme } = MaterialUI;
         
-        // ===== FILTER DOM PROPS =====
-        const filterDOMProps = (props) => {
-            if (!props) return {};
-            
-            const invalidProps = [
-                'asChild', 'delayMs', 'delayDuration', 'skipDelayDuration',
-                'disableHoverableContent', 'forceMount', 'defaultOpen', 'open',
-                'onOpenChange', 'modal', 'defaultChecked', 'checked', 'onCheckedChange',
-                'disabled', 'required', 'name', 'value', 'defaultValue', 'onValueChange',
-                'orientation', 'dir', 'loop', 'collapsible', 'type', 'variant',
-                'side', 'sideOffset', 'align', 'alignOffset', 'sticky', 'hideWhenDetached',
-                'trigger', 'onSelect', 'onEscapeKeyDown', 'onPointerDownOutside',
-                'onInteractOutside', 'onFocusOutside', 'radixPortalClassName'
-            ];
-            
-            const filtered = {};
-            Object.keys(props).forEach(key => {
-                if (
-                    !invalidProps.includes(key) &&
-                    (key === 'className' ||
-                     key === 'style' ||
-                     key === 'id' ||
-                     key === 'children' ||
-                     key.startsWith('data-') ||
-                     key.startsWith('aria-') ||
-                     (key.startsWith('on') && typeof props[key] === 'function' && 
-                      ['onClick', 'onMouseEnter', 'onMouseLeave', 'onFocus', 'onBlur', 'onKeyDown', 'onKeyUp', 'onChange', 'onSubmit'].some(valid => key === valid || key.toLowerCase().includes(valid.toLowerCase()))) ||
-                     ['src', 'alt', 'href', 'target', 'rel', 'type', 'role', 'tabIndex', 'title', 'placeholder'].includes(key))
-                ) {
-                    filtered[key] = props[key];
-                }
-            });
-            
-            return filtered;
-        };
-        
-        // ===== UNIVERSAL FALLBACK SYSTEM =====
-        
-        const createFallbackComponent = (name, defaultProps = {}) => {
-            return (props) => {
-                const { children, ...restProps } = props || {};
-                const filteredProps = filterDOMProps(restProps);
-                return createElement('div', { ...defaultProps, ...filteredProps }, children);
-            };
-        };
-        
-        const createComponentNamespace = (name, subComponents = []) => {
-            const namespace = {};
-            subComponents.forEach(sub => {
-                namespace[sub] = createFallbackComponent(\`\${name}.\${sub}\`);
-            });
-            namespace.Root = createFallbackComponent(\`\${name}.Root\`);
-            return namespace;
-        };
-        
-        const radixComponentMap = {
-            AspectRatio: ['Root'],
-            Avatar: ['Root', 'Image', 'Fallback'],
-            ScrollArea: ['Root', 'Viewport', 'Scrollbar', 'Thumb'],
-            Toolbar: ['Root', 'Button', 'Separator'],
-            Tabs: ['Root', 'List', 'Trigger', 'Content'],
-            Popover: ['Root', 'Trigger', 'Content', 'Close'],
-            Card: ['Root', 'Header', 'Title', 'Description', 'Content', 'Footer'],
-            Dialog: ['Root', 'Trigger', 'Content', 'Title', 'Description', 'Close'],
-            Select: ['Root', 'Trigger', 'Content', 'Item'],
-            Checkbox: ['Root', 'Indicator'],
-            RadioGroup: ['Root', 'Item', 'Indicator'],
-            Switch: ['Root', 'Thumb'],
-            Accordion: ['Root', 'Item', 'Trigger', 'Content'],
-            AlertDialog: ['Root', 'Trigger', 'Content', 'Title', 'Description', 'Action', 'Cancel'],
-            DropdownMenu: ['Root', 'Trigger', 'Content', 'Item'],
-            HoverCard: ['Root', 'Trigger', 'Content'],
-            Tooltip: ['Root', 'Trigger', 'Content', 'Arrow'],
-            Progress: ['Root', 'Indicator'],
-            Slider: ['Root', 'Track', 'Range', 'Thumb'],
-            Separator: ['Root'],
-            Label: ['Root'],
-            Toast: ['Root', 'Title', 'Description', 'Close', 'Viewport'],
-            Collapsible: ['Root', 'Trigger', 'Content'],
-            ContextMenu: ['Root', 'Trigger', 'Content', 'Item'],
-            NavigationMenu: ['Root', 'List', 'Item', 'Trigger', 'Content'],
-            Menubar: ['Root', 'Menu', 'Trigger', 'Content', 'Item']
-        };
-        
-        const loadRadixComponent = (name) => {
-            const possibleNames = [
-                \`RadixUI\${name}\`,
-                \`RadixUI\${name.replace(/([A-Z])/g, '-$1').toLowerCase()}\`,
-                \`@radix-ui/react-\${name.replace(/([A-Z])/g, '-$1').toLowerCase()}\`
-            ];
-            
-            for (const possibleName of possibleNames) {
-                if (window[possibleName]) return window[possibleName];
-                if (window.RadixUI && window.RadixUI[name]) return window.RadixUI[name];
-            }
-            
-            const subComponents = radixComponentMap[name] || ['Root'];
-            return createComponentNamespace(name, subComponents);
-        };
-        
-        const RadixComponents = {};
-        Object.keys(radixComponentMap).forEach(name => {
-            RadixComponents[name] = loadRadixComponent(name);
-        });
-        
-        Object.keys(RadixComponents).forEach(name => {
-            window[name] = RadixComponents[name];
-        });
-        
-        const {
-            AspectRatio, Avatar, ScrollArea, Toolbar, Tabs, Popover,
-            Card, Dialog, Select, Checkbox, RadioGroup, Switch,
-            Accordion, AlertDialog, DropdownMenu, HoverCard, Tooltip,
-            Progress, Slider, Separator, Label, Toast, Collapsible,
-            ContextMenu, NavigationMenu, Menubar
-        } = RadixComponents;
-        
-        // Make components available globally for the generated code
-        window.Avatar = Avatar;
-        window.ScrollArea = ScrollArea;
-        window.Tabs = Tabs;
-        window.AspectRatio = AspectRatio;
-        window.Toolbar = Toolbar;
-        window.Popover = Popover;
-        window.Card = Card;
-        window.Dialog = Dialog;
-        window.Select = Select;
-        window.Checkbox = Checkbox;
-        window.RadioGroup = RadioGroup;
-        window.Switch = Switch;
-        window.Accordion = Accordion;
-        window.AlertDialog = AlertDialog;
-        window.DropdownMenu = DropdownMenu;
-        window.HoverCard = HoverCard;
-        window.Tooltip = Tooltip;
-        window.Progress = Progress;
-        window.Slider = Slider;
-        window.Separator = Separator;
-        window.Label = Label;
-        window.Toast = Toast;
-        window.Collapsible = Collapsible;
-        window.ContextMenu = ContextMenu;
-        window.NavigationMenu = NavigationMenu;
-        window.Menubar = Menubar;
-        
-        // ===== UNIVERSAL ICON SYSTEM =====
-        
-        const createIconFallback = (name) => {
-            return (props = {}) => {
-                const { size = 24, color = 'currentColor', ...rest } = props;
-                return createElement('svg', {
-                    width: size,
-                    height: size,
-                    viewBox: '0 0 24 24',
-                    fill: 'none',
-                    stroke: color,
-                    strokeWidth: 2,
-                    strokeLinecap: 'round',
-                    strokeLinejoin: 'round',
-                    ...rest
-                }, createElement('circle', { cx: 12, cy: 12, r: 10 }));
-            };
-        };
-        
-        // Create all common lucide-react icons
-        const iconNames = [
-            'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'MoreVertical', 'MoreHorizontal',
-            'Phone', 'Video', 'Send', 'Plus', 'Minus', 'Smile', 'Camera', 'Mic', 
-            'CheckCheck', 'Search', 'MapPin', 'ShoppingCart', 'Menu', 'Heart', 'Star', 
-            'Clock', 'Home', 'User', 'ChevronDown', 'ChevronUp', 'ChevronLeft', 'ChevronRight', 
-            'X', 'Check', 'AlertCircle', 'Info', 'Warning', 'Trash', 'Edit', 'Copy', 
-            'Download', 'Upload', 'Filter', 'Settings', 'Bell', 'Mail', 'Lock', 'Unlock', 
-            'Eye', 'EyeOff', 'Flame', 'Share2', 'Share', 'History', 'Grid', 'List', 
-            'Image', 'File', 'Folder', 'Tag', 'Bookmark', 'ThumbsUp', 'ThumbsDown', 
-            'Message', 'Comment', 'Like', 'Dislike', 'Maximize', 'Minimize', 'Close',
-            'HelpCircle', 'Info', 'AlertTriangle', 'CheckCircle', 'XCircle'
-        ];
-        
-        iconNames.forEach(name => {
-            window[name] = createIconFallback(name);
-        });
-        
-        // Also make them available as const for direct use
-        const ArrowLeft = createIconFallback('ArrowLeft');
-        const MoreVertical = createIconFallback('MoreVertical');
-        const Phone = createIconFallback('Phone');
-        const Video = createIconFallback('Video');
-        const Send = createIconFallback('Send');
-        const Plus = createIconFallback('Plus');
-        const Smile = createIconFallback('Smile');
-        const Camera = createIconFallback('Camera');
-        const Mic = createIconFallback('Mic');
-        const CheckCheck = createIconFallback('CheckCheck');
-        const Search = createIconFallback('Search');
-        const MapPin = createIconFallback('MapPin');
-        const ShoppingCart = createIconFallback('ShoppingCart');
-        const Menu = createIconFallback('Menu');
-        const Heart = createIconFallback('Heart');
-        const Star = createIconFallback('Star');
-        const Clock = createIconFallback('Clock');
-        const Home = createIconFallback('Home');
-        const User = createIconFallback('User');
-        
-        // Proxy for any icon not explicitly defined - creates fallbacks dynamically
-        const lucideReact = new Proxy({}, {
-            get: (target, prop) => {
-                // Si el icono está en window, usarlo
-                if (window[prop] && typeof window[prop] === 'function') {
-                    return window[prop];
-                }
-                // Si lucideReact real está disponible, intentar cargar desde ahí
-                if (window.lucideReact && typeof window.lucideReact === 'object' && window.lucideReact[prop]) {
-                    window[prop] = window.lucideReact[prop];
-                    return window[prop];
-                }
-                // Si no, crear un fallback dinámico y guardarlo en window
-                if (typeof prop === 'string' && prop.length > 0) {
-                    const iconName = prop;
-                    if (!window[iconName]) {
-                        window[iconName] = createIconFallback(iconName);
-                    }
-                    return window[iconName];
-                }
-                // Fallback genérico si prop no es string válido
-                return createIconFallback('HelpCircle');
-            }
-        });
-        
-        // Make lucide-react available globally
-        window.lucideReact = lucideReact;
-        
-        // ===== ICON DETECTION AND AUTO-EXPOSURE =====
-        
-        // Función para detectar y exponer iconos usados en el código
-        const detectAndExposeIcons = (codeStr) => {
-            // Buscar todos los iconos usados: <IconName o IconName(
-            const iconPattern = /<([A-Z][a-zA-Z0-9]*)\s|([A-Z][a-zA-Z0-9]*)\s*\(/g;
-            const matches = [...codeStr.matchAll(iconPattern)];
-            const usedIcons = new Set();
-            
-            matches.forEach(match => {
-                const iconName = match[1] || match[2];
-                // Filtrar componentes conocidos de React/Radix
-                if (iconName && 
-                    !['React', 'Component', 'Fragment', 'Root', 'Image', 'Fallback', 'Viewport', 'Scrollbar', 'Thumb', 'Trigger', 'Content', 'List', 'Item', 'Field', 'Label', 'Control', 'Message', 'Submit', 'Indicator', 'Separator', 'Avatar', 'Form', 'Checkbox', 'RadioGroup', 'Switch', 'Select', 'Tabs', 'Dialog', 'Popover', 'Accordion', 'AlertDialog', 'DropdownMenu', 'HoverCard', 'Tooltip', 'Progress', 'Slider', 'Toast', 'Collapsible', 'ContextMenu', 'NavigationMenu', 'Menubar', 'ScrollArea', 'AspectRatio', 'Toolbar', 'Card'].includes(iconName) &&
-                    iconName[0] === iconName[0].toUpperCase() &&
-                    iconName.length > 1) {
-                    usedIcons.add(iconName);
-                }
-            });
-            
-            // Exponer iconos desde lucideReact si están disponibles
-            usedIcons.forEach(iconName => {
-                if (!window[iconName]) {
-                    // Intentar cargar desde lucideReact real primero
-                    if (window.lucideReact && typeof window.lucideReact === 'object' && window.lucideReact[iconName]) {
-                        window[iconName] = window.lucideReact[iconName];
-                        console.log('✅ Exposed icon from lucide-react:', iconName);
-                    } else {
-                        // Crear fallback si no está disponible
-                        window[iconName] = createIconFallback(iconName);
-                        console.log('⚠️ Created fallback for icon:', iconName);
-                    }
-                }
-            });
-            
-            return Array.from(usedIcons);
-        };
-        
-        // Make useState, useEffect, etc. available globally
+        // Make Material-UI available globally
+        window.MaterialUI = MaterialUI;
+        window.React = React;
+        window.ReactDOM = ReactDOM;
         window.useState = useState;
         window.useEffect = useEffect;
         window.useRef = useRef;
         window.useMemo = useMemo;
-        window.React = React;
-        window.ReactDOM = ReactDOM;
+        
+        // Create theme from ChromaForge palette colors - SIEMPRE usar colores de la paleta
+        const chromaForgeTheme = createTheme({
+            palette: {
+                primary: {
+                    main: '${primaryColor}',
+                    dark: '${primaryHover}',
+                },
+                secondary: {
+                    main: '${secondaryColor}',
+                },
+                background: {
+                    default: '${bgDefault}',
+                    paper: '${bgPaper}',
+                },
+                text: {
+                    primary: '${textPrimary}',
+                    secondary: '${textSecondary}',
+                    disabled: '${disabledText}',
+                },
+                error: {
+                    main: '${errorColor}',
+                },
+                warning: {
+                    main: '${warningColor}',
+                },
+                info: {
+                    main: '${infoColor}',
+                },
+                success: {
+                    main: '${successColor}',
+                },
+                action: {
+                    disabled: '${disabledText}',
+                    disabledBackground: '${disabledBg}',
+                },
+            },
+            components: {
+                MuiButton: {
+                    styleOverrides: {
+                        root: {
+                            '&.Mui-disabled': {
+                                backgroundColor: '${disabledBg}',
+                                color: '${disabledText}',
+                                borderColor: '${disabledBorder}',
+                            },
+                        },
+                    },
+                },
+                MuiTextField: {
+                    styleOverrides: {
+                        root: {
+                            '& .MuiInputBase-root.Mui-disabled': {
+                                backgroundColor: '${disabledBg}',
+                                color: '${disabledText}',
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        
+        // Make theme available globally
+        window.chromaForgeTheme = chromaForgeTheme;
         
         // ===== GENERATED CODE =====
-        // Execute the generated code and expose component to window
-        let executionError = null;
-        let componentDefined = false;
+        const executeCodeAndRender = () => {
+            const componentName = '${aiGeneratedComponent.componentName}';
+            let ComponentToRender = null;
+            
+            try {
+                // Limpiar export default del código
+                const codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
+                
+                console.log('=== PREVIEW INIT ===');
+                console.log('Component name:', componentName);
+                console.log('Material-UI available:', typeof MaterialUI !== 'undefined');
+                console.log('Theme created:', chromaForgeTheme);
+                
+                // Ejecutar el código generado
+                eval(codeStr);
+                
+                // Obtener el componente
+                ComponentToRender = eval(componentName);
+                
+                if (typeof ComponentToRender !== 'function') {
+                    throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
+                }
+                
+                // Exponer a window
+                window[componentName] = ComponentToRender;
+                window['__currentComponent'] = ComponentToRender;
+                console.log('✅ Component found and exposed:', componentName);
+                
+                // Renderizar
+                setTimeout(() => {
+                    try {
+                        const root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(createElement(ComponentToRender));
+                        console.log('✅ Component rendered successfully');
+                    } catch (e) {
+                        console.error('Render error:', e);
+                        const root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(createElement('div', { 
+                            style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+                        }, 'Render Error: ' + String(e)));
+                    }
+                }, 100);
+                
+            } catch (e) {
+                console.error('Error executing code:', e);
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(createElement('div', { 
+                    style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+                }, [
+                    createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
+                    createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
+                ]));
+            }
+        };
         
-        console.log('=== PREVIEW INIT ===');
-        console.log('Component name:', '${aiGeneratedComponent.componentName}');
-        console.log('Code length:', ${code.length});
-        console.log('React available:', typeof React !== 'undefined');
-        console.log('Lucide ready:', window.lucideReactReady);
-        
-        // Función para esperar a que lucide-react esté listo
-        const waitForLucide = (callback, maxWait = 3000) => {
+        // Esperar a que Material-UI esté completamente cargado
+        const waitForMaterialUI = (callback, maxWait = 5000) => {
             const startTime = Date.now();
             const check = () => {
-                if (window.lucideReactReady || Date.now() - startTime > maxWait) {
+                if (typeof MaterialUI !== 'undefined' && MaterialUI.ThemeProvider && Date.now() - startTime < maxWait) {
                     callback();
+                } else if (Date.now() - startTime >= maxWait) {
+                    callback(); // Ejecutar de todas formas después del timeout
                 } else {
                     setTimeout(check, 50);
                 }
@@ -2906,84 +2703,11 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             check();
         };
         
-        // Función para ejecutar el código y renderizar
-        const executeCodeAndRender = () => {
-            const componentName = '${aiGeneratedComponent.componentName}';
-            let ComponentToRender = null;
-            
-            try {
-                // El código ya está escapado desde TypeScript, solo necesitamos limpiar export default
-                // Nota: code ya viene escapado, así que podemos usarlo directamente después de limpiar export
-                const codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
-                
-                // PASO 1: Detectar y exponer iconos ANTES de ejecutar el código
-                const detectedIcons = detectAndExposeIcons(codeStr);
-                console.log('🔍 Detected icons:', detectedIcons);
-                
-                // PASO 2: Esperar un momento para que los iconos se expongan desde lucide-react
-                setTimeout(() => {
-                    try {
-                        // PASO 3: Ejecutar el código generado
-                        eval(codeStr);
-                        
-                        // PASO 4: Obtener el componente
-                        ComponentToRender = eval(componentName);
-                        
-                        if (typeof ComponentToRender !== 'function') {
-                            throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
-                        }
-                        
-                        // PASO 5: Exponer a window para futuras referencias
-                        window[componentName] = ComponentToRender;
-                        window['__currentComponent'] = ComponentToRender;
-                        console.log('✅ Component found and exposed:', componentName);
-                        
-                        // PASO 6: Renderizar después de asegurar que todo esté listo
-                        setTimeout(() => {
-                            try {
-                                const root = ReactDOM.createRoot(document.getElementById('root'));
-                                root.render(createElement(ComponentToRender));
-                                console.log('✅ Component rendered successfully');
-                            } catch (e) {
-                                console.error('Render error:', e);
-                                const root = ReactDOM.createRoot(document.getElementById('root'));
-                                root.render(createElement('div', { 
-                                    style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                                }, 'Render Error: ' + String(e)));
-                            }
-                        }, 100);
-                        
-                    } catch (e) {
-                        console.error('Error executing code:', e);
-                        const root = ReactDOM.createRoot(document.getElementById('root'));
-                        root.render(createElement('div', { 
-                            style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                        }, [
-                            createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
-                            createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
-                        ]));
-                    }
-                }, 200); // Delay para asegurar que lucide-react esté completamente cargado
-                
-            } catch (e) {
-                console.error('Error in executeCodeAndRender:', e);
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(createElement('div', { 
-                    style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                }, [
-                    createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Error'),
-                    createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
-                ]));
-            }
-        };
-        
-        // Ejecutar código y renderizar después de que lucide-react esté listo (o timeout)
-        if (window.lucideReactReady) {
-            executeCodeAndRender();
-        } else {
-            waitForLucide(executeCodeAndRender);
-        }
+        waitForMaterialUI(executeCodeAndRender);
     </script>
+</head>
+<body>
+    <div id="root"></div>
 </body>
 </html>`;
                                             })()}
@@ -3077,13 +2801,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                             </div>
             </div>
 
-            {/* --- AI ASSISTANT SIDEBAR (RIGHT) - HIDDEN --- */}
-            {false && <div className={`relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 ${isRightSidebarExpanded ? 'w-full md:w-[400px]' : 'w-0 md:w-[24px]'} overflow-hidden`}>
+            {/* --- AI ASSISTANT SIDEBAR (RIGHT) - MATERIAL DESIGN --- */}
+            <div className={`relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 ${isRightSidebarExpanded ? 'w-full md:w-[400px]' : 'w-0 md:w-[24px]'} overflow-hidden`}>
                 {/* Toggle Button */}
                 <button
                     onClick={() => setIsRightSidebarExpanded(!isRightSidebarExpanded)}
                     className={`absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isRightSidebarExpanded ? '-left-3 top-6' : 'left-1 top-6'}`}
-                    title={isRightSidebarExpanded ? 'Collapse AI Assistant' : 'Expand AI Assistant'}
+                    title={isRightSidebarExpanded ? 'Collapse AI Designer' : 'Expand AI Designer'}
                     style={{ pointerEvents: 'auto' }}
                 >
                     {isRightSidebarExpanded ? (
@@ -3095,6 +2819,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 
                 {isRightSidebarExpanded && (
                 <div className="flex-1 overflow-hidden flex flex-col">
+                    {/* Header - Material Design style */}
                     <div className="p-6 border-b border-white/5 shrink-0">
                         <div className="flex items-center justify-between">
                             <div>
@@ -3103,7 +2828,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                     AI Designer
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-2">
-                                    Generate UI components using your color palette.
+                                    Powered by Google Material Design
                                 </p>
                             </div>
                             {!isPremium && (
@@ -3111,17 +2836,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                     PRO
                                 </span>
                             )}
-                                        </div>
-                                        </div>
+                        </div>
+                    </div>
                     
-                    {/* Messages History */}
+                    {/* Messages History - Mantener funcionalidad */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
                         {aiMessages.length === 0 && (
                             <div className="text-sm text-slate-400 text-center py-8">
                                 <HiSparkles className="w-8 h-8 mx-auto mb-3 text-indigo-500/50" />
                                 <p>Ask me to create UI components!</p>
                                 <p className="text-xs mt-2 text-slate-500">Example: "Create a card UI with primary-600"</p>
-                                    </div>
+                            </div>
                         )}
                         
                         {aiMessages.map((msg, idx) => (
@@ -3134,7 +2859,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                     }`}
                                 >
                                     {msg.text}
-                            </div>
+                                </div>
                                 {msg.code && (
                                     <div className="w-full mt-2">
                                         <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
@@ -3155,17 +2880,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                     <HiClipboard className="w-4 h-4" />
                                                     Copy
                                                 </button>
-                            </div>
+                                            </div>
                                             <pre className="text-xs text-slate-300 overflow-x-auto max-h-[200px]">
                                                 <code>{removeAllImports(replaceUnsplashUrls(replaceThemeReferences(msg.code || '', theme)))}</code>
                                             </pre>
-                    </div>
+                                        </div>
                                         {!isPremium && (
                                             <div className="mt-2 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-lg p-3">
                                                 <p className="text-xs text-slate-400">
                                                     💡 Preview available in canvas for Pro users
                                                 </p>
-                        </div>
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -3201,7 +2926,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                     />
                                                 </circle>
                                             </svg>
-                        </div>
+                                        </div>
                                         <span>Generating...</span>
                                     </div>
                                 </div>
@@ -3209,9 +2934,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         )}
                         
                         <div ref={aiMessagesEndRef} />
-                </div>
+                    </div>
                     
-                    {/* Input Area */}
+                    {/* Input Area - Mantener funcionalidad */}
                     <div className="p-4 border-t border-white/5 shrink-0">
                         <div className="flex gap-2 items-end">
                             <textarea
@@ -3220,22 +2945,15 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 onChange={(e) => setAiPrompt(e.target.value)}
                                 onKeyDown={(e) => {
                                     // Enter alone does nothing (allows line break)
-                                    // Only Shift+Enter also allows line break (default behavior)
-                                    // No preventDefault needed - Enter will naturally create line breaks
                                 }}
                                 placeholder="e.g. Create a card UI with primary-600..."
                                 disabled={isAIGenerating}
                                 rows={1}
-                                className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2 resize-none overflow-hidden"
+                                className="flex-1 px-4 py-2 rounded-lg text-sm border transition-all focus:outline-none focus:ring-2 resize-none overflow-hidden bg-slate-800 text-white border-slate-700 placeholder-slate-500"
                                 style={{ 
-                                    backgroundColor: theme.bg.input, 
-                                    color: theme.text.main,
-                                    borderColor: theme.border.default,
                                     minHeight: '40px',
                                     maxHeight: '200px'
                                 }}
-                                onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
-                                onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                             />
                             <button
                                 type="button"
@@ -3344,19 +3062,19 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                     }
                                 }}
                                 disabled={isAIGenerating || !aiPrompt.trim()}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{ 
-                                    backgroundColor: isAIGenerating || !aiPrompt.trim() ? theme.disabled.bg : theme.action.primary, 
-                                    color: theme.text.onPrimary
-                                }}
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+                                    isAIGenerating || !aiPrompt.trim() 
+                                        ? 'bg-slate-700 text-slate-400' 
+                                        : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                                }`}
                             >
                                 <FaPaperPlane className="w-4 h-4" />
                             </button>
-            </div>
-        </div>
+                        </div>
+                    </div>
                 </div>
                 )}
-            </div>}
+            </div>
         </div>
         
         {/* Global Toast */}

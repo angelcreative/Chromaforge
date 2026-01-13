@@ -274,14 +274,30 @@ app.post('/api/ui-design', async (req, res) => {
       return `- ${c.name}: ${c.hex} (shades: ${shades})`;
     }).join('\n    ');
 
+    // Get primary color from palette
+    const primaryColor = palette.brand[config.primaryIndex]?.hex || palette.brand[0]?.hex || '#1976d2';
+    const primaryShade300 = palette.brand[config.primaryIndex]?.shades?.find((s: any) => s.level === 300)?.hex || primaryColor;
+    const primaryShade700 = palette.brand[config.primaryIndex]?.shades?.find((s: any) => s.level === 700)?.hex || primaryColor;
+    const secondaryColor = palette.brand[1]?.hex || palette.brand[0]?.hex || '#dc004e';
+    const secondaryShade300 = palette.brand[1]?.shades?.find((s: any) => s.level === 300)?.hex || secondaryColor;
+    const secondaryShade700 = palette.brand[1]?.shades?.find((s: any) => s.level === 700)?.hex || secondaryColor;
+    const bgDefault = palette.neutral[0]?.hex || '#ffffff';
+    const bgPaper = palette.neutral[1]?.hex || palette.neutral[0]?.hex || '#f5f5f5';
+    const textPrimary = palette.neutral[palette.neutral.length - 1]?.hex || '#000000';
+    const textSecondary = palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#666666';
+    const errorColor = palette.semantic.find((c: any) => c.name.toLowerCase().includes('error') || c.name.toLowerCase().includes('danger'))?.hex || '#d32f2f';
+    const warningColor = palette.semantic.find((c: any) => c.name.toLowerCase().includes('warning'))?.hex || '#ed6c02';
+    const infoColor = palette.semantic.find((c: any) => c.name.toLowerCase().includes('info'))?.hex || '#0288d1';
+    const successColor = palette.semantic.find((c: any) => c.name.toLowerCase().includes('success'))?.hex || '#2e7d32';
+    const primaryShade600 = palette.brand[config.primaryIndex]?.shades?.find((s: any) => s.level === 600)?.hex || primaryColor;
+
     const context = `
-    You are a professional UI Designer and React Developer specializing in Design Systems.
+    You are a professional UI Designer and React Developer specializing in Google Material Design.
     
-    === AVAILABLE COMPONENTS ===
-    Molecules: ${availableComponents.molecules.join(', ')}
-    Organisms: ${availableComponents.organisms.join(', ')}
+    === CRITICAL: ALWAYS USE CHROMAFORGE PALETTE COLORS ===
+    You MUST use colors from the provided ChromaForge palette. NEVER use hardcoded colors like "#FF5733", "blue", "red", "#1976d2", etc.
     
-    === CURRENT COLOR PALETTE ===
+    === CURRENT COLOR PALETTE FROM CHROMAFORGE ===
     Brand Colors:
     ${brandPaletteContext || 'No brand colors'}
     
@@ -302,62 +318,120 @@ app.post('/api/ui-design', async (req, res) => {
     "${prompt}"
     
     === TASK ===
-    Generate a React/JSX component using Radix UI primitives that matches the user's request.
+    Generate a React/JSX component using Material-UI (MUI) that matches the user's request.
     
-    === RULES ===
-    1. **Use Radix UI**: Import and use only Radix UI components (e.g., @radix-ui/react-button, @radix-ui/react-card, etc.)
-    2. **Color References**: 
-       - When user says "primary-600", use the shade level 600 from the primary brand color
-       - When user says "use color X", find that color in the palette
-       - Use theme variables: theme.action.primary, theme.action.secondaryBg, theme.bg.card, theme.text.main, etc.
-    3. **Shade Modifications**: If user asks to change shade (e.g., "change to 600"), use the appropriate shade from the palette
-    4. **Component Structure**: Create complete, functional React components with proper imports
-    5. **Accessibility**: Ensure components are accessible (use proper ARIA attributes, keyboard navigation)
-    6. **Styling**: Use inline styles with theme colors, or Tailwind classes where appropriate
-    7. **Code Quality**: Write clean, readable, production-ready code
-    8. **Images**: 
-       - For user avatars, profile pictures, or card images, ALWAYS use Picsum Photos (Lorem Picsum) service
-       - Format: https://picsum.photos/[width]/[height]?random=[seed] where seed is a number (1-1000) or descriptive keyword
-       - Examples: 
-         * Avatar: https://picsum.photos/100/100?random=portrait
-         * Card image: https://picsum.photos/400/300?random=nature
-         * Product image: https://picsum.photos/600/400?random=product
-         * Kitchen image: https://picsum.photos/600/450?random=kitchen
-         * Interior image: https://picsum.photos/600/450?random=interior
-       - Use descriptive seed values that match the context (e.g., "portrait" for avatars, "nature" for landscapes, "product" for e-commerce, "kitchen" for kitchen images)
-       - The seed ensures the same image is returned for the same keyword, but different keywords return different images
-       - NEVER use source.unsplash.com (it's discontinued) or placeholder.com
-    9. **Icons**: 
-       - Use icons from lucide-react library - ALL icons are available globally, DO NOT import them
-       - You can use ANY icon from lucide-react (Plane, Calendar, Ticket, Luggage, Flame, Share2, History, MapPin, Clock, etc.)
-       - Browse available icons at: https://lucide.dev/icons/
-       - Format: <IconName size={20} color="..." /> (e.g., <Plane size={18} color="blue" />, <Calendar size={20} color="red" />)
-       - Examples: <Plane />, <Calendar />, <Ticket />, <Luggage />, <MapPin />, <Clock />, <Heart />, <Star />, <ShoppingCart />, etc.
-       - NEVER import icons - they are provided globally as React components
-       - For buttons, prefer using <button> elements with text labels rather than icon-only buttons when possible
+    === CRITICAL RULES ===
+    1. **ALWAYS USE COLORS FROM CHROMAFORGE PALETTE**: 
+       - NEVER use hardcoded colors like "#FF5733", "blue", "red", "#1976d2", etc.
+       - ALWAYS reference colors from the provided ChromaForge palette above
+       - Create a theme object that maps ChromaForge colors to Material Design:
+         const theme = createTheme({
+           palette: {
+             primary: { 
+               main: '${primaryColor}',
+               light: '${primaryShade300}',
+               dark: '${primaryShade700}'
+             },
+             secondary: { 
+               main: '${secondaryColor}',
+               light: '${secondaryShade300}',
+               dark: '${secondaryShade700}'
+             },
+             background: { 
+               default: '${bgDefault}',
+               paper: '${bgPaper}'
+             },
+             text: {
+               primary: '${textPrimary}',
+               secondary: '${textSecondary}',
+               disabled: '${palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999'}'
+             },
+             error: { main: '${errorColor}' },
+             warning: { main: '${warningColor}' },
+             info: { main: '${infoColor}' },
+             success: { main: '${successColor}' },
+             action: {
+               disabled: '${palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999'}',
+               disabledBackground: '${palette.neutral[Math.floor(palette.neutral.length / 2) - 1]?.hex || palette.neutral[0]?.hex || '#cccccc'}'
+             }
+           }
+         });
+       - When user says "primary-600", use: '${primaryShade600}'
+       - When user says "use color X", find that color in the ChromaForge palette above
+       - **DISABLED COLORS**: ALWAYS use neutral colors from the palette for disabled states. NEVER use hardcoded gray colors.
+       - **SEMANTIC COLORS**: Use the semantic colors from the ChromaForge palette (error, warning, info, success) shown above.
+    
+    2. **Material-UI Components**: 
+       - Import from @mui/material (e.g., import { Button, Card, TextField, ThemeProvider, createTheme } from '@mui/material')
+       - Use Material Design patterns and spacing (8px grid)
+       - Follow Material Design elevation system
+       - Wrap component in ThemeProvider with the theme created from ChromaForge colors
+    
+    3. **Google Fonts**: 
+       - Use Google Fonts (Roboto is default)
+       - Material-UI uses Roboto by default, no need to import
+    
+    4. **Material Icons**: 
+       - Use Material Icons from @mui/icons-material
+       - Format: import { IconName } from '@mui/icons-material'
+       - Examples: Home, Search, ShoppingCart, Favorite, Menu, Add, Delete, Edit, etc.
+       - DO NOT use lucide-react icons
+    
+    5. **Component Structure**: 
+       - Create complete, functional React components
+       - Use Material-UI's ThemeProvider and createTheme
+       - Apply colors from ChromaForge palette to theme
+       - Use sx prop or styled components for styling
+       - Example:
+         import { ThemeProvider, createTheme } from '@mui/material/styles';
+         import { Button, Card, CardContent, Typography } from '@mui/material';
+         import { ShoppingCart } from '@mui/icons-material';
+         
+         const theme = createTheme({
+           palette: {
+             primary: { main: '${primaryColor}' },
+             secondary: { main: '${secondaryColor}' },
+             background: { default: '${bgDefault}', paper: '${bgPaper}' },
+             text: { primary: '${textPrimary}', secondary: '${textSecondary}' }
+           }
+         });
+         
+         const GeneratedComponent = () => {
+           return (
+             <ThemeProvider theme={theme}>
+               <Card>
+                 <CardContent>
+                   <Typography variant="h5" color="text.primary">
+                     Title
+                   </Typography>
+                   <Button variant="contained" color="primary" startIcon={<ShoppingCart />}>
+                     Action
+                   </Button>
+                 </CardContent>
+               </Card>
+             </ThemeProvider>
+           );
+         };
+    
+    6. **Images**: 
+       - Use Picsum Photos: https://picsum.photos/[width]/[height]?random=[seed]
+       - Use descriptive seeds: portrait, nature, product, kitchen, etc.
+    
+    7. **Code Quality**: 
+       - Clean, readable, production-ready code
+       - Proper Material Design spacing and typography
+       - Accessible components with ARIA attributes
+       - NO hardcoded colors - ALWAYS use theme colors from ChromaForge palette
     
     === OUTPUT FORMAT ===
-    Return ONLY valid JSX/TSX code. Do not include markdown code blocks, explanations, or comments outside the code.
-    The code should be a complete, self-contained React component that can be directly rendered.
-    
-    Example structure:
-    import * as Card from '@radix-ui/react-card';
-    import * as Button from '@radix-ui/react-button';
-    
-    const GeneratedComponent = () => {
-      return (
-        <Card.Root style={{ backgroundColor: theme.bg.card }}>
-          <Card.Header>
-            <Card.Title style={{ color: theme.text.main }}>Title</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <Button.Root style={{ backgroundColor: theme.action.primary }}>
-              Action
-            </Button.Root>
-          </Card.Content>
-        </Card.Root>
-      );
-    };
+    Return ONLY valid JSX/TSX code. No markdown code blocks, no explanations.
+    The code must:
+    - Import Material-UI components from @mui/material
+    - Import Material Icons from @mui/icons-material
+    - Create a theme using ChromaForge palette colors (NEVER hardcoded)
+    - Use ThemeProvider to wrap the component
+    - Reference colors from the theme, NEVER hardcoded colors
+    - Export the component as default or named export
     `;
 
     // Call Gemini API
@@ -365,7 +439,7 @@ app.post('/api/ui-design', async (req, res) => {
       model: 'gemini-3-flash-preview',
       contents: context,
       config: {
-        systemInstruction: "You are a React/JSX code generator. You output only valid, executable React component code. No explanations, no markdown, just code.",
+        systemInstruction: "You are a React/JSX code generator specializing in Material Design. You output only valid, executable React component code using Material-UI. Always use colors from the ChromaForge palette provided. No explanations, no markdown, just code.",
       }
     });
 
