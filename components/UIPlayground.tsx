@@ -2513,7 +2513,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             key={`preview-${aiGeneratedComponent.componentName}-${aiGeneratedComponent.bundleId || 'fallback'}-${config.primaryIndex}-${config.isDarkMode}-${theme.action.primary}-${theme.bg.page}`}
                                             srcDoc={(() => {
                                                 // Si tenemos bundleId, usar bundle compilado
-                                                if (aiGeneratedComponent.bundleId) {
+                                                if (aiGeneratedComponent.bundleId && aiGeneratedComponent.bundleId !== 'null' && aiGeneratedComponent.bundleId !== 'undefined') {
                                                     // Obtener TODOS los colores de la paleta actual para inyectarlos en el tema
                                                     const primaryColor = theme.action.primary;
                                                     const primaryHover = theme.action.primaryHover;
@@ -2953,27 +2953,15 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     // Prepend icon helpers
                     codeStr = iconHelper + codeStr;
                     
-                    // Eliminar imports problemáticos - construir regex de forma segura
-                    // Usar función para construir el patrón sin problemas de escape
-                    const buildRegex = (pattern) => {
-                        const parts = pattern.split('\\s');
-                        if (parts.length > 1) {
-                            return new RegExp(parts.join('\\\\s'), 'g');
-                        }
-                        return new RegExp(pattern, 'g');
-                    };
-                    
-                    // Patrones sin \\s - usar [ ] para espacios literales
-                    const importIconsPattern = /import\s+.*from\s+['"]@mui\/icons-material['"];?/g;
-                    codeStr = codeStr.replace(importIconsPattern, '// Icons available as components');
+                    // Eliminar imports problemáticos - usar replace con strings para evitar problemas de escape en template literals anidados
+                    // Reemplazar imports de iconos
+                    codeStr = codeStr.replace(new RegExp('import\\s+.*from\\s+[\'"]@mui/icons-material[\'"];?', 'g'), '// Icons available as components');
                     
                     // NO reemplazar creación de theme - dejar que el código use createTheme que ya está disponible globalmente
                     // Solo eliminar imports de createTheme si están solos
-                    const importCreateThemePattern = /import\s+\{\s*createTheme\s*\}\s+from\s+['"]@mui\/material\/styles['"];?/g;
-                    codeStr = codeStr.replace(importCreateThemePattern, '// createTheme available globally');
+                    codeStr = codeStr.replace(new RegExp('import\\s+\\{\\s*createTheme\\s*\\}\\s+from\\s+[\'"]@mui/material/styles[\'"];?', 'g'), '// createTheme available globally');
                     
-                    const importThemeProviderCreateThemePattern = /import\s+\{\s*ThemeProvider\s*,\s*createTheme\s*\}\s+from\s+['"]@mui\/material\/styles['"];?/g;
-                    codeStr = codeStr.replace(importThemeProviderCreateThemePattern, "import { ThemeProvider } from '@mui/material/styles'; // createTheme available globally");
+                    codeStr = codeStr.replace(new RegExp('import\\s+\\{\\s*ThemeProvider\\s*,\\s*createTheme\\s*\\}\\s+from\\s+[\'"]@mui/material/styles[\'"];?', 'g'), "import { ThemeProvider } from '@mui/material/styles'; // createTheme available globally");
                     
                     console.log('=== PREVIEW INIT ===');
                     console.log('Component name:', componentName);

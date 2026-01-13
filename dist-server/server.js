@@ -507,9 +507,12 @@ app.get('/api/bundles/:bundleId.js', (req, res) => {
             const bundle = readFileSync(bundlePath, 'utf-8');
             res.setHeader('Content-Type', 'application/javascript');
             res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 hora
+            res.setHeader('Access-Control-Allow-Origin', '*'); // CORS para iframe
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups'); // Reducir warnings
             res.send(bundle);
         }
         catch (error) {
+            console.error('[Server] Bundle not found:', bundlePath);
             res.status(404).json({ error: 'Bundle not found' });
         }
     }
