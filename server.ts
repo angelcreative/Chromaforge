@@ -372,39 +372,31 @@ app.post('/api/ui-design', async (req, res) => {
        - Material-UI uses Roboto by default, no need to import
     
     4. **Material Icons**: 
-       - Use Material Icons from @mui/icons-material
-       - Format: import { IconName } from '@mui/icons-material'
-       - Examples: Home, Search, ShoppingCart, Favorite, Menu, Add, Delete, Edit, etc.
+       - Material Icons are available as helper functions (ShoppingCart, Home, Search, Menu, Favorite, Add, Delete, Edit, etc.)
+       - DO NOT import from @mui/icons-material - icons are provided as React components
+       - Examples: <ShoppingCart />, <Home />, <Search />, <Menu />, <Favorite />, <Add />, <Delete />, <Edit />
+       - These icon components are already available in the environment
        - DO NOT use lucide-react icons
     
     5. **Component Structure**: 
        - Create complete, functional React components
-       - Use Material-UI's ThemeProvider and createTheme
-       - Apply colors from ChromaForge palette to theme
+       - Use Material-UI's ThemeProvider - the theme is already created and available as 'chromaForgePaletteTheme'
+       - DO NOT create a new theme - use the existing chromaForgePaletteTheme
        - Use sx prop or styled components for styling
        - Example:
-         import { ThemeProvider, createTheme } from '@mui/material/styles';
+         import { ThemeProvider } from '@mui/material/styles';
          import { Button, Card, CardContent, Typography } from '@mui/material';
-         import { ShoppingCart } from '@mui/icons-material';
-         
-         const theme = createTheme({
-           palette: {
-             primary: { main: '${primaryColor}' },
-             secondary: { main: '${secondaryColor}' },
-             background: { default: '${bgDefault}', paper: '${bgPaper}' },
-             text: { primary: '${textPrimary}', secondary: '${textSecondary}' }
-           }
-         });
+         // Note: Material Icons are loaded via CDN, use them directly (e.g., <ShoppingCart />)
          
          const GeneratedComponent = () => {
            return (
-             <ThemeProvider theme={theme}>
+             <ThemeProvider theme={chromaForgePaletteTheme}>
                <Card>
                  <CardContent>
                    <Typography variant="h5" color="text.primary">
                      Title
                    </Typography>
-                   <Button variant="contained" color="primary" startIcon={<ShoppingCart />}>
+                   <Button variant="contained" color="primary">
                      Action
                    </Button>
                  </CardContent>
@@ -412,6 +404,8 @@ app.post('/api/ui-design', async (req, res) => {
              </ThemeProvider>
            );
          };
+       - IMPORTANT: Use 'chromaForgePaletteTheme' (already created) instead of creating a new theme
+       - IMPORTANT: Do NOT import from @mui/icons-material - icons are available globally
     
     6. **Images**: 
        - Use Picsum Photos: https://picsum.photos/[width]/[height]?random=[seed]

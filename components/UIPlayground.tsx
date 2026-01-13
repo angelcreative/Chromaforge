@@ -2542,6 +2542,23 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <style>
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -2554,22 +2571,39 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     <script src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"></script>
     <script src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"></script>
     <script src="https://unpkg.com/@mui/material@5/dist/material-ui.development.js"></script>
-    <script src="https://unpkg.com/@mui/icons-material@5/index.js"></script>
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo, createElement } = React;
-        const { ThemeProvider, createTheme } = MaterialUI;
+        // Wait for Material-UI to be available
+        const waitForMaterialUI = (callback, maxWait = 5000) => {
+            const startTime = Date.now();
+            const check = () => {
+                if (typeof MaterialUI !== 'undefined' && MaterialUI.createTheme && Date.now() - startTime < maxWait) {
+                    callback();
+                } else if (Date.now() - startTime >= maxWait) {
+                    console.error('Material-UI failed to load');
+                    callback(); // Execute anyway
+                } else {
+                    setTimeout(check, 50);
+                }
+            };
+            check();
+        };
         
-        // Make Material-UI available globally
-        window.MaterialUI = MaterialUI;
-        window.React = React;
-        window.ReactDOM = ReactDOM;
-        window.useState = useState;
-        window.useEffect = useEffect;
-        window.useRef = useRef;
-        window.useMemo = useMemo;
-        
-        // Create theme from ChromaForge palette colors - SIEMPRE usar colores de la paleta
-        const chromaForgeTheme = createTheme({
+        waitForMaterialUI(() => {
+            const { useState, useEffect, useRef, useMemo, createElement } = React;
+            const { ThemeProvider, createTheme } = MaterialUI;
+            
+            // Make Material-UI available globally
+            window.MaterialUI = MaterialUI;
+            window.React = React;
+            window.ReactDOM = ReactDOM;
+            window.useState = useState;
+            window.useEffect = useEffect;
+            window.useRef = useRef;
+            window.useMemo = useMemo;
+            
+            // Create theme from ChromaForge palette colors - SIEMPRE usar colores de la paleta
+            // Usar nombre único para evitar conflictos con código generado
+            const chromaForgePaletteTheme = createTheme({
             palette: {
                 primary: {
                     main: '${primaryColor}',
@@ -2627,83 +2661,114 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     },
                 },
             },
-        });
-        
-        // Make theme available globally
-        window.chromaForgeTheme = chromaForgeTheme;
-        
-        // ===== GENERATED CODE =====
-        const executeCodeAndRender = () => {
-            const componentName = '${aiGeneratedComponent.componentName}';
-            let ComponentToRender = null;
+            });
             
-            try {
-                // Limpiar export default del código
-                const codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
+            // Make theme available globally with unique name
+            window.chromaForgePaletteTheme = chromaForgePaletteTheme;
+            window.__cfTheme = chromaForgePaletteTheme; // Alias corto
+            
+            // ===== GENERATED CODE =====
+            const executeCodeAndRender = () => {
+                const componentName = '${aiGeneratedComponent.componentName}';
+                let ComponentToRender = null;
                 
-                console.log('=== PREVIEW INIT ===');
-                console.log('Component name:', componentName);
-                console.log('Material-UI available:', typeof MaterialUI !== 'undefined');
-                console.log('Theme created:', chromaForgeTheme);
-                
-                // Ejecutar el código generado
-                eval(codeStr);
-                
-                // Obtener el componente
-                ComponentToRender = eval(componentName);
-                
-                if (typeof ComponentToRender !== 'function') {
-                    throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
-                }
-                
-                // Exponer a window
-                window[componentName] = ComponentToRender;
-                window['__currentComponent'] = ComponentToRender;
-                console.log('✅ Component found and exposed:', componentName);
-                
-                // Renderizar
-                setTimeout(() => {
-                    try {
-                        const root = ReactDOM.createRoot(document.getElementById('root'));
-                        root.render(createElement(ComponentToRender));
-                        console.log('✅ Component rendered successfully');
-                    } catch (e) {
-                        console.error('Render error:', e);
-                        const root = ReactDOM.createRoot(document.getElementById('root'));
-                        root.render(createElement('div', { 
-                            style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                        }, 'Render Error: ' + String(e)));
+                try {
+                    // Limpiar export default del código
+                    let codeStr = \`${code.replace(/export\s+default\s+\w+;?/g, '')}\`;
+                    
+                    // Reemplazar creación de theme por uso del tema existente
+                    codeStr = codeStr.replace(/const\s+theme\s*=\s*createTheme\([^)]+\);/g, '// Theme already created as chromaForgePaletteTheme');
+                    codeStr = codeStr.replace(/import\s+.*createTheme.*from\s+['"]@mui\/material\/styles['"];?/g, '// createTheme not needed, use chromaForgePaletteTheme');
+                    codeStr = codeStr.replace(/import\s+.*ThemeProvider.*createTheme.*from\s+['"]@mui\/material\/styles['"];?/g, "import { ThemeProvider } from '@mui/material/styles';");
+                    
+                    // Reemplazar referencias a variable 'theme' standalone (no theme.xxx) por chromaForgePaletteTheme
+                    codeStr = codeStr.replace(/\btheme\s*=\s*createTheme\(/g, 'chromaForgePaletteTheme = createTheme(');
+                    codeStr = codeStr.replace(/<ThemeProvider\s+theme\s*=\s*\{theme\}/g, '<ThemeProvider theme={chromaForgePaletteTheme}');
+                    codeStr = codeStr.replace(/<ThemeProvider\s+theme\s*=\s*theme\s*>/g, '<ThemeProvider theme={chromaForgePaletteTheme}>');
+                    
+                    // Eliminar imports de @mui/icons-material (no funcionan en CDN)
+                    codeStr = codeStr.replace(/import\s+\{[^}]+\}\s+from\s+['"]@mui\/icons-material['"];?/g, '// Icons: Use Material Icons via <span className="material-icons">icon_name</span> or create simple SVG icons');
+                    
+                    // Crear funciones helper para iconos comunes si se usan
+                    const iconHelper = `
+                    // Helper para crear iconos Material simples
+                    const createMaterialIcon = (name) => {
+                        return React.createElement('span', { className: 'material-icons', style: { fontSize: 'inherit' } }, name);
+                    };
+                    const ShoppingCart = (props) => createMaterialIcon('shopping_cart');
+                    const Home = (props) => createMaterialIcon('home');
+                    const Search = (props) => createMaterialIcon('search');
+                    const Menu = (props) => createMaterialIcon('menu');
+                    const Favorite = (props) => createMaterialIcon('favorite');
+                    const Add = (props) => createMaterialIcon('add');
+                    const Delete = (props) => createMaterialIcon('delete');
+                    const Edit = (props) => createMaterialIcon('edit');
+                    const Close = (props) => createMaterialIcon('close');
+                    const Check = (props) => createMaterialIcon('check');
+                    const ArrowBack = (props) => createMaterialIcon('arrow_back');
+                    const ArrowForward = (props) => createMaterialIcon('arrow_forward');
+                    `;
+                    codeStr = iconHelper + codeStr;
+                    
+                    console.log('=== PREVIEW INIT ===');
+                    console.log('Component name:', componentName);
+                    console.log('Material-UI available:', typeof MaterialUI !== 'undefined');
+                    console.log('Theme created:', chromaForgePaletteTheme);
+                    
+                    // Ejecutar el código generado en un contexto aislado
+                    (function() {
+                        // Proporcionar Material-UI y React en el scope
+                        const MaterialUI = window.MaterialUI;
+                        const React = window.React;
+                        const ReactDOM = window.ReactDOM;
+                        const { ThemeProvider, createTheme } = MaterialUI;
+                        const chromaForgePaletteTheme = window.chromaForgePaletteTheme;
+                        
+                        eval(codeStr);
+                    })();
+                    
+                    // Obtener el componente
+                    ComponentToRender = eval(componentName);
+                    
+                    if (typeof ComponentToRender !== 'function') {
+                        throw new Error('Component is not a function, got: ' + typeof ComponentToRender);
                     }
-                }, 100);
-                
-            } catch (e) {
-                console.error('Error executing code:', e);
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(createElement('div', { 
-                    style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
-                }, [
-                    createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
-                    createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
-                ]));
-            }
-        };
-        
-        // Esperar a que Material-UI esté completamente cargado
-        const waitForMaterialUI = (callback, maxWait = 5000) => {
-            const startTime = Date.now();
-            const check = () => {
-                if (typeof MaterialUI !== 'undefined' && MaterialUI.ThemeProvider && Date.now() - startTime < maxWait) {
-                    callback();
-                } else if (Date.now() - startTime >= maxWait) {
-                    callback(); // Ejecutar de todas formas después del timeout
-                } else {
-                    setTimeout(check, 50);
+                    
+                    // Exponer a window
+                    window[componentName] = ComponentToRender;
+                    window['__currentComponent'] = ComponentToRender;
+                    console.log('✅ Component found and exposed:', componentName);
+                    
+                    // Renderizar
+                    setTimeout(() => {
+                        try {
+                            const root = ReactDOM.createRoot(document.getElementById('root'));
+                            root.render(createElement(ComponentToRender));
+                            console.log('✅ Component rendered successfully');
+                        } catch (e) {
+                            console.error('Render error:', e);
+                            const root = ReactDOM.createRoot(document.getElementById('root'));
+                            root.render(createElement('div', { 
+                                style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+                            }, 'Render Error: ' + String(e)));
+                        }
+                    }, 100);
+                    
+                } catch (e) {
+                    console.error('Error executing code:', e);
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(createElement('div', { 
+                        style: { padding: '20px', color: 'red', fontFamily: 'monospace', fontSize: '12px' } 
+                    }, [
+                        createElement('div', { key: 'title', style: { fontWeight: 'bold', marginBottom: '10px' } }, 'Execution Error'),
+                        createElement('div', { key: 'error', style: { fontSize: '10px', whiteSpace: 'pre-wrap' } }, String(e))
+                    ]));
                 }
             };
-            check();
-        };
-        
-        waitForMaterialUI(executeCodeAndRender);
+            
+            // Ejecutar inmediatamente ya que Material-UI está cargado
+            executeCodeAndRender();
+        });
     </script>
 </head>
 <body>
