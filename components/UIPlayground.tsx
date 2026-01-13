@@ -3061,6 +3061,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     <div id="root"></div>
 </body>
 </html>`;
+                                                }
                                             })()}
                                             className="w-full h-[600px] border-0 rounded"
                                             sandbox="allow-scripts allow-same-origin"

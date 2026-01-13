@@ -498,7 +498,11 @@ app.post('/api/ui-design', async (req, res) => {
 app.get('/api/bundles/:bundleId.js', (req, res) => {
     try {
         const { bundleId } = req.params;
-        const bundlePath = join(process.cwd(), 'dist-server', 'bundles', `${bundleId}.js`);
+        // Usar el mismo directorio que componentCompiler
+        const bundlesDir = process.env.NODE_ENV === 'production'
+            ? '/tmp/chromaforge-bundles'
+            : join(process.cwd(), 'dist-server', 'bundles');
+        const bundlePath = join(bundlesDir, `${bundleId}.js`);
         try {
             const bundle = readFileSync(bundlePath, 'utf-8');
             res.setHeader('Content-Type', 'application/javascript');

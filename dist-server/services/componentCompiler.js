@@ -3,16 +3,24 @@ import { randomBytes } from 'crypto';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 // Directorio para bundles temporales
-const BUNDLES_DIR = join(process.cwd(), 'dist-server', 'bundles');
-// Asegurar que el directorio existe
-if (!existsSync(BUNDLES_DIR)) {
-    mkdirSync(BUNDLES_DIR, { recursive: true });
+// Usar /tmp en producción (Cloud Run) o dist-server/bundles en desarrollo
+// /tmp es escribible en Cloud Run y otros entornos serverless
+const BUNDLES_DIR = process.env.NODE_ENV === 'production'
+    ? '/tmp/chromaforge-bundles'
+    : join(process.cwd(), 'dist-server', 'bundles');
+// Función para asegurar que el directorio existe (llamar en runtime, no en module load)
+function ensureBundlesDir() {
+    if (!existsSync(BUNDLES_DIR)) {
+        mkdirSync(BUNDLES_DIR, { recursive: true });
+    }
 }
 /**
  * Compila un componente React generado por IA usando esbuild
  * El código compilado será servido como bundle estático
  */
 export async function compileComponent({ code, componentName, theme }) {
+    // Asegurar que el directorio existe en runtime
+    ensureBundlesDir();
     const bundleId = randomBytes(16).toString('hex');
     const bundlePath = join(BUNDLES_DIR, `${bundleId}.js`);
     try {
@@ -191,6 +199,7 @@ if (typeof ` + componentName + ` !== 'undefined') {
  */
 export function cleanupOldBundles() {
     try {
+        ensureBundlesDir();
         const files = require('fs').readdirSync(BUNDLES_DIR);
         const now = Date.now();
         const oneHour = 60 * 60 * 1000;
