@@ -2663,9 +2663,10 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
             },
             });
             
-            // Make theme available globally with unique name
+            // Make theme and createTheme available globally BEFORE executing any code
             window.chromaForgePaletteTheme = chromaForgePaletteTheme;
             window.__cfTheme = chromaForgePaletteTheme; // Alias corto
+            window.createTheme = createTheme; // Make createTheme available globally
             
             // ===== GENERATED CODE =====
             const executeCodeAndRender = () => {
@@ -2790,29 +2791,42 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     const ViewCarousel = (props) => createMaterialIcon('view_carousel', props);
                     const ViewArray = (props) => createMaterialIcon('view_array', props);
                     const ViewSidebar = (props) => createMaterialIcon('view_sidebar', props);
+                    // Rating component helper
+                    const Rating = (props) => {
+                        const { value = 0, max = 5, precision = 0.5, size = 'medium', sx, readOnly, ...rest } = props;
+                        const stars = [];
+                        const fullStars = Math.floor(value);
+                        const hasHalfStar = value % 1 >= precision;
+                        const starSize = size === 'small' ? 16 : size === 'large' ? 28 : 20;
+                        for (let i = 0; i < fullStars; i++) {
+                            stars.push(React.createElement(Star, { key: i, sx: { ...sx, fontSize: starSize } }));
+                        }
+                        if (hasHalfStar && fullStars < max) {
+                            stars.push(React.createElement(Star, { key: 'half', sx: { ...sx, fontSize: starSize, opacity: 0.5 } }));
+                        }
+                        const emptyStars = max - Math.ceil(value);
+                        for (let i = 0; i < emptyStars; i++) {
+                            stars.push(React.createElement(Star, { key: 'empty-' + i, sx: { ...sx, fontSize: starSize, opacity: 0.3 } }));
+                        }
+                        return React.createElement('div', { style: { display: 'flex', gap: '2px', alignItems: 'center' }, ...rest }, stars);
+                    };
                     \`;
                     
                     // Prepend icon helpers
                     codeStr = iconHelper + codeStr;
                     
-                    // Eliminar imports problemáticos
-                    codeStr = codeStr.replace(/import\s+.*from\s+['"]@mui\/icons-material['"];?/g, '// Icons available as components');
+                    // Eliminar imports problemáticos - usar espacios literales en lugar de \\s en template literals
+                    codeStr = codeStr.replace(/import [^'"]*from ['"]@mui\/icons-material['"];?/g, '// Icons available as components');
                     
-                    // Reemplazar creación de theme - usar el tema existente
-                    codeStr = codeStr.replace(/const\s+chromaForgePaletteTheme\s*=\s*createTheme\(/g, '// Theme already created, using existing chromaForgePaletteTheme');
-                    codeStr = codeStr.replace(/const\s+theme\s*=\s*createTheme\(/g, '// Theme already created as chromaForgePaletteTheme');
-                    
-                    // Reemplazar imports de createTheme
-                    codeStr = codeStr.replace(/import\s+\{[^}]*createTheme[^}]*\}\s+from\s+['"]@mui\/material\/styles['"];?/g, "import { ThemeProvider } from '@mui/material/styles';");
-                    
-                    // Reemplazar uso de theme variable por chromaForgePaletteTheme
-                    codeStr = codeStr.replace(/<ThemeProvider\s+theme\s*=\s*\{theme\}/g, '<ThemeProvider theme={chromaForgePaletteTheme}');
-                    codeStr = codeStr.replace(/<ThemeProvider\s+theme\s*=\s*theme\s*>/g, '<ThemeProvider theme={chromaForgePaletteTheme}>');
-                    codeStr = codeStr.replace(/theme\s*=\s*\{theme\}/g, 'theme={chromaForgePaletteTheme}');
+                    // NO reemplazar creación de theme - dejar que el código use createTheme que ya está disponible
+                    // Solo eliminar imports de createTheme si están solos
+                    codeStr = codeStr.replace(/import \{ createTheme \} from ['"]@mui\/material\/styles['"];?/g, '// createTheme available globally');
+                    codeStr = codeStr.replace(/import \{ ThemeProvider, createTheme \} from ['"]@mui\/material\/styles['"];?/g, "import { ThemeProvider } from '@mui/material/styles'; // createTheme available globally");
                     
                     console.log('=== PREVIEW INIT ===');
                     console.log('Component name:', componentName);
                     console.log('Material-UI available:', typeof MaterialUI !== 'undefined');
+                    console.log('createTheme available:', typeof window.createTheme !== 'undefined');
                     console.log('Theme created:', chromaForgePaletteTheme);
                     
                     // Ejecutar el código generado en un contexto con todas las dependencias
@@ -2821,10 +2835,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         const MaterialUI = window.MaterialUI;
                         const React = window.React;
                         const ReactDOM = window.ReactDOM;
-                        const { ThemeProvider, createTheme, Box, Card, CardContent, CardActions, CardMedia, Button, Typography, Chip, IconButton, Stack, Divider } = MaterialUI;
+                        const { 
+                            ThemeProvider, createTheme, Box, Card, CardContent, CardActions, CardMedia, 
+                            Button, Typography, Chip, IconButton, Stack, Divider, Rating
+                        } = MaterialUI;
                         const chromaForgePaletteTheme = window.chromaForgePaletteTheme;
                         
-                        // Hacer createTheme y componentes disponibles globalmente
+                        // Hacer createTheme y componentes disponibles globalmente ANTES de ejecutar código
                         window.createTheme = createTheme;
                         window.ThemeProvider = ThemeProvider;
                         window.Box = Box;
@@ -2838,6 +2855,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         window.IconButton = IconButton;
                         window.Stack = Stack;
                         window.Divider = Divider;
+                        window.Rating = Rating || window.Rating; // Use helper if Material-UI Rating not available
                         
                         // Ejecutar código
                         eval(codeStr);
