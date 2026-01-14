@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseCard, ThemeColors, IconButton } from '../BaseComponents';
+import { BaseCard, ThemeColors } from '../BaseComponents';
 import { Mic, Video, Monitor, PhoneOff, UserPlus } from 'lucide-react';
 import * as Avatar from '@radix-ui/react-avatar';
 

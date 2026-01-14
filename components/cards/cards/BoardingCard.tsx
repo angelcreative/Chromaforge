@@ -5,7 +5,7 @@ import * as Avatar from '@radix-ui/react-avatar';
 
 export default function BoardingCard({ theme }: { theme: ThemeColors }) {
   return (
-    <BaseCard theme={theme} className="p-6">
+    <BaseCard theme={theme} className="p-6" style={{ maxWidth: '480px', minWidth: '480px' }}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="text-sm font-semibold mb-1" style={{ color: theme.text.main }}>United Airlines</div>

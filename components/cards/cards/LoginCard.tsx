@@ -11,13 +11,13 @@ export default function LoginCard({ theme }: { theme: ThemeColors }) {
       <form className="space-y-4 mb-6">
         <div>
           <Label theme={theme} htmlFor="email">Email</Label>
-          <Input theme={theme} id="email" placeholder="your@email.com" style={{ padding: '12px 16px' }} />
+          <Input theme={theme} id="email" placeholder="your@email.com" />
         </div>
         <div>
           <Label theme={theme} htmlFor="password">Password</Label>
-          <Input theme={theme} id="password" type="password" placeholder="Enter password..." style={{ padding: '12px 16px' }} />
+          <Input theme={theme} id="password" type="password" placeholder="Enter password..." />
         </div>
-        <Button theme={theme} style={{ width: '100%', padding: '12px 24px' }}>Log in</Button>
+        <Button theme={theme} className="w-full">Log in</Button>
       </form>
 
       <div className="flex items-center gap-4 my-6">
@@ -27,13 +27,13 @@ export default function LoginCard({ theme }: { theme: ThemeColors }) {
       </div>
 
       <div className="space-y-3">
-        <Button theme={theme} variant="tertiary" style={{ width: '100%', padding: '12px 24px' }}>
+        <Button theme={theme} variant="tertiary" className="w-full">
           Continue with Microsoft
         </Button>
-        <Button theme={theme} variant="tertiary" style={{ width: '100%', padding: '12px 24px' }}>
+        <Button theme={theme} variant="tertiary" className="w-full">
           Continue with Google
         </Button>
-        <Button theme={theme} variant="tertiary" style={{ width: '100%', padding: '12px 24px' }}>
+        <Button theme={theme} variant="tertiary" className="w-full">
           Continue with Apple
         </Button>
       </div>

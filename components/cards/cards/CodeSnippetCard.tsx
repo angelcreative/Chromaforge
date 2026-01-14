@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BaseCard, ThemeColors, IconButton } from '../BaseComponents';
+import { BaseCard, ThemeColors } from '../BaseComponents';
+import { IconButton } from '../Molecules';
 import { Copy } from 'lucide-react';
 import * as Tabs from '@radix-ui/react-tabs';
 

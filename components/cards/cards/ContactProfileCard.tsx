@@ -23,18 +23,18 @@ export default function ContactProfileCard({ theme }: { theme: ThemeColors }) {
         </IconButton>
       </div>
 
-      <Button theme={theme} style={{ width: '100%', marginBottom: '12px' }} icon={<Mail size={16} />}>
+      <Button theme={theme} className="w-full mb-3" icon={<Mail size={16} />}>
         Send email
       </Button>
 
       <div className="flex gap-2 mb-6">
-        <IconButton theme={theme} style={{ flex: 1 }}>
+        <IconButton theme={theme} className="flex-1">
           <MessageCircle size={20} />
         </IconButton>
-        <IconButton theme={theme} style={{ flex: 1 }}>
+        <IconButton theme={theme} className="flex-1">
           <Video size={20} />
         </IconButton>
-        <IconButton theme={theme} style={{ flex: 1 }}>
+        <IconButton theme={theme} className="flex-1">
           <Calendar size={20} />
         </IconButton>
       </div>

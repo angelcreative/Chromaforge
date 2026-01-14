@@ -19,8 +19,8 @@ export default function WalkCard({ theme }: { theme: ThemeColors }) {
         physique is exercised, if you want to have a fit figure, you have to work hard.
       </p>
       <div className="flex gap-3 mb-6">
-        <Button theme={theme} variant="secondary" style={{ flex: 1 }}>Learn More</Button>
-        <Button theme={theme} style={{ flex: 1 }}>Start Now</Button>
+        <Button theme={theme} variant="secondary" className="flex-1">Learn More</Button>
+        <Button theme={theme} className="flex-1">Start Now</Button>
       </div>
       <div className="flex items-center gap-2 text-sm" style={{ color: theme.text.tertiary }}>
         <Clock size={16} />

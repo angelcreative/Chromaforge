@@ -34,7 +34,7 @@ export default function SearchCard({ theme }: { theme: ThemeColors }) {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold" style={{ color: theme.text.main }}>Recent Searches</h3>
-            <Button theme={theme} variant="tertiary" style={{ padding: '4px 12px', fontSize: '12px' }}>
+            <Button theme={theme} variant="tertiary">
               Clear all
             </Button>
           </div>

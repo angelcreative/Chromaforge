@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BaseCard, ThemeColors, IconButton } from '../BaseComponents';
+import { BaseCard, ThemeColors } from '../BaseComponents';
 import { Home, Video, Plus, Users, User, Radio, BookOpen, Edit } from 'lucide-react';
 
 export default function MenubarCard({ theme }: { theme: ThemeColors }) {

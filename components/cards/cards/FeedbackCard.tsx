@@ -66,8 +66,8 @@ export default function FeedbackCard({ theme }: { theme: ThemeColors }) {
       </div>
 
       <div className="flex gap-3">
-        <Button theme={theme} variant="secondary" style={{ flex: 1 }}>Cancel</Button>
-        <Button theme={theme} style={{ flex: 1 }}>Submit</Button>
+        <Button theme={theme} variant="secondary" className="flex-1">Cancel</Button>
+        <Button theme={theme} className="flex-1">Submit</Button>
       </div>
     </BaseCard>
   );

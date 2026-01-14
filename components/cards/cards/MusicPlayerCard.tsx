@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BaseCard, ThemeColors, IconButton } from '../BaseComponents';
+import { BaseCard, ThemeColors } from '../BaseComponents';
 import {
   Play,
   Pause,

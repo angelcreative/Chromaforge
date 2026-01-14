@@ -29,7 +29,7 @@ export default function PinCard({ theme }: { theme: ThemeColors }) {
         <a href="#" style={{ color: theme.action.primary }}>Didn't get code? Resend</a>
       </div>
 
-      <Button theme={theme} style={{ width: '100%' }}>Verify number</Button>
+      <Button theme={theme} className="w-full">Verify number</Button>
     </BaseCard>
   );
 }

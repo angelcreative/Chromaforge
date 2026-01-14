@@ -5,7 +5,7 @@ import { Star, X, Navigation, Phone, Bookmark, Share } from 'lucide-react';
 
 export default function MapCard({ theme }: { theme: ThemeColors }) {
   return (
-    <BaseCard theme={theme} className="overflow-hidden" style={{ maxWidth: '900px', width: '100%' }}>
+    <BaseCard theme={theme} className="overflow-hidden" style={{ maxWidth: '1000px', minWidth: '480px', width: '100%' }}>
       <div className="h-64 bg-slate-800 relative">
         <iframe
           src="https://maps.google.com/maps?width=500&height=500&hl=en&q=2880+Broadway,+New+York&t=&z=18&ie=UTF8&iwloc=B&output=embed"

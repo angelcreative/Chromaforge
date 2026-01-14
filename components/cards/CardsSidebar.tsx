@@ -104,39 +104,10 @@ export const CardsSidebar: React.FC<CardsSidebarProps> = ({
     ),
   })).filter((category) => category.cards.length > 0);
 
-  if (!isExpanded) {
-    return (
-      <div className="relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 w-0 md:w-[24px] overflow-hidden">
-        <button
-          onClick={onToggle}
-          className={`absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isExpanded ? '-left-3 top-6' : 'left-1 top-6'}`}
-          title="Expand Cards Library"
-          style={{ pointerEvents: 'auto' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M6 12L10 8L6 4V12Z" />
-          </svg>
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 w-full md:w-[280px] overflow-hidden">
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
-        className="absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 -left-3 top-6"
-        title="Collapse Cards Library"
-        style={{ pointerEvents: 'auto' }}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M10 12L6 8L10 4V12Z" />
-        </svg>
-      </button>
-
-      {isExpanded && (
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+    <div
+      className="relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl w-full md:w-[280px] overflow-hidden">
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
           {/* Header */}
           <div className="p-6 border-b border-white/5">
             <p className="text-xs text-slate-500">
@@ -192,7 +163,6 @@ export const CardsSidebar: React.FC<CardsSidebarProps> = ({
             ))}
           </div>
         </div>
-      )}
     </div>
   );
 };

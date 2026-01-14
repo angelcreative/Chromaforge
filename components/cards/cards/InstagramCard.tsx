@@ -1,5 +1,6 @@
 import React from 'react';
-import { BaseCard, ThemeColors, IconButton } from '../BaseComponents';
+import { BaseCard, ThemeColors } from '../BaseComponents';
+import { IconButton } from '../Molecules';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
 import * as Avatar from '@radix-ui/react-avatar';
 

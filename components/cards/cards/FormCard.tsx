@@ -33,8 +33,8 @@ export default function FormCard({ theme }: { theme: ThemeColors }) {
       />
 
       <div className="flex gap-3">
-        <Button theme={theme} variant="secondary" style={{ flex: 1 }}>Back</Button>
-        <Button theme={theme} style={{ flex: 1 }}>Next</Button>
+        <Button theme={theme} variant="secondary" className="flex-1">Back</Button>
+        <Button theme={theme} className="flex-1">Next</Button>
       </div>
     </BaseCard>
   );

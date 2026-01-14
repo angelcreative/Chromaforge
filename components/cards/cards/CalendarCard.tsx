@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BaseCard, ThemeColors, IconButton } from '../BaseComponents';
+import { BaseCard, ThemeColors } from '../BaseComponents';
+import { IconButton } from '../Molecules';
 import { ChevronLeft, ChevronRight, Music, Utensils } from 'lucide-react';
 
 export default function CalendarCard({ theme }: { theme: ThemeColors }) {

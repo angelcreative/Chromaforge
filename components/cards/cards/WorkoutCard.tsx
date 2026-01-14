@@ -71,7 +71,7 @@ export default function WorkoutCard({ theme }: { theme: ThemeColors }) {
           </div>
         </div>
 
-        <Button theme={theme} style={{ width: '100%' }}>View Complete Route</Button>
+        <Button theme={theme} className="w-full">View Complete Route</Button>
       </div>
     </BaseCard>
   );

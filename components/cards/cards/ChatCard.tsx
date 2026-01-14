@@ -45,7 +45,7 @@ export default function ChatCard({ theme }: { theme: ThemeColors }) {
       </div>
 
       <div className="flex items-center gap-2 pt-4 border-t" style={{ borderColor: theme.border.subtle }}>
-        <Input theme={theme} placeholder="Write your message here" style={{ flex: 1, minWidth: '300px' }} />
+        <Input theme={theme} placeholder="Write your message here" className="flex-1" style={{ minWidth: '300px' }} />
         <IconButton theme={theme}>
           <Send size={20} />
         </IconButton>

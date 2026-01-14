@@ -47,7 +47,7 @@ export default function OnboardingCard({ theme }: { theme: ThemeColors }) {
         Discover the latest trends, timeless classics and bold pieces that define you.
       </p>
       
-      <Button theme={theme} style={{ width: '100%' }}>
+      <Button theme={theme} className="w-full">
         Sign up
       </Button>
     </BaseCard>

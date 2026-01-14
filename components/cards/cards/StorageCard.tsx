@@ -21,7 +21,7 @@ export default function StorageCard({ theme }: { theme: ThemeColors }) {
         <p className="text-sm" style={{ color: theme.text.secondary }}>12 GB of 30 GB used</p>
       </div>
 
-      <Button theme={theme} style={{ width: '100%' }}>Buy storage</Button>
+      <Button theme={theme} className="w-full">Buy storage</Button>
     </BaseCard>
   );
 }

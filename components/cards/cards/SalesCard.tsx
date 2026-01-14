@@ -18,7 +18,7 @@ export default function SalesCard({ theme }: { theme: ThemeColors }) {
         Book more meetings and close deals quicker with Us, click-to-dial, real-time coaching,
         and Ai cloud capabilities.
       </p>
-      <Button theme={theme} variant="secondary" style={{ marginBottom: '24px' }}>Learn more</Button>
+      <Button theme={theme} variant="secondary" className="mb-6">Learn more</Button>
 
       <div className="p-4 rounded-lg" style={{ backgroundColor: theme.bg.input }}>
         <div className="flex items-start gap-4 mb-4">

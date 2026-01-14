@@ -103,7 +103,7 @@ export default function PaymentCard({ theme }: { theme: ThemeColors }) {
           <div className="flex-1" style={{ backgroundColor: `${theme.action.primary}15`, borderRadius: '8px', padding: '8px 12px' }}>
             <span style={{ color: theme.text.main }}>30KCELEB</span>
           </div>
-          <Button theme={theme} variant="secondary" style={{ backgroundColor: `${theme.action.primary}20`, color: theme.action.primary }}>Apply</Button>
+          <Button theme={theme} variant="secondary">Apply</Button>
         </div>
         <span className="text-xs" style={{ color: theme.semantic.success.main }}>30% Discount code applied</span>
       </div>
@@ -130,7 +130,7 @@ export default function PaymentCard({ theme }: { theme: ThemeColors }) {
         </div>
       </div>
 
-      <Button theme={theme} style={{ width: '100%' }}>Pay Now</Button>
+      <Button theme={theme} className="w-full">Pay Now</Button>
     </BaseCard>
   );
 }

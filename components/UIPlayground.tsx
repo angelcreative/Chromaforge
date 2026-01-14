@@ -7,7 +7,7 @@ import * as Accordion from '@radix-ui/react-accordion';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import * as AspectRatio from '@radix-ui/react-aspect-ratio';
 import * as Avatar from '@radix-ui/react-avatar';
-import * as Checkbox from '@radix-ui/react-checkbox';
+import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -18,12 +18,12 @@ import * as Menubar from '@radix-ui/react-menubar';
 import * as NavigationMenu from '@radix-ui/react-navigation-menu';
 import * as Popover from '@radix-ui/react-popover';
 import * as Progress from '@radix-ui/react-progress';
-import * as RadioGroup from '@radix-ui/react-radio-group';
+import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import * as Select from '@radix-ui/react-select';
+import * as SelectPrimitive from '@radix-ui/react-select';
 import * as Separator from '@radix-ui/react-separator';
-import * as Slider from '@radix-ui/react-slider';
-import * as Switch from '@radix-ui/react-switch';
+import * as SliderPrimitive from '@radix-ui/react-slider';
+import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as Tabs from '@radix-ui/react-tabs';
 import * as Toast from '@radix-ui/react-toast';
 import * as Toggle from '@radix-ui/react-toggle';
@@ -43,6 +43,8 @@ import {
 import { FaPaperPlane } from 'react-icons/fa';
 import { CardsSidebar } from './cards/CardsSidebar';
 import { CardsViewer } from './cards/CardsViewer';
+import { Button, IconButton, Switch, Checkbox, Radio, RadioGroup, Select, Slider } from './cards/Molecules';
+import { ThemeColors } from './cards/BaseComponents';
 
 interface UIPlaygroundProps {
   brandPalette: ColorData[];
@@ -79,16 +81,14 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'molecules' | 'organisms'>('molecules');
   const [selectedComponent, setSelectedComponent] = useState<ComponentType>('button');
+  const [componentSearchQuery, setComponentSearchQuery] = useState('');
   const [toastOpen, setToastOpen] = useState(false);
   const [checkboxStates, setCheckboxStates] = useState<{ [key: number]: boolean }>({});
   const [radioState, setRadioState] = useState<string>('option1');
   const [switchStates, setSwitchStates] = useState<{ [key: number]: boolean }>({});
   const [activeTabValue, setActiveTabValue] = useState<string>('tab1');
-  const [isLeftSidebarExpanded, setIsLeftSidebarExpanded] = useState(true);
-  
   // Cards Library states
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [isCardsSidebarExpanded, setIsCardsSidebarExpanded] = useState(true);
   
   // AI Assistant states
   const [aiPrompt, setAiPrompt] = useState('');
@@ -712,26 +712,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <div className="mb-8">
                 <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>Primary</h4>
                 <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.primaryHover; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.action.primary; }}
-                  >
-                    Primary Button
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all cursor-not-allowed"
-                    style={{ backgroundColor: theme.disabled.bg, color: theme.disabled.text }}
-                  >
-                    Disabled
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary, transform: 'scale(0.95)' }}
-                  >
-                    Active
-                  </button>
+                  <Button theme={theme as ThemeColors}>Primary Button</Button>
+                  <Button theme={theme as ThemeColors} disabled>Disabled</Button>
+                  <Button theme={theme as ThemeColors}>Active</Button>
                 </div>
               </div>
 
@@ -739,30 +722,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <div className="mb-8">
                 <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>Secondary</h4>
                 <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ 
-                      backgroundColor: theme.action.secondaryBg, 
-                      color: theme.action.secondaryText
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = theme.action.secondaryHover;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
-                    }}
-                  >
-                    Secondary Button
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all cursor-not-allowed"
-                    style={{ 
-                      backgroundColor: theme.disabled.bg, 
-                      color: theme.disabled.text
-                    }}
-                  >
-                    Disabled
-                  </button>
+                  <Button theme={theme as ThemeColors} variant="secondary">Secondary Button</Button>
+                  <Button theme={theme as ThemeColors} variant="secondary" disabled>Disabled</Button>
                 </div>
               </div>
 
@@ -770,22 +731,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <div className="mb-8">
                 <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>Tertiary</h4>
                 <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-medium transition-all"
-                    style={{ color: theme.action.primary }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.secondaryBg; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    onMouseDown={(e) => { e.currentTarget.style.backgroundColor = theme.action.secondaryBg; }}
-                    onMouseUp={(e) => { e.currentTarget.style.backgroundColor = theme.action.secondaryBg; }}
-                  >
-                    Tertiary Button
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-medium transition-all cursor-not-allowed"
-                    style={{ color: theme.disabled.text }}
-                  >
-                    Disabled
-                  </button>
+                  <Button theme={theme as ThemeColors} variant="tertiary">Tertiary Button</Button>
+                  <Button theme={theme as ThemeColors} variant="tertiary" disabled>Disabled</Button>
                 </div>
               </div>
 
@@ -793,20 +740,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <div className="mb-8">
                 <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>Link</h4>
                 <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="px-0 py-2 text-sm font-medium transition-all underline decoration-2 underline-offset-4"
-                    style={{ color: theme.action.primary }}
-                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                  >
-                    Link Button
-                  </button>
-                  <button 
-                    className="px-0 py-2 text-sm font-medium transition-all underline decoration-2 underline-offset-4 cursor-not-allowed"
-                    style={{ color: theme.disabled.text }}
-                  >
-                    Disabled
-                  </button>
+                  <Button theme={theme as ThemeColors} variant="link">Link Button</Button>
+                  <Button theme={theme as ThemeColors} variant="link" disabled>Disabled</Button>
                 </div>
               </div>
 
@@ -928,30 +863,10 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <div className="mb-8">
                 <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: theme.text.secondary }}>Semantic</h4>
                 <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ backgroundColor: theme.semantic.success.main, color: '#FFFFFF' }}
-                  >
-                    Success
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ backgroundColor: theme.semantic.error.main, color: '#FFFFFF' }}
-                  >
-                    Error
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ backgroundColor: theme.semantic.warning.main, color: '#FFFFFF' }}
-                  >
-                    Warning
-                  </button>
-                  <button 
-                    className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-                    style={{ backgroundColor: theme.semantic.info.main, color: '#FFFFFF' }}
-                  >
-                    Info
-                  </button>
+                  <Button theme={theme as ThemeColors} variant="success">Success</Button>
+                  <Button theme={theme as ThemeColors} variant="error">Error</Button>
+                  <Button theme={theme as ThemeColors} variant="warning">Warning</Button>
+                  <Button theme={theme as ThemeColors} variant="info">Info</Button>
                 </div>
               </div>
             </div>
@@ -1352,20 +1267,10 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     </AlertDialog.Description>
                     <div className="flex justify-end gap-3">
                       <AlertDialog.Cancel asChild>
-                        <button 
-                          className="px-4 py-2 rounded-lg text-sm font-medium"
-                          style={{ backgroundColor: theme.bg.input, color: theme.text.main }}
-                        >
-                          Cancel
-                        </button>
+                        <Button theme={theme as ThemeColors} variant="secondary">Cancel</Button>
                       </AlertDialog.Cancel>
                       <AlertDialog.Action asChild>
-                        <button 
-                          className="px-4 py-2 rounded-lg text-sm font-bold"
-                          style={{ backgroundColor: theme.semantic.error.main, color: '#FFFFFF' }}
-                        >
-                          Yes, delete account
-                        </button>
+                        <Button theme={theme as ThemeColors} variant="error">Yes, delete account</Button>
                       </AlertDialog.Action>
                     </div>
                   </AlertDialog.Content>
@@ -1436,7 +1341,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                   { label: 'Disabled Option', id: 3, disabled: true },
                 ].map((item) => (
                   <div key={item.id} className="flex items-center gap-3">
-                    <Checkbox.Root
+                    <CheckboxPrimitive.Root
                       className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all disabled:cursor-not-allowed"
                       checked={checkboxStates[item.id] || false}
                       disabled={item.disabled}
@@ -1450,10 +1355,10 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                           : (checkboxStates[item.id] ? theme.action.primary : theme.border.default),
                       }}
                     >
-                      <Checkbox.Indicator>
+                      <CheckboxPrimitive.Indicator>
                         <HiCheck className="w-4 h-4" style={{ color: item.disabled ? theme.disabled.text : theme.text.onPrimary }} />
-                      </Checkbox.Indicator>
-                    </Checkbox.Root>
+                      </CheckboxPrimitive.Indicator>
+                    </CheckboxPrimitive.Root>
                     <Label.Root className="text-sm" style={{ color: item.disabled ? theme.disabled.text : theme.text.main }}>
                       {item.label}
                     </Label.Root>
@@ -1547,12 +1452,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Dialog</h3>
               <Dialog.Root>
                 <Dialog.Trigger asChild>
-                  <button 
-                    className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
-                  >
-                    Open Dialog
-                  </button>
+                  <Button theme={theme as ThemeColors}>Open Dialog</Button>
                 </Dialog.Trigger>
                 <Dialog.Portal>
                   <Dialog.Overlay className="fixed inset-0 bg-black/50" />
@@ -1579,29 +1479,16 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     </div>
                     <div className="flex justify-end gap-3 mt-6">
                       <Dialog.Close asChild>
-                        <button 
-                          className="px-4 py-2 rounded-lg text-sm font-medium"
-                          style={{ backgroundColor: theme.bg.input, color: theme.text.main }}
-                        >
-                          Cancel
-                        </button>
+                        <Button theme={theme as ThemeColors} variant="secondary">Cancel</Button>
                       </Dialog.Close>
                       <Dialog.Close asChild>
-                        <button 
-                          className="px-4 py-2 rounded-lg text-sm font-bold"
-                          style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
-                        >
-                          Save changes
-                        </button>
+                        <Button theme={theme as ThemeColors}>Save changes</Button>
                       </Dialog.Close>
                     </div>
                     <Dialog.Close asChild>
-                      <button 
-                        className="absolute top-4 right-4 p-1 rounded"
-                        style={{ color: theme.text.secondary }}
-                      >
+                      <IconButton theme={theme as ThemeColors} className="absolute top-4 right-4">
                         <HiX className="w-5 h-5" />
-                      </button>
+                      </IconButton>
                     </Dialog.Close>
                   </Dialog.Content>
                 </Dialog.Portal>
@@ -1617,13 +1504,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Dropdown Menu</h3>
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                  <button 
-                    className="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
-                    style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}
-                  >
-                    Options
-                    <HiChevronDown className="w-4 h-4" />
-                  </button>
+                  <Button theme={theme as ThemeColors} icon={<HiChevronDown className="w-4 h-4" />}>Options</Button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content 
@@ -2023,27 +1904,27 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
           <div className="space-y-8">
             <div>
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Radio Button Groups</h3>
-              <RadioGroup.Root defaultValue="option1" className="space-y-3">
+              <RadioGroupPrimitive.Root defaultValue="option1" className="space-y-3">
                 {['Option 1', 'Option 2', 'Option 3'].map((option, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <RadioGroup.Item
+                    <RadioGroupPrimitive.Item
                       value={`option${i + 1}`}
                       className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                       style={{
                         borderColor: theme.border.default,
                       }}
                     >
-                      <RadioGroup.Indicator
+                      <RadioGroupPrimitive.Indicator
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: theme.action.primary }}
                       />
-                    </RadioGroup.Item>
+                    </RadioGroupPrimitive.Item>
                     <Label.Root className="text-sm" style={{ color: theme.text.main }}>
                       {option}
                     </Label.Root>
                   </div>
                 ))}
-              </RadioGroup.Root>
+              </RadioGroupPrimitive.Root>
             </div>
             <div>
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Disabled Radio</h3>
@@ -2099,8 +1980,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                   <Label.Root className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>
                     Select Option
                   </Label.Root>
-                  <Select.Root>
-                    <Select.Trigger
+                  <SelectPrimitive.Root>
+                    <SelectPrimitive.Trigger
                       className="w-full px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-all focus:outline-none focus:ring-2"
                       style={{
                         backgroundColor: theme.bg.input,
@@ -2108,25 +1989,25 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         border: `1px solid ${theme.border.default}`,
                       }}
                     >
-                      <Select.Value placeholder="Choose an option..." />
-                      <Select.Icon>
+                      <SelectPrimitive.Value placeholder="Choose an option..." />
+                      <SelectPrimitive.Icon>
                         <HiChevronDown className="w-4 h-4" />
-                      </Select.Icon>
-                    </Select.Trigger>
-                    <Select.Portal>
-                      <Select.Content
+                      </SelectPrimitive.Icon>
+                    </SelectPrimitive.Trigger>
+                    <SelectPrimitive.Portal>
+                      <SelectPrimitive.Content
                         className="rounded-lg shadow-lg border min-w-[200px] p-1"
         style={{ 
             backgroundColor: theme.bg.card, 
                           borderColor: theme.border.subtle,
                         }}
                       >
-                        <Select.ScrollUpButton className="flex items-center justify-center h-6">
+                        <SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6">
                           <HiChevronUp className="w-4 h-4" style={{ color: theme.text.secondary }} />
-                        </Select.ScrollUpButton>
-                        <Select.Viewport>
+                        </SelectPrimitive.ScrollUpButton>
+                        <SelectPrimitive.Viewport>
                           {['Option 1', 'Option 2', 'Option 3', 'Option 4'].map((option, i) => (
-                            <Select.Item
+                            <SelectPrimitive.Item
                               key={i}
                               value={option.toLowerCase().replace(' ', '-')}
                               className="px-3 py-2 rounded text-sm cursor-pointer focus:outline-none"
@@ -2134,16 +2015,16 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                 color: theme.text.main,
                               }}
                             >
-                              <Select.ItemText>{option}</Select.ItemText>
-                            </Select.Item>
+                              <SelectPrimitive.ItemText>{option}</SelectPrimitive.ItemText>
+                            </SelectPrimitive.Item>
                           ))}
-                        </Select.Viewport>
-                        <Select.ScrollDownButton className="flex items-center justify-center h-6">
+                        </SelectPrimitive.Viewport>
+                        <SelectPrimitive.ScrollDownButton className="flex items-center justify-center h-6">
                           <HiChevronDown className="w-4 h-4" style={{ color: theme.text.secondary }} />
-                        </Select.ScrollDownButton>
-                      </Select.Content>
-                    </Select.Portal>
-                  </Select.Root>
+                        </SelectPrimitive.ScrollDownButton>
+                      </SelectPrimitive.Content>
+                    </SelectPrimitive.Portal>
+                  </SelectPrimitive.Root>
                 </div>
                 <div>
                   <Label.Root className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>
@@ -2176,64 +2057,64 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                   <Label.Root className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>
                     Volume: 50
                   </Label.Root>
-                  <Slider.Root 
+                  <SliderPrimitive.Root 
                     className="relative flex items-center select-none touch-none w-full h-5"
                     defaultValue={[50]}
                     max={100}
                     step={1}
                   >
-                    <Slider.Track 
+                    <SliderPrimitive.Track 
                       className="bg-black/10 relative grow rounded-full h-2"
                       style={{ backgroundColor: theme.bg.input }}
                     >
-                      <Slider.Range 
+                      <SliderPrimitive.Range 
                         className="absolute bg-white rounded-full h-full"
                         style={{ backgroundColor: theme.action.primary }}
                       />
-                    </Slider.Track>
-                    <Slider.Thumb 
+                    </SliderPrimitive.Track>
+                    <SliderPrimitive.Thumb 
                       className="block w-5 h-5 bg-white shadow-lg rounded-full focus:outline-none focus:ring-2"
                       style={{ 
                         backgroundColor: theme.action.primary,
                         border: `2px solid ${theme.action.primary}`
                       }}
                     />
-                  </Slider.Root>
+                  </SliderPrimitive.Root>
                 </div>
                 <div>
                   <Label.Root className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>
                     Range: 25 - 75
                   </Label.Root>
-                  <Slider.Root 
+                  <SliderPrimitive.Root 
                     className="relative flex items-center select-none touch-none w-full h-5"
                     defaultValue={[25, 75]}
                     max={100}
                     step={1}
                   >
-                    <Slider.Track 
+                    <SliderPrimitive.Track 
                       className="bg-black/10 relative grow rounded-full h-2"
                       style={{ backgroundColor: theme.bg.input }}
                     >
-                      <Slider.Range 
+                      <SliderPrimitive.Range 
                         className="absolute bg-white rounded-full h-full"
                         style={{ backgroundColor: theme.action.primary }}
                       />
-                    </Slider.Track>
-                    <Slider.Thumb 
+                    </SliderPrimitive.Track>
+                    <SliderPrimitive.Thumb 
                       className="block w-5 h-5 bg-white shadow-lg rounded-full focus:outline-none focus:ring-2"
                       style={{ 
                         backgroundColor: theme.action.primary,
                         border: `2px solid ${theme.action.primary}`
                       }}
                     />
-                    <Slider.Thumb 
+                    <SliderPrimitive.Thumb 
                       className="block w-5 h-5 bg-white shadow-lg rounded-full focus:outline-none focus:ring-2"
                       style={{ 
                         backgroundColor: theme.action.primary,
                         border: `2px solid ${theme.action.primary}`
                       }}
                     />
-                  </Slider.Root>
+                  </SliderPrimitive.Root>
                 </div>
               </div>
             </div>
@@ -2256,7 +2137,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     <Label.Root className="text-sm" style={{ color: item.disabled ? theme.disabled.text : theme.text.main }}>
                       {item.label}
                     </Label.Root>
-                    <Switch.Root
+                    <SwitchPrimitive.Root
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                       checked={switchStates[item.id] || false}
                       disabled={item.disabled}
@@ -2267,14 +2148,14 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                           : (switchStates[item.id] ? theme.action.primary : (theme.switch?.off || theme.border.default || '#9CA3AF')),
                       }}
                     >
-                      <Switch.Thumb
+                      <SwitchPrimitive.Thumb
                         className="inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out shadow-sm"
                         style={{
                           transform: switchStates[item.id] ? 'translateX(24px)' : 'translateX(4px)',
                           backgroundColor: item.disabled ? theme.disabled.text : 'white',
                         }}
                       />
-                    </Switch.Root>
+                    </SwitchPrimitive.Root>
                   </div>
                 ))}
               </div>
@@ -2581,22 +2462,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         {/* --- MAIN CONTENT AREA --- */}
         <div className="flex flex-row flex-1 overflow-hidden">
             {/* --- COMPONENT MENU SIDEBAR (LEFT) --- */}
-            <div className={`relative bg-slate-900 border-r border-white/5 flex flex-col shrink-0 z-10 shadow-2xl transition-all duration-300 ${isLeftSidebarExpanded ? 'w-full md:w-[280px]' : 'w-0 md:w-[24px]'} overflow-hidden`}>
-                {/* Toggle Button */}
-                <button
-                    onClick={() => setIsLeftSidebarExpanded(!isLeftSidebarExpanded)}
-                    className={`absolute z-50 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-slate-700 transition-all shadow-lg hover:scale-110 ${isLeftSidebarExpanded ? '-right-3 top-6' : 'right-1 top-6'}`}
-                    title={isLeftSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-                    style={{ pointerEvents: 'auto' }}
-                >
-                    {isLeftSidebarExpanded ? (
-                        <HiChevronLeft className="w-4 h-4" />
-                    ) : (
-                        <HiChevronRight className="w-4 h-4" />
-                    )}
-                </button>
-                
-                {isLeftSidebarExpanded && (
+            <div className="relative bg-slate-900 border-r border-white/5 flex flex-col shrink-0 z-10 shadow-2xl w-full md:w-[280px] overflow-hidden">
+                { (
                 <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                 <div className="p-6 border-b border-white/5">
                     <p className="text-xs text-slate-500">
@@ -2642,9 +2509,27 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         </div>
                     </div>
 
+                {/* Search */}
+                <div className="px-4 pt-4 pb-4 border-b border-white/5">
+                  <div className="relative">
+                    <HiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder={`Search ${activeTab}...`}
+                      value={componentSearchQuery}
+                      onChange={(e) => setComponentSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-lg text-sm bg-slate-800 border border-white/10 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+
                 {/* COMPONENT LIST */}
                 <div className="p-4 space-y-1">
-                    {(activeTab === 'molecules' ? molecules : organisms).map((comp) => (
+                    {(activeTab === 'molecules' ? molecules : organisms)
+                      .filter((comp) => 
+                        comp.label.toLowerCase().includes(componentSearchQuery.toLowerCase())
+                      )
+                      .map((comp) => (
                         <button
                             key={comp.id}
                             onClick={() => {
@@ -2824,8 +2709,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     setSelectedComponent(null as any);
                     setAiGeneratedComponent(null);
                 }}
-                isExpanded={isCardsSidebarExpanded}
-                onToggle={() => setIsCardsSidebarExpanded(!isCardsSidebarExpanded)}
+                isExpanded={true}
+                onToggle={() => {}}
             />
         </div>
         
