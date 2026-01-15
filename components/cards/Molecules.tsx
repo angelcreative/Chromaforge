@@ -165,41 +165,6 @@ export const Button: React.FC<{
     return null;
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled || variant === 'link') return;
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const currentX = e.clientX - rect.left;
-      const currentY = e.clientY - rect.top;
-      const currentTime = Date.now();
-      
-      setGlowPosition({
-        x: currentX,
-        y: currentY,
-      });
-      
-      // Calculate velocity for organic movement
-      if (lastPositionRef.current) {
-        const timeDelta = Math.max(currentTime - lastPositionRef.current.time, 1); // Avoid division by zero
-        const xDelta = currentX - lastPositionRef.current.x;
-        const yDelta = currentY - lastPositionRef.current.y;
-        
-        // Velocity in pixels per millisecond, smoothed
-        const vx = (xDelta / timeDelta) * 16; // Scale for smoother effect
-        const vy = (yDelta / timeDelta) * 16;
-        
-        setVelocity({ x: vx, y: vy });
-      }
-      
-      lastPositionRef.current = { x: currentX, y: currentY, time: currentTime };
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setGlowPosition(null);
-    setVelocity({ x: 0, y: 0 });
-    lastPositionRef.current = null;
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || variant === 'link') return;
@@ -493,9 +458,7 @@ export const Switch: React.FC<{
             const currentBg = checked ? theme.action.primary : (theme.switch?.off || theme.border.default || '#9CA3AF');
             e.currentTarget.style.backgroundColor = currentBg;
           }
-          setGlowPosition(null);
         }}
-        onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
       >
         <RippleEffect position={ripplePosition} isActive={isRippling} />
@@ -551,21 +514,9 @@ export const Radio: React.FC<{
   label?: string;
   className?: string;
 }> = ({ value, checked, onCheckedChange, theme, disabled = false, label, className = '' }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const radioRef = React.useRef<HTMLDivElement>(null);
-
-  const getBaseColor = () => checked ? theme.action.primary : theme.border.default;
-  const getGlowColor = () => lightenColor(getBaseColor(), 0.3);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (disabled) return;
-    if (radioRef.current) {
-      const rect = radioRef.current.getBoundingClientRect();
-      setGlowPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (disabled) return;
@@ -599,12 +550,9 @@ export const Radio: React.FC<{
             e.currentTarget.style.borderColor = checked ? theme.action.primary : theme.border.default;
             e.currentTarget.style.backgroundColor = 'transparent';
           }
-          setGlowPosition(null);
         }}
-        onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
       >
-        <GlowEffect position={glowPosition} color={getGlowColor()} size={60} isActive={!disabled && !isRippling} />
         <RippleEffect position={ripplePosition} isActive={isRippling} />
         {checked && (
           <div 
@@ -629,21 +577,9 @@ const RadioGroupItem: React.FC<{
   value: string;
   theme: ThemeColors;
 }> = ({ option, value, theme }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const labelRef = React.useRef<HTMLLabelElement>(null);
-
-  const getBaseColor = () => theme.action.primary;
-  const getGlowColor = () => lightenColor(getBaseColor(), 0.3);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLLabelElement>) => {
-    if (option.disabled) return;
-    if (labelRef.current) {
-      const rect = labelRef.current.getBoundingClientRect();
-      setGlowPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLLabelElement>) => {
     if (option.disabled) return;
@@ -670,12 +606,9 @@ const RadioGroupItem: React.FC<{
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = value === option.value ? `${theme.action.primary}15` : theme.bg.input;
-        setGlowPosition(null);
       }}
-      onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
     >
-      <GlowEffect position={glowPosition} color={getGlowColor()} size={150} isActive={!option.disabled && !isRippling} />
       <RippleEffect position={ripplePosition} isActive={isRippling} />
       <RadioGroupPrimitive.Item
         value={option.value}
@@ -718,21 +651,9 @@ export const Checkbox: React.FC<{
   label?: string;
   className?: string;
 }> = ({ checked, onCheckedChange, theme, disabled = false, label, className = '' }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const checkboxRef = React.useRef<HTMLButtonElement>(null);
-
-  const getBaseColor = () => checked ? theme.action.primary : theme.border.default;
-  const getGlowColor = () => lightenColor(getBaseColor(), 0.3);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    if (checkboxRef.current) {
-      const rect = checkboxRef.current.getBoundingClientRect();
-      setGlowPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled) return;
@@ -773,12 +694,9 @@ export const Checkbox: React.FC<{
             e.currentTarget.style.borderColor = checked ? theme.action.primary : theme.border.default;
             e.currentTarget.style.backgroundColor = checked ? theme.action.primary : theme.bg.input;
           }
-          setGlowPosition(null);
         }}
-        onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
       >
-        <GlowEffect position={glowPosition} color={getGlowColor()} size={60} isActive={!disabled && !isRippling} />
         <RippleEffect position={ripplePosition} isActive={isRippling} />
         <CheckboxPrimitive.Indicator className="relative z-10">
           <HiCheck className="w-4 h-4" style={{ color: disabled ? theme.disabled.text : theme.text.onPrimary }} />
@@ -937,20 +855,9 @@ const SelectItem: React.FC<{
   option: { value: string; label: string };
   theme: ThemeColors;
 }> = ({ option, theme }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const itemRef = React.useRef<HTMLDivElement>(null);
-
-  const getBaseColor = () => theme.action.primary;
-  const getGlowColor = () => lightenColor(getBaseColor(), 0.3);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (itemRef.current) {
-      const rect = itemRef.current.getBoundingClientRect();
-      setGlowPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (itemRef.current) {
@@ -971,12 +878,9 @@ const SelectItem: React.FC<{
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = 'transparent';
-        setGlowPosition(null);
       }}
-      onMouseMove={handleMouseMove as any}
       onMouseDown={handleMouseDown as any}
     >
-      <GlowEffect position={glowPosition} color={getGlowColor()} size={120} isActive={!isRippling} />
       <RippleEffect position={ripplePosition} isActive={isRippling} />
       <span className="relative z-10">
         <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
@@ -995,21 +899,9 @@ export const Select: React.FC<{
   disabled?: boolean;
   className?: string;
 }> = ({ value, onValueChange, theme, options, placeholder = 'Choose an option...', disabled = false, className = '' }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
-
-  const getBaseColor = () => theme.action.primary;
-  const getGlowColor = () => lightenColor(getBaseColor(), 0.3);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setGlowPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled) return;
@@ -1040,12 +932,9 @@ export const Select: React.FC<{
           if (!disabled && document.activeElement !== e.currentTarget) {
             e.currentTarget.style.borderColor = theme.border.default;
           }
-          setGlowPosition(null);
         }}
-        onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
       >
-        <GlowEffect position={glowPosition} color={getGlowColor()} size={150} isActive={!disabled && !isRippling} />
         <RippleEffect position={ripplePosition} isActive={isRippling} />
         <span className="relative z-10 flex items-center justify-between w-full">
           <SelectPrimitive.Value placeholder={placeholder} />
@@ -1081,20 +970,9 @@ export const Select: React.FC<{
 
 // Slider Thumb Component with effects
 const SliderThumb: React.FC<{ theme: ThemeColors }> = ({ theme }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const thumbRef = React.useRef<HTMLSpanElement>(null);
-
-  const getBaseColor = () => theme.action.primary;
-  const getGlowColor = () => lightenColor(getBaseColor(), 0.3);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLSpanElement>) => {
-    if (thumbRef.current) {
-      const rect = thumbRef.current.getBoundingClientRect();
-      setGlowPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (thumbRef.current) {
@@ -1117,12 +995,9 @@ const SliderThumb: React.FC<{ theme: ThemeColors }> = ({ theme }) => {
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = theme.action.primary;
         e.currentTarget.style.transform = 'scale(1)';
-        setGlowPosition(null);
       }}
-      onMouseMove={handleMouseMove as any}
       onMouseDown={handleMouseDown as any}
     >
-      <GlowEffect position={glowPosition} color={getGlowColor()} size={60} isActive={!isRippling} />
       <RippleEffect position={ripplePosition} isActive={isRippling} />
     </SliderPrimitive.Thumb>
   );
@@ -1181,12 +1056,9 @@ export const IconButton: React.FC<{
   style?: React.CSSProperties;
   variant?: 'default' | 'primary' | 'secondary';
 }> = ({ children, theme, onClick, disabled = false, className = '', style = {}, variant = 'default' }) => {
-  const [glowPosition, setGlowPosition] = React.useState<{ x: number; y: number } | null>(null);
-  const [velocity, setVelocity] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
-  const lastPositionRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
 
   const variantStyles = {
     default: {
@@ -1201,57 +1073,6 @@ export const IconButton: React.FC<{
       backgroundColor: theme.action.secondaryBg,
       color: theme.action.secondaryText,
     },
-  };
-
-  const lightenColor = (color: string, amount: number = 0.2): string => {
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const lighterR = Math.min(255, Math.floor(r + (255 - r) * amount));
-    const lighterG = Math.min(255, Math.floor(g + (255 - g) * amount));
-    const lighterB = Math.min(255, Math.floor(b + (255 - b) * amount));
-    return `#${lighterR.toString(16).padStart(2, '0')}${lighterG.toString(16).padStart(2, '0')}${lighterB.toString(16).padStart(2, '0')}`;
-  };
-
-  const getBaseColor = () => {
-    if (variant === 'primary') return theme.action.primary;
-    if (variant === 'secondary') return theme.action.secondaryBg;
-    return theme.action.primary;
-  };
-
-  const getGlowColor = () => {
-    const baseColor = getBaseColor();
-    return lightenColor(baseColor, 0.3);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const currentX = e.clientX - rect.left;
-      const currentY = e.clientY - rect.top;
-      const currentTime = Date.now();
-      
-      setGlowPosition({
-        x: currentX,
-        y: currentY,
-      });
-      
-      // Calculate velocity for organic movement
-      if (lastPositionRef.current) {
-        const timeDelta = Math.max(currentTime - lastPositionRef.current.time, 1);
-        const xDelta = currentX - lastPositionRef.current.x;
-        const yDelta = currentY - lastPositionRef.current.y;
-        
-        const vx = (xDelta / timeDelta) * 16;
-        const vy = (yDelta / timeDelta) * 16;
-        
-        setVelocity({ x: vx, y: vy });
-      }
-      
-      lastPositionRef.current = { x: currentX, y: currentY, time: currentTime };
-    }
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -1302,22 +1123,9 @@ export const IconButton: React.FC<{
             e.currentTarget.style.backgroundColor = variantStyles[variant].backgroundColor as string;
           }
         }
-        setGlowPosition(null);
-        setVelocity({ x: 0, y: 0 });
-        lastPositionRef.current = null;
       }}
-      onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
     >
-      {!disabled && glowPosition && !isRippling && (
-        <GlowEffect 
-          position={glowPosition} 
-          color={getGlowColor()} 
-          size={80} 
-          isActive={true}
-          velocity={velocity}
-        />
-      )}
       {!disabled && (
         <RippleEffect position={ripplePosition} isActive={isRippling} />
       )}
