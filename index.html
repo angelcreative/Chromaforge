@@ -24,12 +24,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>ChromaForge - Advanced Color Token Builder</title>
-    <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon.svg?v=6" />
+    <link id="apple-touch-icon" rel="apple-touch-icon" href="/favicon-light.svg?v=6" />
     <script>
       (function () {
+        var dark = document.documentElement.dataset.theme === 'dark';
+        var href = (dark ? '/favicon-dark.svg' : '/favicon-light.svg') + '?v=6';
         var icon = document.getElementById('favicon');
-        if (!icon) return;
-        icon.href = document.documentElement.dataset.theme === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg';
+        var apple = document.getElementById('apple-touch-icon');
+        if (icon) icon.href = href;
+        if (apple) apple.href = href;
       })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
