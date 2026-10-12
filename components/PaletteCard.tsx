@@ -1,12 +1,21 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Eye, Info, Lock, SlidersHorizontal } from 'lucide-react';
-import { ColorData, GlobalCurveConfig } from '../types';
-import { generateShades, rgbToCmyk } from '../utils/colorUtils';
+import { ColorData, ColorRGB, GlobalCurveConfig } from '../types';
+import { generateShades, hexToRgb, rgbToCmyk } from '../utils/colorUtils';
+import ColorInfo, { stepRef } from './ColorInfo';
+
+interface OpenInfo {
+  id: string;
+  hex: string;
+  rgb: ColorRGB;
+  level?: number;
+  anchor: HTMLElement;
+  closing: boolean;
+}
 
 interface PaletteCardProps {
   color: ColorData;
-  onOpenInfo: (color: ColorData) => void;
   onOpenGrid: (color: ColorData) => void;
   onEditScale: (color: ColorData) => void; 
   onCopy: (text: string) => void;
@@ -16,10 +25,11 @@ interface PaletteCardProps {
   globalConfig?: GlobalCurveConfig;
 }
 
-const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid, onEditScale, onCopy, onColorUpdate, isPrintMode, isCompact = false, globalConfig }) => {
+const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenGrid, onEditScale, onCopy, onColorUpdate, isPrintMode, isCompact = false, globalConfig }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(color.name);
+  const [info, setInfo] = useState<OpenInfo | null>(null);
   
   // Pass globalConfig here to ensure sliders affect the card immediately
   const shades = generateShades(color, globalConfig);
@@ -61,6 +71,15 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
     onCopy(hex);
   };
 
+  const openInfo = (anchor: HTMLElement, next: Omit<OpenInfo, 'anchor' | 'closing'>) => {
+    setInfo((current) => {
+      if (current && current.anchor === anchor && !current.closing) {
+        return { ...current, closing: true };
+      }
+      return { ...next, anchor, closing: false };
+    });
+  };
+
   const hasCustomScale = color.scaleConfig && (color.scaleConfig.hueShift !== 0 || color.scaleConfig.saturationBoost !== 0 || color.scaleConfig.lockInputColor || color.scaleConfig.useOkLCH);
 
   return (
@@ -82,7 +101,8 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                 <div 
                     className="h-32 w-full relative group cursor-pointer overflow-hidden rounded-t-[calc(1rem-1px)]"
                     style={{ backgroundColor: color.hex }}
-                    onClick={() => onOpenInfo(color)}
+                    data-color-info-trigger
+                    onClick={(event) => openInfo(event.currentTarget, { id: 'base', hex: color.hex, rgb: color.rgb })}
                 >
                 </div>
             )}
@@ -149,7 +169,9 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                             <Eye className="size-5" strokeWidth={1.5} />
                         </button>
                         <button 
-                            onClick={() => onOpenInfo(color)}
+                            type="button"
+                            data-color-info-trigger
+                            onClick={(event) => openInfo(event.currentTarget, { id: 'base', hex: color.hex, rgb: color.rgb })}
                             className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                             aria-label="Color details"
                         >
@@ -184,6 +206,23 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                                     onClick={() => handleCopy(shade.hex)}
                                     aria-label={`Step ${shade.level}, ${shade.hex}`}
                                 >
+                                    <button
+                                        type="button"
+                                        data-color-info-trigger
+                                        aria-label={`Color details, step ${shade.level}`}
+                                        className={`absolute top-0.5 left-0.5 grid size-4 place-items-center rounded ${isLight ? 'text-black/80 hover:bg-black/10' : 'text-white/90 hover:bg-white/15'}`}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            openInfo(event.currentTarget, {
+                                                id: `step-${shade.level}`,
+                                                hex: shade.hex,
+                                                rgb: hexToRgb(shade.hex),
+                                                level: shade.level,
+                                            });
+                                        }}
+                                    >
+                                        <Info className="size-3" strokeWidth={1.5} />
+                                    </button>
                                     {shade.isInput && (
                                         <div className={`absolute top-1 right-1 ${isLight ? 'text-black' : 'text-white'}`}>
                                             <Lock className="size-2.5" strokeWidth={1.5} aria-hidden />
@@ -199,6 +238,20 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                 </div>
             </div>
         </div>
+        {info && (
+            <ColorInfo
+                key={info.id}
+                hex={info.hex}
+                rgb={info.rgb}
+                step={info.level != null ? stepRef(color.name, info.level) : undefined}
+                printOn={!!isPrintMode}
+                anchor={info.anchor}
+                closing={info.closing}
+                onCopy={onCopy}
+                onRequestClose={() => setInfo((current) => current && !current.closing ? { ...current, closing: true } : current)}
+                onClosed={() => setInfo(null)}
+            />
+        )}
     </div>
   );
 };
