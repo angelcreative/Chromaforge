@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -34,6 +35,87 @@ if (existsSync(envLocalPath)) {
 const app = express();
 const PORT = Number(process.env.PORT) || 8080;
 
+const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyBY0XUym3soacWnPG8kmEW52aPBv_vrIIk';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'chroma-forge';
+
+const ownerSecret = () => (process.env.OWNER_ACCESS_CODE || process.env.CREATOR_BYPASS_SECRET || '').trim();
+
+const isValidOwnerCode = (provided: unknown): boolean => {
+  const secret = ownerSecret();
+  if (!secret || typeof provided !== 'string' || !provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+};
+
+const bearerToken = (req: express.Request): string | null => {
+  const header = req.get('authorization') || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : null;
+};
+
+const firebaseUidFromIdToken = async (idToken: string): Promise<string | null> => {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(FIREBASE_WEB_API_KEY)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    }
+  );
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null) as { users?: { localId?: string }[] } | null;
+  return data?.users?.[0]?.localId || null;
+};
+
+const userHasPaidAi = async (idToken: string, uid: string): Promise<boolean> => {
+  const headers = { Authorization: `Bearer ${idToken}` };
+  const userUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}`;
+  const userRes = await fetch(userUrl, { headers });
+  if (userRes.ok) {
+    const doc = await userRes.json().catch(() => null) as { fields?: { isPro?: { booleanValue?: boolean } } } | null;
+    if (doc?.fields?.isPro?.booleanValue === true) return true;
+  }
+
+  const subUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/customers/${encodeURIComponent(uid)}/subscriptions`;
+  const subRes = await fetch(subUrl, { headers });
+  if (!subRes.ok) return false;
+  const data = await subRes.json().catch(() => null) as { documents?: { fields?: { status?: { stringValue?: string } } }[] } | null;
+  const docs = Array.isArray(data?.documents) ? data.documents : [];
+  return docs.some((doc: { fields?: { status?: { stringValue?: string } } }) => {
+    const status = doc?.fields?.status?.stringValue;
+    return status === 'active' || status === 'trialing';
+  });
+};
+
+const paymentRequired = (res: express.Response) =>
+  res.status(402).json({
+    name: 'Payment required',
+    colors: [],
+    code: '',
+    description: 'Subscribe to use the assistant. This request was not generated.',
+    paymentRequired: true,
+  });
+
+/** Owner code or an active Stripe subscription. Checked before any model call. */
+const assertAiAccess = async (req: express.Request, res: express.Response): Promise<boolean> => {
+  if (isValidOwnerCode(req.body?.ownerAccess)) return true;
+  const token = bearerToken(req);
+  if (!token) {
+    paymentRequired(res);
+    return false;
+  }
+  try {
+    const uid = await firebaseUidFromIdToken(token);
+    if (uid && (await userHasPaidAi(token, uid))) return true;
+  } catch (error) {
+    console.warn('[Backend] Could not verify assistant subscription');
+  }
+  paymentRequired(res);
+  return false;
+};
+
 // Middleware
 app.use(express.json());
 
@@ -42,9 +124,18 @@ app.use(express.static(join(baseDir, 'dist'), {
   index: false // Don't serve index.html automatically
 }));
 
+app.post('/api/owner-unlock', (req, res) => {
+  if (isValidOwnerCode(req.body?.access)) {
+    return res.json({ ok: true });
+  }
+  return res.status(403).json({ ok: false });
+});
+
 // API endpoint for palette generation
 app.post('/api/palette', async (req, res) => {
   try {
+    if (!(await assertAiAccess(req, res))) return;
+
     const { history, currentPalette } = req.body;
 
     if (!history || !Array.isArray(history)) {
@@ -214,6 +305,8 @@ app.post('/api/palette', async (req, res) => {
 // API endpoint for UI component generation
 app.post('/api/ui-design', async (req, res) => {
   try {
+    if (!(await assertAiAccess(req, res))) return;
+
     const { prompt, palette, availableComponents, config } = req.body;
 
     if (!prompt || typeof prompt !== 'string') {
@@ -618,5 +711,6 @@ app.listen(PORT, '0.0.0.0', () => {
   } else {
     console.log(`[Server] ❌ API_KEY is NOT configured. Create .env.local with: API_KEY=your_gemini_api_key`);
   }
+  console.log(`[Server] Owner unlock ${ownerSecret() ? 'configured' : 'disabled (set OWNER_ACCESS_CODE)'}`);
 });
 

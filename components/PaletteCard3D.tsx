@@ -191,7 +191,7 @@ const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
       ref={containerRef}
     >
       <div className="absolute top-6 text-center pointer-events-none z-20 transition-transform duration-300 group-hover:-translate-y-2 select-none">
-        <h3 className="text-xl font-bold text-white drop-shadow-md tracking-tight">{color.name}</h3>
+        <h3 className="palette-ink text-xl font-bold text-white drop-shadow-md tracking-tight">{color.name}</h3>
         <p className="text-xs text-slate-400 font-mono mt-1 opacity-60 group-hover:opacity-100 transition-opacity duration-300">{color.hex}</p>
         
         <div className={`mt-2 text-[10px] uppercase font-bold tracking-widest transition-opacity duration-500 ${lightingMode === 'neutral' ? 'opacity-0' : 'opacity-100'}`} style={{ color: lightingMode === 'neon' ? '#d946ef' : lightingMode === 'warm' ? '#f97316' : '#22d3ee' }}>
@@ -262,7 +262,7 @@ const PaletteCard3D: React.FC<PaletteCard3DProps> = ({ color }) => {
                                 <div className="absolute inset-0 pointer-events-none mix-blend-overlay" style={{ backgroundColor: currentLighting.overlayColor }} />
 
                                 <div className="w-full h-full flex items-center justify-center transition-opacity duration-300 pointer-events-none select-none opacity-100">
-                                     <span className="text-[9px] font-bold text-white/90 drop-shadow-md bg-black/30 px-1 py-0.5 rounded backdrop-blur-[2px]">
+                                     <span className="palette-ink text-[9px] font-bold text-white/90 drop-shadow-md bg-black/30 px-1 py-0.5 rounded backdrop-blur-[2px]">
                                         {hex === shades[10].hex ? 950 : 
                                          hex === shades[0].hex ? 50 : 
                                          hex === shades[1].hex ? 100 :

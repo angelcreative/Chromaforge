@@ -19,8 +19,6 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
     onClose, 
     onLoadPalette, 
     onDeletePalette,
-    lifetimeSaves = 0,
-    isPremium = false
 }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
@@ -35,12 +33,7 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 My Saved Palettes
             </h2>
             <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs text-slate-500">Your personal collection.</p>
-                {!isPremium && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${lifetimeSaves >= 5 ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-slate-700 text-slate-400'}`}>
-                        {lifetimeSaves}/5 Used (Lifetime)
-                    </span>
-                )}
+                <p className="text-xs text-slate-500">Saved in this browser.</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition p-2 bg-slate-800 rounded-full">

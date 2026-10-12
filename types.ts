@@ -73,7 +73,7 @@ export interface Shade {
   isInput?: boolean; // Indicates if this shade is the locked anchor (original input)
 }
 
-export type ExportFormat = 'css' | 'scss' | 'tailwind' | 'json' | 'ase' | 'procreate' | 'figma';
+export type ExportFormat = 'skill' | 'css' | 'scss' | 'tailwind' | 'json' | 'ase' | 'procreate' | 'figma';
 
 // New Config for UI Playground
 export interface PlaygroundConfig {

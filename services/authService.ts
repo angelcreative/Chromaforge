@@ -144,6 +144,17 @@ export const sendVerification = async (user: User) => {
     }
 };
 
+/** Anonymous Firebase user so Stripe checkout has a customer id. Not a studio login. */
+export const ensureBillingUser = async () => {
+    if (isDemoMode || !auth) {
+        throw new Error('Billing is unavailable in this session.');
+    }
+    if (auth.currentUser) return auth.currentUser;
+    const { signInAnonymously } = await import('firebase/auth');
+    const cred = await signInAnonymously(auth);
+    return cred.user;
+};
+
 export const logoutUser = async () => {
     if (!isDemoMode && auth) {
         return firebaseSignOut(auth);
