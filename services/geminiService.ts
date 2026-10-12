@@ -1,12 +1,15 @@
 import { ColorData, ChatMessage } from "../types";
 import { createColorData } from "../utils/colorUtils";
 import { getOwnerAccessCode } from "./ownerAccess";
+import { getCreditWalletId } from "./creditWallet";
 
 export interface PalettePromptResult {
   name: string;
   colors: ColorData[];
   description: string;
   paymentRequired?: boolean;
+  creditsSpent?: number;
+  creditsRemaining?: number;
 }
 
 const isHex = (value: unknown) =>
@@ -33,6 +36,7 @@ export const generatePaletteFromPrompt = async (
         history,
         currentPalette,
         ownerAccess: getOwnerAccessCode() || undefined,
+        walletId: getCreditWalletId(),
       })
     });
 
@@ -47,6 +51,7 @@ export const generatePaletteFromPrompt = async (
         colors: [],
         description: errorData.description || `HTTP ${response.status}`,
         paymentRequired: response.status === 402 || errorData.paymentRequired === true,
+        creditsRemaining: typeof errorData.creditsRemaining === 'number' ? errorData.creditsRemaining : undefined,
       };
     }
 
@@ -64,7 +69,9 @@ export const generatePaletteFromPrompt = async (
       return {
         name: data.name || "AI Generated Palette",
         description: data.description || `I've updated the palette with ${usable.length} colors.`,
-        colors: usable.map((c: { hex: string, name: string }) => createColorData(c.hex, undefined, c.name))
+        colors: usable.map((c: { hex: string, name: string }) => createColorData(c.hex, undefined, c.name)),
+        creditsSpent: typeof data.creditsSpent === 'number' ? data.creditsSpent : undefined,
+        creditsRemaining: typeof data.creditsRemaining === 'number' ? data.creditsRemaining : undefined,
       };
     }
     
