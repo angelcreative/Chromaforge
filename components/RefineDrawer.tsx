@@ -36,6 +36,9 @@ const thumbStyle = (hex: string): React.CSSProperties => ({
   boxShadow: '0 0 0 1px rgba(0,0,0,0.7)',
 });
 
+const selectedRing = 'ring-1 ring-inset ring-foreground';
+const selectedRingFocus = 'focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-foreground';
+
 const RefineDrawer: React.FC<RefineDrawerProps> = ({
   open,
   color,
@@ -110,7 +113,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
                 aria-label={`Color ${index + 1}`}
                 aria-pressed={index === colorIndex}
                 onClick={() => onSelectColor?.(index)}
-                className={`size-5 shrink-0 rounded-md ring-2 ring-offset-2 ring-offset-card ${index === colorIndex ? 'ring-foreground' : 'ring-transparent'}`}
+                className={`size-5 shrink-0 rounded-md outline-none ${selectedRingFocus} ${index === colorIndex ? selectedRing : ''}`}
                 style={{ backgroundColor: swatch.hex }}
               />
             ))}
@@ -137,11 +140,8 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
                 aria-pressed={!!shade.isInput}
                 aria-label={`Step ${shade.level}`}
                 onClick={() => onChangeRef.current(shade.hex)}
-                className="relative min-w-0 flex-1"
-                style={{
-                  backgroundColor: shade.hex,
-                  boxShadow: shade.isInput ? 'inset 0 0 0 2px #fff, inset 0 0 0 4px #171717' : undefined,
-                }}
+                className={`relative min-w-0 flex-1 outline-none ${selectedRingFocus} ${shade.isInput ? selectedRing : ''}`}
+                style={{ backgroundColor: shade.hex }}
               >
                 <span className="block truncate px-0.5 font-mono text-[9px] leading-none" style={{ color: ink }}>
                   {shade.level}
