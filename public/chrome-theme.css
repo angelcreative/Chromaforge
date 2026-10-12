@@ -232,6 +232,86 @@ body {
   .drawer-out { animation-name: studio-in; }
 }
 
+/* Shade row: Shades, Vibrancy, Contrast, Hue blend.
+   Track and knob stay on black, white, and gray tokens in both themes. */
+.scale-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  height: 16px;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  background: transparent;
+  cursor: pointer;
+  accent-color: var(--foreground);
+}
+
+.scale-slider:focus {
+  outline: none;
+}
+
+.scale-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--foreground) 0%,
+    var(--foreground) var(--range-fill, 0%),
+    var(--switch) var(--range-fill, 0%),
+    var(--switch) 100%
+  );
+}
+
+.scale-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 1.5px solid var(--foreground);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: none;
+}
+
+.scale-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--ring);
+}
+
+.scale-slider::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--foreground) 0%,
+    var(--foreground) var(--range-fill, 0%),
+    var(--switch) var(--range-fill, 0%),
+    var(--switch) 100%
+  );
+}
+
+.scale-slider::-moz-range-progress {
+  background: transparent;
+}
+
+.scale-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--foreground);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: none;
+}
+
+.scale-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--ring);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .studio-fade,
   .studio-in,
