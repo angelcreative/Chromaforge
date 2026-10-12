@@ -21,6 +21,10 @@ const CENTER = SIZE / 2;
 const RADIUS = 142;
 const PLOT_RADIUS = RADIUS * 0.86;
 
+const rangeFill = (value: number, min: number, max: number): React.CSSProperties => ({
+  '--range-fill': `${((value - min) / (max - min)) * 100}%`,
+} as React.CSSProperties);
+
 const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig, onClose, onSave, onPreview, usageCount, limit, isPremium }) => {
   const originalConfig = useRef<ScaleConfiguration | undefined>(color.scaleConfig);
   const onPreviewRef = useRef(onPreview);
@@ -350,7 +354,8 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                   step={1}
                   value={config.hueShift}
                   onChange={(e) => setConfig({ ...config, hueShift: Number(e.target.value) })}
-                  className="w-full"
+                  className="scale-slider w-full"
+                  style={rangeFill(config.hueShift, -60, 60)}
                 />
                 <div className="mt-1 flex justify-between text-[13px] text-muted-foreground">
                   <span>Cooler</span>
@@ -371,7 +376,8 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                   step={1}
                   value={config.saturationBoost}
                   onChange={(e) => setConfig({ ...config, saturationBoost: Number(e.target.value) })}
-                  className="w-full"
+                  className="scale-slider w-full"
+                  style={rangeFill(config.saturationBoost, -100, 100)}
                 />
                 <div className="mt-1 flex justify-between text-[13px] text-muted-foreground">
                   <span>Flatten</span>

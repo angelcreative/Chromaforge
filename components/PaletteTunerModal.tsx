@@ -16,6 +16,10 @@ interface PaletteTunerModalProps {
 type TuneMode = 'linear' | 'lumfit' | 'oklch';
 type ViewStep = 'input' | 'tuner';
 
+const rangeFill = (value: number, min: number, max: number): React.CSSProperties => ({
+  '--range-fill': `${((value - min) / (max - min)) * 100}%`,
+} as React.CSSProperties);
+
 const PaletteTunerModal: React.FC<PaletteTunerModalProps> = ({ onClose, usageCount, limit, isPremium, initialCode }) => {
   const [inputText, setInputText] = useState(initialCode || '');
   const [currentStep, setCurrentStep] = useState<ViewStep>('input'); 
@@ -263,7 +267,8 @@ const PaletteTunerModal: React.FC<PaletteTunerModalProps> = ({ onClose, usageCou
                         type="range" min="3" max="30" 
                         value={globalSteps}
                         onChange={(e) => setGlobalSteps(Number(e.target.value))}
-                        className="w-32 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                        className="scale-slider w-32"
+                        style={rangeFill(globalSteps, 3, 30)}
                       />
                       <span className="text-xs font-mono font-bold text-foreground w-6 text-center">{globalSteps}</span>
                   </div>
