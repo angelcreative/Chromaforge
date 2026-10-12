@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Copy, Download, FileDown, Heart, Pipette, Plus } from 'lucide-react';
-import LogoMark from './LogoMark';
+import LogoMark, { type LogoMotion } from './LogoMark';
 import ThemeToggle from './ThemeToggle';
 
 export interface StudioTopBarProps {
@@ -16,6 +16,7 @@ export interface StudioTopBarProps {
   onDownloadSkill: () => void;
   printOn: boolean;
   onTogglePrint: () => void;
+  markMotion?: LogoMotion;
 }
 
 const barButton =
@@ -34,6 +35,7 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onDownloadSkill,
   printOn,
   onTogglePrint,
+  markMotion = 'enter',
 }) => {
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
         className="grid size-10 place-items-center text-foreground"
         aria-label="Chromaforge"
       >
-        <LogoMark className="size-6" />
+        <LogoMark className="size-6" motion={markMotion} />
       </button>
       <button type="button" onClick={onNewPalette} className={barButton}>
         <Plus className="size-4" strokeWidth={1.5} aria-hidden />

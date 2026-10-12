@@ -13,7 +13,6 @@ import PaletteTunerModal from './components/PaletteTunerModal';
 import ScaleEditorModal from './components/ScaleEditorModal';
 import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
-import LogoMark from './components/LogoMark';
 import DescribeHeading from './components/DescribeHeading';
 import PlaygroundCards from './components/PlaygroundCards';
 import GradientList from './components/GradientList';
@@ -748,6 +747,7 @@ const App: React.FC = () => {
           onDownloadSkill={handleDownloadSkill}
           printOn={isPrintMode}
           onTogglePrint={() => setIsPrintMode((value) => !value)}
+          markMotion={isChatLoading ? 'loading' : 'enter'}
       />
 
       <StudioSidebar
@@ -873,8 +873,7 @@ const App: React.FC = () => {
               {pendingRequest && (
                 <p className="max-w-md text-2xl font-medium tracking-tight text-foreground">{pendingRequest}</p>
               )}
-              <LogoMark animated className="mt-8 size-16 text-foreground" />
-              <p className="mt-3 text-[15px] text-muted-foreground">Making a palette</p>
+              <p className={`text-[15px] text-muted-foreground ${pendingRequest ? 'mt-4' : ''}`}>Making a palette</p>
             </div>
           </div>
           {renderPromptForm()}
