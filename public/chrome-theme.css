@@ -217,9 +217,7 @@ body {
 }
 .color-info-pop {
   width: 17.5rem;
-  animation: color-info-in 160ms ease-out both;
 }
-.color-info-pop.is-leaving { animation: color-info-out 120ms ease-in both; }
 
 @keyframes palette-color-in {
   from { opacity: 0; transform: scale(0.96); }
@@ -229,11 +227,6 @@ body {
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: scale(0.96); }
 }
-.palette-color-pop {
-  animation: palette-color-in 160ms ease-out both;
-}
-.palette-color-pop.is-leaving { animation: palette-color-out 120ms ease-in both; }
-
 @media (max-width: 1023px) {
   .drawer-in,
   .drawer-out { animation-name: studio-in; }

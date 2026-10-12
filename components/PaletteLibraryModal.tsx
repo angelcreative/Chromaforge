@@ -1,6 +1,8 @@
 
+import { motion } from 'motion/react';
 import React from 'react';
 import { Inbox, Library, Loader2, Trash2, X } from 'lucide-react';
+import { MotionButton, enterMotion, popMotion, uiTransition, useReduced } from './uiMotion';
 import { SavedPalette } from '../services/storageService';
 import { ColorData } from '../types';
 
@@ -21,9 +23,21 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
     onLoadPalette, 
     onDeletePalette,
 }) => {
+  const reduce = useReduced();
+  const pop = popMotion(reduce);
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col h-[80vh] relative overflow-hidden">
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={uiTransition(reduce, 0.16)}
+    >
+      <motion.div
+        className="bg-card border border-border rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col h-[80vh] relative overflow-hidden"
+        initial={pop.initial}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={pop.transition}
+      >
         
         <div className="p-6 border-b border-border flex justify-between items-center shrink-0">
           <div>
@@ -37,9 +51,9 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 <p className="text-xs text-muted-foreground">Saved in this browser.</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full">
+          <MotionButton type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 bg-secondary rounded-full">
             <X className="size-5" strokeWidth={1.5} />
-          </button>
+          </MotionButton>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6 custom-scrollbar">
@@ -57,8 +71,8 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {palettes.map((palette) => (
-                        <div key={palette.id} className="bg-background border border-border rounded-xl p-4 hover:border-primary transition-all group relative">
+                    {palettes.map((palette, index) => (
+                        <motion.div key={palette.id} className="bg-background border border-border rounded-xl p-4 hover:border-primary group relative" {...enterMotion(reduce, index)}>
                             <div className="flex justify-between items-start mb-3">
                                 <h3 className="font-bold text-foreground text-sm truncate pr-2">{palette.name}</h3>
                                 <button 
@@ -85,13 +99,13 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                                     Load
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -1,5 +1,7 @@
+import { motion } from 'motion/react';
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { MotionButton, presencePop, useReduced } from './uiMotion';
 import { generateShades, getContrastRatio, getLuminance } from '../utils/colorUtils';
 import { ColorData, GlobalCurveConfig } from '../types';
 
@@ -10,6 +12,8 @@ interface ContrastGridProps {
 }
 
 const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClose }) => {
+  const reduce = useReduced();
+  const tip = presencePop(reduce, 'bottom center');
   const [hoveredCell, setHoveredCell] = useState<{
     x: number;
     y: number;
@@ -55,10 +59,10 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClos
           <h2 className="shrink-0 text-[13px] text-foreground">Contrast grid</h2>
           <span className="truncate text-[13px] text-muted-foreground">{color.name}</span>
         </div>
-        <button onClick={onClose} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
+        <MotionButton type="button" onClick={onClose} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
           <X className="size-4" strokeWidth={1.5} />
           Close
-        </button>
+        </MotionButton>
       </div>
 
       <div className="bg-card p-4 md:p-6 rounded-2xl shadow-xl overflow-auto flex-1 border border-border relative">
@@ -89,17 +93,19 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClos
                         const isPassAA = ratio >= 4.5;
                         
                         return (
-                            <div 
+                            <motion.div 
                                 key={`${row.level}-${col.level}`}
-                                className="flex-1 min-w-[3rem] flex items-center justify-center text-xs md:text-sm font-medium transition-transform hover:scale-105 hover:z-10 hover:shadow-xl rounded-sm relative cursor-default border border-transparent hover:border-border"
+                                className="flex-1 min-w-[3rem] flex items-center justify-center text-xs md:text-sm font-medium hover:z-10 hover:shadow-xl rounded-sm relative cursor-default border border-transparent hover:border-border"
                                 style={{ backgroundColor: row.hex, color: col.hex }}
                                 onMouseEnter={(e) => handleMouseEnter(e, ratioStr, row.hex, col.hex)}
                                 onMouseLeave={handleMouseLeave}
+                                whileHover={reduce ? undefined : { scale: 1.04 }}
+                                transition={reduce ? { duration: 0 } : { duration: 0.16, ease: [0.2, 0, 0, 1] }}
                             >
                                 {ratioStr}
                                 {isPassAAA && <span className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-green-500 rounded-full shadow-sm ring-1 ring-black/20"/>}
                                 {!isPassAAA && isPassAA && <span className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-sm ring-1 ring-black/20"/>}
-                            </div>
+                            </motion.div>
                         );
                     })}
                 </div>
@@ -109,9 +115,12 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClos
       
       {/* Fixed Tooltip Overlay */}
       {hoveredCell && (
-        <div 
-            className="fixed z-[60] pointer-events-none transform -translate-x-1/2 -translate-y-[110%] bg-background rounded-lg shadow-2xl border border-border p-3 min-w-[140px] animate-in fade-in zoom-in-95 duration-150"
+        <motion.div 
+            className="fixed z-[60] pointer-events-none bg-background rounded-lg shadow-2xl border border-border p-3 min-w-[140px]"
             style={{ left: hoveredCell.x, top: hoveredCell.y }}
+            initial={reduce ? false : { opacity: 0, scale: 0.96, x: '-50%', y: '-110%' }}
+            animate={{ opacity: 1, scale: 1, x: '-50%', y: '-110%' }}
+            transition={tip.transition}
         >
             <div className="text-foreground font-bold text-lg mb-1 leading-tight">
                 Ratio: {hoveredCell.ratio}
@@ -122,7 +131,7 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClos
                 <span className="text-muted-foreground font-bold">TXT:</span> 
                 <span className="text-foreground text-right">{hoveredCell.txtHex}</span>
             </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

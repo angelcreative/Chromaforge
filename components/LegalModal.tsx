@@ -1,7 +1,9 @@
 
+import { AnimatePresence, motion } from 'motion/react';
 import React from 'react';
 import { X } from 'lucide-react';
 import { legalContent } from '../utils/legalData';
+import { MotionButton, presenceFade, uiTransition, useReduced } from './uiMotion';
 
 export type LegalPageType = 'terms' | 'privacy' | 'cookies' | 'refunds';
 
@@ -11,9 +13,8 @@ interface LegalModalProps {
 }
 
 const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
-  if (!type) return null;
-
-  const data = legalContent[type];
+  const reduce = useReduced();
+  const data = type ? legalContent[type] : null;
 
   // Helper to render markdown-like bold text
   const renderContent = (text: string) => {
@@ -30,17 +31,25 @@ const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative flex min-h-0 max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+    <AnimatePresence>
+    {type && data && (
+    <motion.div key={type} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" {...presenceFade(reduce)}>
+      <motion.div
+        className="relative flex min-h-0 max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        initial={reduce ? false : { scale: 0.96 }}
+        animate={{ scale: 1 }}
+        exit={reduce ? { scale: 1 } : { scale: 0.98 }}
+        transition={uiTransition(reduce)}
+      >
         
         <div className="p-6 border-b border-border flex justify-between items-start shrink-0 bg-card z-10">
           <div>
             <h2 className="text-2xl font-bold text-foreground">{data.title}</h2>
             <p className="text-xs text-muted-foreground font-mono mt-1">{data.date}</p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full hover:bg-accent">
+          <MotionButton type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 bg-secondary rounded-full hover:bg-accent">
             <X className="size-5" strokeWidth={1.5} />
-          </button>
+          </MotionButton>
         </div>
 
         <div className="min-h-0 flex-auto overflow-y-auto bg-muted p-6 custom-scrollbar">
@@ -48,15 +57,18 @@ const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
         </div>
         
         <div className="p-4 border-t border-border bg-card shrink-0 text-center">
-            <button 
+            <MotionButton 
+                type="button"
                 onClick={onClose}
-                className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:opacity-90 transition-colors"
+                className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:opacity-90"
             >
                 Close
-            </button>
+            </MotionButton>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+    )}
+    </AnimatePresence>
   );
 };
 

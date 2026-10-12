@@ -1,5 +1,7 @@
+import { motion } from 'motion/react';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { MotionButton, enterMotion, popMotion, useReduced } from './uiMotion';
 import { ColorData, GlobalCurveConfig, PlaygroundConfig, Shade } from '../types';
 import { generateShades } from '../utils/colorUtils';
 import { PLAYGROUND_CARDS } from './cards/CardsSidebar';
@@ -54,8 +56,10 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
   const onClosed = useRef<() => void>(() => {});
   const finished = useRef(false);
   const focused = useRef(false);
+  const reduce = useReduced();
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  const pop = popMotion(reduce, closing);
   const [box, setBox] = useState<{ top: number; left: number; transformOrigin: string } | null>(null);
 
   const finish = () => {
@@ -155,22 +159,22 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
   }, [closing]);
 
   const panel = open ? createPortal(
-    <div
+    <motion.div
       ref={panelRef}
       role="dialog"
       aria-label="Palette color"
       data-palette-color-popover
-      className={`palette-color-pop fixed z-[60] rounded-xl bg-popover p-2 text-popover-foreground shadow-panel ring-1 ring-border ${closing ? 'is-leaving' : ''}`}
+      className="palette-color-pop fixed z-[60] rounded-xl bg-popover p-2 text-popover-foreground shadow-panel ring-1 ring-border"
       style={box ? { top: box.top, left: box.left, transformOrigin: box.transformOrigin } : { top: -9999, left: 0 }}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && closing) finish();
-      }}
+      initial={pop.initial}
+      animate={pop.animate}
+      transition={pop.transition}
     >
       <div className="grid grid-cols-6 gap-1.5" role="listbox" aria-label="Palette steps">
         {shades.map((shade) => {
           const selected = shade.hex.toLowerCase() === swatch;
           return (
-            <button
+            <MotionButton
               key={shade.level}
               type="button"
               role="option"
@@ -186,7 +190,7 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
           );
         })}
       </div>
-    </div>,
+    </motion.div>,
     document.body,
   ) : null;
 
@@ -220,6 +224,7 @@ const PlaygroundCards: React.FC<PlaygroundCardsProps> = ({
   globalConfig,
   onPrimaryColorChange,
 }) => {
+  const reduce = useReduced();
   const theme = useMemo(
     () => buildPlaygroundTheme(brandPalette, neutralPalette, semanticPalette, config, globalConfig),
     [brandPalette, neutralPalette, semanticPalette, config, globalConfig],
@@ -239,10 +244,11 @@ const PlaygroundCards: React.FC<PlaygroundCardsProps> = ({
   return (
     <section aria-label="Playground cards" data-view="playground-cards" className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       {PLAYGROUND_CARDS.map((card, index) => (
-        <article
+        <motion.article
           key={card.id}
-          className="studio-card flex flex-col gap-3 rounded-2xl bg-card p-3 shadow-panel ring-1 ring-border"
-          style={{ animationDelay: `${Math.min(index, 8) * 28}ms` }}
+          className="flex flex-col gap-3 rounded-2xl bg-card p-3 shadow-panel ring-1 ring-border"
+          {...enterMotion(reduce, index)}
+          whileTap={reduce ? undefined : { scale: 0.99 }}
         >
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-[13px] text-foreground">{card.name}</h2>
@@ -257,7 +263,7 @@ const PlaygroundCards: React.FC<PlaygroundCardsProps> = ({
           <div className="flex justify-center overflow-hidden rounded-xl p-4" style={{ backgroundColor: theme.bg.page }}>
             <PlaygroundCardPreview cardId={card.id} theme={theme} />
           </div>
-        </article>
+        </motion.article>
       ))}
     </section>
   );

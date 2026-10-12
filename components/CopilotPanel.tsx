@@ -1,8 +1,10 @@
+import { AnimatePresence, motion } from 'motion/react';
 import React from 'react';
 import { Send, X } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { formatCompact } from '../services/credits';
 import PigmoButton from './pigmo/PigmoButton';
+import { MotionButton, enterMotion, presencePop, useReduced } from './uiMotion';
 
 export interface CopilotPanelProps {
   open: boolean;
@@ -30,32 +32,38 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   balanceLabel,
   balanceTitle,
   onCredits,
-}) => (
+}) => {
+  const reduce = useReduced();
+  const pop = presencePop(reduce, 'bottom right');
+  return (
   <>
+    <AnimatePresence>
     {open && (
-      <form
+      <motion.form
+        key="assistant"
         className="fixed bottom-[6.75rem] right-4 z-50 flex max-h-[min(28rem,calc(100dvh-9rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
         }}
+        {...pop}
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[13px]">Pigmo</span>
-          <button type="button" onClick={onClose} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
+          <MotionButton type="button" onClick={onClose} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
             <X className="size-4" strokeWidth={1.5} />
-          </button>
+          </MotionButton>
         </div>
         <div className="mb-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           {messages.map((message, index) => (
-            <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <motion.div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`} {...enterMotion(reduce, index)}>
               <div className={`max-w-[90%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground ring-1 ring-border'}`}>
                 {message.text}
                 {message.role === 'model' && typeof message.creditsSpent === 'number' && (
                   <p className="mt-1 text-[12px] text-muted-foreground" title={`${message.creditsSpent} credits`}>{formatCompact(message.creditsSpent)} credits</p>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
         <div className="mb-2">
@@ -82,19 +90,21 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             aria-label="Edit this palette"
             className="max-h-28 min-h-[3rem] flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          <button
+          <MotionButton
             type="submit"
             disabled={loading || !input.trim()}
             className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
             aria-label="Send"
           >
             <Send className="size-4" strokeWidth={1.5} />
-          </button>
+          </MotionButton>
         </div>
-      </form>
+      </motion.form>
     )}
+    </AnimatePresence>
     <PigmoButton open={open} onActivate={onToggle} />
   </>
-);
+  );
+};
 
 export default CopilotPanel;
