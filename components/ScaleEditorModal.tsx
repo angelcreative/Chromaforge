@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { ColorData, ScaleConfiguration } from '../types';
-import { generateShades, createColorData, hexToHsl, rgbToOklch } from '../utils/colorUtils';
+import { generateShades, createColorData, hexToRgb, rgbToOklch } from '../utils/colorUtils';
 
 interface ScaleEditorModalProps {
   color: ColorData;
@@ -15,16 +15,8 @@ interface ScaleEditorModalProps {
 
 const SIZE = 320;
 const CENTER = SIZE / 2;
-const RADIUS = 120;
-
-const getPolarCoords = (h: number, s: number) => {
-  const angle = (h - 90) * (Math.PI / 180);
-  const r = (s / 100) * RADIUS;
-  return {
-    x: CENTER + r * Math.cos(angle),
-    y: CENTER + r * Math.sin(angle),
-  };
-};
+const RADIUS = 142;
+const PLOT_RADIUS = RADIUS * 0.86;
 
 const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onSave, onPreview, usageCount, limit, isPremium }) => {
   const originalConfig = useRef<ScaleConfiguration | undefined>(color.scaleConfig);
@@ -40,7 +32,6 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
     mode: 'curves',
   });
 
-  const [fitArc, setFitArc] = useState(true);
   const [activeShade, setActiveShade] = useState<number | null>(null);
   const [leaving, setLeaving] = useState(false);
 
@@ -83,15 +74,6 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
   const previewColor = useMemo(() => createColorData(color.hex, config), [color.hex, config]);
   const shades = useMemo(() => generateShades(previewColor), [previewColor]);
 
-  const activeShadeData = useMemo(() =>
-    shades.find(s => s.level === activeShade),
-  [shades, activeShade]);
-
-  const activeHsl = useMemo(
-    () => (activeShadeData ? hexToHsl(activeShadeData.hex) : null),
-    [activeShadeData]
-  );
-
   const handleDiscard = () => finish(true);
 
   const handleSave = () => {
@@ -99,39 +81,25 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
     finish(false);
   };
 
-  const { points, viewBox } = useMemo(() => {
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-
-    const pts = shades.map(shade => {
-      const hsl = hexToHsl(shade.hex);
-      const p = getPolarCoords(hsl.h, hsl.s);
-      minX = Math.min(minX, p.x);
-      maxX = Math.max(maxX, p.x);
-      minY = Math.min(minY, p.y);
-      maxY = Math.max(maxY, p.y);
-      return { ...p, hex: shade.hex, level: shade.level, hsl };
+  const points = useMemo(() => {
+    const samples = shades.map((shade) => {
+      const rgb = hexToRgb(shade.hex);
+      return { shade, oklch: rgbToOklch(rgb.r, rgb.g, rgb.b) };
     });
+    const maxChroma = samples.reduce((max, sample) => Math.max(max, sample.oklch.c), 0);
+    const frame = maxChroma > 1e-4 ? maxChroma : 1;
 
-    if (!fitArc || pts.length === 0) {
-      return { points: pts, viewBox: `0 0 ${SIZE} ${SIZE}` };
-    }
-
-    const pad = 36;
-    const spanX = Math.max(maxX - minX, 72);
-    const spanY = Math.max(maxY - minY, 72);
-    const midX = (minX + maxX) / 2;
-    const midY = (minY + maxY) / 2;
-    const vbW = spanX + pad * 2;
-    const vbH = spanY + pad * 2;
-
-    return {
-      points: pts,
-      viewBox: `${midX - vbW / 2} ${midY - vbH / 2} ${vbW} ${vbH}`,
-    };
-  }, [shades, fitArc]);
+    return samples.map(({ shade, oklch }) => {
+      const angle = ((oklch.h - 90) * Math.PI) / 180;
+      const radius = (oklch.c / frame) * PLOT_RADIUS;
+      return {
+        x: CENTER + radius * Math.cos(angle),
+        y: CENTER + radius * Math.sin(angle),
+        hex: shade.hex,
+        level: shade.level,
+      };
+    });
+  }, [shades]);
 
   const pathData = useMemo(() => {
     if (points.length === 0) return '';
@@ -180,26 +148,34 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <h3 className="text-[13px] text-foreground">Hue and saturation path</h3>
-            <button
-              type="button"
-              onClick={() => setFitArc(!fitArc)}
-              className="h-8 shrink-0 rounded-lg border border-border bg-background px-2.5 text-[13px] text-foreground hover:bg-accent"
-            >
-              {fitArc ? 'Full wheel' : 'Fit arc'}
-            </button>
-          </div>
           <svg
-            viewBox={viewBox}
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
             preserveAspectRatio="xMidYMid meet"
-            aria-label="Hue and saturation path"
-            className={`w-full rounded-xl bg-muted text-foreground ring-1 ring-border ${fitArc ? 'h-44 lg:h-36' : 'aspect-square h-auto max-h-72'}`}
-            onClick={() => setActiveShade(null)}
+            aria-label="OKLCH steps"
+            className="aspect-square w-full text-foreground"
+            onClick={(event) => {
+              const svg = event.currentTarget;
+              const matrix = svg.getScreenCTM();
+              if (!matrix) return;
+              const point = svg.createSVGPoint();
+              point.x = event.clientX;
+              point.y = event.clientY;
+              const local = point.matrixTransform(matrix.inverse());
+              let nearestLevel: number | null = null;
+              let nearestDistance = 14;
+              for (const step of points) {
+                const distance = Math.hypot(step.x - local.x, step.y - local.y);
+                if (distance <= nearestDistance) {
+                  nearestDistance = distance;
+                  nearestLevel = step.level;
+                }
+              }
+              setActiveShade(nearestLevel);
+            }}
           >
             <g className="pointer-events-none opacity-40">
-              <circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
-              <circle cx={CENTER} cy={CENTER} r={RADIUS * 0.5} fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+              <circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
+              <circle cx={CENTER} cy={CENTER} r={RADIUS * 0.5} fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
               <line x1={CENTER} y1={CENTER - RADIUS} x2={CENTER} y2={CENTER + RADIUS} stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
               <line x1={CENTER - RADIUS} y1={CENTER} x2={CENTER + RADIUS} y2={CENTER} stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
             </g>
@@ -207,42 +183,60 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
               d={pathData}
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.5"
-              strokeOpacity="0.7"
+              strokeWidth="1"
+              strokeOpacity="0.45"
               strokeLinecap="round"
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
               className="pointer-events-none"
             />
             {points.map((s) => {
-              const isMain = s.level === 500;
               const isActive = activeShade === s.level;
-              const r = isMain ? 5 : 3.5;
               return (
                 <g
                   key={s.level}
-                  className="cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); setActiveShade(s.level); }}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isActive}
+                  aria-label={`Step ${s.level}`}
+                  className="cursor-pointer outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setActiveShade(s.level);
+                    }
+                  }}
                 >
-                  <circle cx={s.x} cy={s.y} r={16} fill="transparent" />
+                  <circle cx={s.x} cy={s.y} r={12} fill="transparent" />
                   <circle
                     cx={s.x}
                     cy={s.y}
-                    r={isActive ? r + 2 : r}
+                    r={9}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    vectorEffect="non-scaling-stroke"
+                    className="oklch-ring"
+                    data-selected={isActive ? 'true' : 'false'}
+                  />
+                  <circle
+                    cx={s.x}
+                    cy={s.y}
+                    r={4.5}
                     fill={s.hex}
                     stroke="currentColor"
-                    strokeWidth={isActive ? 2 : 1.5}
+                    strokeOpacity="0.28"
+                    strokeWidth="1"
                     vectorEffect="non-scaling-stroke"
+                    className="oklch-dot"
+                    data-selected={isActive ? 'true' : 'false'}
                   />
                 </g>
               );
             })}
           </svg>
-        </section>
-
-        <section className="mt-4 lg:hidden">
-          <h3 className="mb-2 text-[13px] text-foreground">Ramp</h3>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="mt-3 flex gap-1 pb-1">
             {shades.map((shade) => {
               const selected = activeShade === shade.level;
               return (
@@ -250,31 +244,18 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                   key={shade.level}
                   type="button"
                   onClick={() => setActiveShade(shade.level)}
-                  className="w-10 shrink-0 text-left"
+                  className="min-w-0 flex-1"
                   aria-pressed={selected}
                   aria-label={`Step ${shade.level}`}
                 >
                   <span
-                    className={`block h-10 rounded-md ring-2 ring-offset-2 ring-offset-card ${selected ? 'ring-foreground' : 'ring-transparent'}`}
+                    className={`oklch-swatch block h-8 rounded-md ring-2 ring-offset-2 ring-offset-card ${selected ? 'scale-[1.06] ring-foreground' : 'ring-transparent'}`}
                     style={{ backgroundColor: shade.hex }}
                   />
-                  <span className="mt-1 block text-center font-mono text-[11px] text-muted-foreground">{shade.level}</span>
+                  <span className="mt-1 block text-center font-mono text-[10px] text-muted-foreground">{shade.level}</span>
                 </button>
               );
             })}
-          </div>
-          <div className="mt-3 rounded-xl border border-border bg-background p-3">
-            {activeShadeData && activeHsl ? (
-              <div>
-                <p className="text-[13px] text-foreground">Step {activeShadeData.level}</p>
-                <p className="mt-1 font-mono text-sm text-foreground">{activeShadeData.hex}</p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Hue {activeHsl.h}°, saturation {activeHsl.s}%, lightness {activeHsl.l}%
-                </p>
-              </div>
-            ) : (
-              <p className="text-[13px] text-muted-foreground">Tap a step to read that color.</p>
-            )}
           </div>
         </section>
 
