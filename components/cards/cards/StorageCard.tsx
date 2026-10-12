@@ -7,7 +7,7 @@ export default function StorageCard({ theme }: { theme: ThemeColors }) {
   return (
     <BaseCard theme={theme} className="p-6">
       <div className="flex items-center gap-3 mb-6">
-        <Cloud size={24} style={{ color: theme.action.primary }} />
+        <Cloud size={24} style={{ color: theme.action.primary }} strokeWidth={1.5}/>
         <h2 className="text-xl font-bold" style={{ color: theme.text.main }}>Storage</h2>
       </div>
 

@@ -16,15 +16,15 @@ export default function SearchCard({ theme }: { theme: ThemeColors }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             theme={theme}
-            iconLeft={<Search size={20} />}
+            iconLeft={<Search size={20} strokeWidth={1.5}/>}
             className="pr-24"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
             <IconButton theme={theme} className="p-1">
-              <Mic size={16} />
+              <Mic size={16} strokeWidth={1.5}/>
             </IconButton>
             <IconButton theme={theme} className="p-1">
-              <Camera size={16} />
+              <Camera size={16} strokeWidth={1.5}/>
             </IconButton>
           </div>
         </div>
@@ -41,7 +41,7 @@ export default function SearchCard({ theme }: { theme: ThemeColors }) {
           <div className="space-y-2">
             {['Design system', 'Color palette generator'].map((search, idx) => (
               <div key={idx} className="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style={{ backgroundColor: theme.bg.input }}>
-                <History size={16} style={{ color: theme.text.tertiary }} />
+                <History size={16} style={{ color: theme.text.tertiary }} strokeWidth={1.5}/>
                 <span className="text-sm" style={{ color: theme.text.main }}>{search}</span>
               </div>
             ))}
@@ -67,7 +67,7 @@ export default function SearchCard({ theme }: { theme: ThemeColors }) {
               { icon: Brush, label: 'Resources' },
             ].map(({ icon: Icon, label }, idx) => (
               <div key={idx} className="flex items-center gap-3 p-3 rounded-lg cursor-pointer" style={{ backgroundColor: theme.bg.input }}>
-                <Icon size={20} style={{ color: theme.action.primary }} />
+                <Icon size={20} strokeWidth={1.5} style={{ color: theme.action.primary }} />
                 <span className="text-sm" style={{ color: theme.text.main }}>{label}</span>
               </div>
             ))}

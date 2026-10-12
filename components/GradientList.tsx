@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy } from 'lucide-react';
 import { ColorData } from '../types';
 import { generateShades } from '../utils/colorUtils';
 
@@ -75,10 +76,10 @@ const GradientCard: React.FC<{
     const gradientCSS = `linear-gradient(${angle}deg, ${hex1} ${stop1}%, ${hex2} ${stop2}%)`;
     
     const directions = [
-        { deg: 0, label: '↑' },
-        { deg: 180, label: '↓' },
-        { deg: 270, label: '←' },
-        { deg: 90, label: '→' },
+        { deg: 0, label: 'Up', Icon: ArrowUp },
+        { deg: 180, label: 'Down', Icon: ArrowDown },
+        { deg: 270, label: 'Left', Icon: ArrowLeft },
+        { deg: 90, label: 'Right', Icon: ArrowRight },
     ];
 
     const shadeOptions = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
@@ -98,12 +99,6 @@ const GradientCard: React.FC<{
                 style={{ background: gradientCSS }}
                 onClick={() => onCopy(gradientCSS)}
             >
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity bg-black/20 backdrop-blur-[1px]">
-                    <span className="bg-white/90 text-[#171717] px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg transform scale-95 group-hover/preview:scale-100 transition-transform flex items-center gap-2">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                        Copy CSS
-                    </span>
-                </div>
                 {/* Visual Direction Indicator overlay */}
                 <div className="absolute bottom-2 right-2 text-[10px] font-bold text-white/50 bg-black/20 px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
                     {angle}°
@@ -119,24 +114,35 @@ const GradientCard: React.FC<{
                         <h3 className="text-foreground font-bold text-base">Gradient {index + 1}</h3>
                         <p className="text-muted-foreground text-xs mt-0.5">Custom Blend</p>
                     </div>
-                    <div className="flex bg-background p-0.5 rounded-lg border border-border items-center">
-                        {directions.map(d => (
-                            <button
-                                key={d.deg}
-                                onClick={() => setAngle(d.deg)}
-                                className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold transition-all ${angle === d.deg ? 'bg-accent text-foreground shadow' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-                                title={`${d.deg}deg`}
-                            >
-                                {d.label}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-1">
+                        <div className="flex bg-background p-0.5 rounded-lg border border-border items-center">
+                            {directions.map(d => (
+                                <button
+                                    key={d.deg}
+                                    onClick={() => setAngle(d.deg)}
+                                    className={`grid size-7 place-items-center rounded ${angle === d.deg ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                                    aria-label={d.label}
+                                    aria-pressed={angle === d.deg}
+                                >
+                                    <d.Icon className="size-3.5" strokeWidth={1.5} />
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => onCopy(gradientCSS)}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2 text-[13px] text-foreground hover:bg-accent"
+                        >
+                            <Copy className="size-3.5" strokeWidth={1.5} />
+                            Copy CSS
+                        </button>
                     </div>
                 </div>
 
                 {/* Stops Visualization (Fully Configurable) */}
                 <div className="space-y-3">
-                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        <span>Stops Configuration</span>
+                    <div className="flex justify-between items-center text-[13px] text-muted-foreground">
+                        <span>Stops</span>
                         <span>%</span>
                     </div>
                     

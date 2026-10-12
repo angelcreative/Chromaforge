@@ -1,4 +1,5 @@
 import React, { Suspense, lazy } from 'react';
+import { Palette } from 'lucide-react';
 import { ThemeColors } from './BaseComponents';
 
 // Lazy load all card components
@@ -87,12 +88,12 @@ export const CardsViewer: React.FC<CardsViewerProps> = ({ selectedCardId, theme 
         style={{ backgroundColor: theme.bg.page }}
       >
         <div className="text-center">
-          <div
-            className="text-6xl mb-4 opacity-20"
+          <Palette
+            className="mx-auto mb-4 size-12 opacity-40"
+            strokeWidth={1.5}
             style={{ color: theme.text.secondary }}
-          >
-            🎨
-          </div>
+            aria-hidden
+          />
           <h3
             className="text-xl font-bold mb-2"
             style={{ color: theme.text.main }}

@@ -11,7 +11,7 @@ export default function FormCard({ theme }: { theme: ThemeColors }) {
       <div className="flex items-center justify-between mb-6">
         <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.text.tertiary }}>QUESTION 01</span>
         <IconButton theme={theme}>
-          <X size={20} />
+          <X size={20} strokeWidth={1.5}/>
         </IconButton>
       </div>
 

@@ -1,4 +1,5 @@
 
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Clipboard, Search, Sparkles, X } from 'lucide-react';
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ColorData, PlaygroundConfig, GlobalCurveConfig } from '../types';
 import { generateShades, getContrastRatio, getLuminance, hexToRgb } from '../utils/colorUtils';
@@ -30,17 +31,6 @@ import * as Toggle from '@radix-ui/react-toggle';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { 
-  HiCheck, HiChevronDown, HiChevronUp, HiChevronLeft, HiChevronRight, HiMenu, HiX, HiDotsVertical,
-  HiFolder, HiFolderOpen, HiUser, HiUserCircle, HiCog, HiBell,
-  HiSearch, HiFilter, HiViewGrid, HiCollection, HiCursorClick,
-  HiLockClosed, HiEye, HiEyeOff, HiChartBar, HiAdjustments,
-  HiVolumeUp, HiVolumeOff, HiSwitchHorizontal, HiTag, HiInformationCircle,
-  HiExclamationCircle, HiQuestionMarkCircle, HiClipboard, HiDocument,
-  HiPuzzle, HiCube, HiViewList, HiTemplate, HiCursorClick as HiCursorArrow, HiPhotograph as HiImage,
-  HiSparkles, HiArrowLeft
-} from 'react-icons/hi';
-import { FaPaperPlane } from 'react-icons/fa';
 import { CardsSidebar } from './cards/CardsSidebar';
 import { CardsViewer } from './cards/CardsViewer';
 import { Button, IconButton, Switch, Checkbox, Radio, RadioGroup, Select, Slider } from './cards/Molecules';
@@ -776,7 +766,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.primaryHover; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.action.primary; }}
                   >
-                    <HiSearch className="w-5 h-5" />
+                    <Search className="w-5 h-5" strokeWidth={1.5}/>
                   </button>
                   <button 
                     className="w-10 h-10 rounded-lg flex items-center justify-center transition-all"
@@ -791,13 +781,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
                     }}
                   >
-                    <HiSearch className="w-5 h-5" />
+                    <Search className="w-5 h-5" strokeWidth={1.5}/>
                   </button>
                   <button 
                     className="w-10 h-10 rounded-lg flex items-center justify-center transition-all cursor-not-allowed"
                     style={{ backgroundColor: theme.disabled.bg, color: theme.disabled.text }}
                   >
-                    <HiSearch className="w-5 h-5" />
+                    <Search className="w-5 h-5" strokeWidth={1.5}/>
                   </button>
                 </div>
               </div>
@@ -812,7 +802,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.action.primaryHover; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.action.primary; }}
                   >
-                    <HiSearch className="w-4 h-4" />
+                    <Search className="w-4 h-4" strokeWidth={1.5}/>
                     <span>Label + Icon Left</span>
                   </button>
                   <button 
@@ -822,7 +812,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.action.primary; }}
                   >
                     <span>Label + Icon Right</span>
-                    <HiSearch className="w-4 h-4" />
+                    <Search className="w-4 h-4" strokeWidth={1.5}/>
                   </button>
                   <button 
                     className="px-6 py-3 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
@@ -837,7 +827,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
                     }}
                   >
-                    <HiSearch className="w-4 h-4" />
+                    <Search className="w-4 h-4" strokeWidth={1.5}/>
                     <span>Label + Icon Left</span>
                   </button>
                   <button 
@@ -854,7 +844,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     }}
                   >
                     <span>Label + Icon Right</span>
-                    <HiSearch className="w-4 h-4" />
+                    <Search className="w-4 h-4" strokeWidth={1.5}/>
                   </button>
                 </div>
               </div>
@@ -947,7 +937,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2" style={{ color: theme.text.main }}>Label + Icon Left</label>
                 <div className="relative">
-                  <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.text.secondary }} />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
                   <input 
                     type="text" 
                     placeholder="Search..."
@@ -979,7 +969,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     onFocus={(e) => e.currentTarget.style.borderColor = theme.border.focus}
                     onBlur={(e) => e.currentTarget.style.borderColor = theme.border.default}
                   />
-                  <HiSearch className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.text.secondary }} />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
                 </div>
               </div>
             </div>
@@ -1213,7 +1203,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       style={{ color: theme.text.main }}
                     >
                       <span>Is it accessible?</span>
-                      <HiChevronDown className="w-4 h-4 transition-transform duration-200" />
+                      <ChevronDown className="w-4 h-4 transition-transform duration-200" strokeWidth={1.5}/>
                     </Accordion.Trigger>
                   </Accordion.Header>
                   <Accordion.Content className="px-4 pb-3 text-sm" style={{ color: theme.text.secondary }}>
@@ -1227,7 +1217,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       style={{ color: theme.text.main }}
                     >
                       <span>Is it unstyled?</span>
-                      <HiChevronDown className="w-4 h-4 transition-transform duration-200" />
+                      <ChevronDown className="w-4 h-4 transition-transform duration-200" strokeWidth={1.5}/>
                     </Accordion.Trigger>
                   </Accordion.Header>
                   <Accordion.Content className="px-4 pb-3 text-sm" style={{ color: theme.text.secondary }}>
@@ -1356,7 +1346,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       }}
                     >
                       <CheckboxPrimitive.Indicator>
-                        <HiCheck className="w-4 h-4" style={{ color: item.disabled ? theme.disabled.text : theme.text.onPrimary }} />
+                        <Check className="w-4 h-4" style={{ color: item.disabled ? theme.disabled.text : theme.text.onPrimary }} strokeWidth={1.5}/>
                       </CheckboxPrimitive.Indicator>
                     </CheckboxPrimitive.Root>
                     <Label.Root className="text-sm" style={{ color: item.disabled ? theme.disabled.text : theme.text.main }}>
@@ -1385,7 +1375,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     }}
                   >
                     <span>@peduarte starred 3 repositories</span>
-                    <HiChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4" strokeWidth={1.5}/>
                   </button>
                 </Collapsible.Trigger>
                 <Collapsible.Content className="mt-2 p-4 rounded-lg border" style={{ backgroundColor: theme.bg.card, borderColor: theme.border.subtle }}>
@@ -1487,7 +1477,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     </div>
                     <Dialog.Close asChild>
                       <IconButton theme={theme as ThemeColors} className="absolute top-4 right-4">
-                        <HiX className="w-5 h-5" />
+                        <X className="w-5 h-5" strokeWidth={1.5}/>
                       </IconButton>
                     </Dialog.Close>
                   </Dialog.Content>
@@ -1504,7 +1494,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
               <h3 className="text-lg font-bold mb-4" style={{ color: theme.text.main }}>Dropdown Menu</h3>
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                  <Button theme={theme as ThemeColors} icon={<HiChevronDown className="w-4 h-4" />}>Options</Button>
+                  <Button theme={theme as ThemeColors} icon={<ChevronDown className="w-4 h-4" strokeWidth={1.5}/>}>Options</Button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content 
@@ -1811,7 +1801,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                           className="absolute top-2 right-2 p-1 rounded"
                           style={{ color: theme.text.secondary }}
                         >
-                          <HiX className="w-4 h-4" />
+                          <X className="w-4 h-4" strokeWidth={1.5}/>
                         </button>
                       </Popover.Close>
                       <div className="font-bold mb-2" style={{ color: theme.text.main }}>Dimensions</div>
@@ -1991,7 +1981,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     >
                       <SelectPrimitive.Value placeholder="Choose an option..." />
                       <SelectPrimitive.Icon>
-                        <HiChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-4 h-4" strokeWidth={1.5}/>
                       </SelectPrimitive.Icon>
                     </SelectPrimitive.Trigger>
                     <SelectPrimitive.Portal>
@@ -2003,7 +1993,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         }}
                       >
                         <SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6">
-                          <HiChevronUp className="w-4 h-4" style={{ color: theme.text.secondary }} />
+                          <ChevronUp className="w-4 h-4" style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
                         </SelectPrimitive.ScrollUpButton>
                         <SelectPrimitive.Viewport>
                           {['Option 1', 'Option 2', 'Option 3', 'Option 4'].map((option, i) => (
@@ -2020,7 +2010,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                           ))}
                         </SelectPrimitive.Viewport>
                         <SelectPrimitive.ScrollDownButton className="flex items-center justify-center h-6">
-                          <HiChevronDown className="w-4 h-4" style={{ color: theme.text.secondary }} />
+                          <ChevronDown className="w-4 h-4" style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
                         </SelectPrimitive.ScrollDownButton>
                       </SelectPrimitive.Content>
                     </SelectPrimitive.Portal>
@@ -2039,7 +2029,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     }}
                   >
                     <span>Disabled option</span>
-                    <HiChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4" strokeWidth={1.5}/>
                   </div>
                 </div>
               </div>
@@ -2248,7 +2238,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       className="absolute top-2 right-2 p-1 rounded"
                       style={{ color: theme.text.secondary }}
                     >
-                      <HiX className="w-4 h-4" />
+                      <X className="w-4 h-4" strokeWidth={1.5}/>
                     </button>
                   </Toast.Close>
                 </Toast.Root>
@@ -2512,7 +2502,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                 {/* Search */}
                 <div className="px-4 pt-4 pb-4 border-b border-border">
                   <div className="relative">
-                    <HiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" strokeWidth={1.5}/>
                     <input
                       type="text"
                       placeholder={`Search ${activeTab}...`}
@@ -2598,7 +2588,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                         e.currentTarget.style.backgroundColor = theme.action.secondaryBg;
                                     }}
                                 >
-                                    <HiArrowLeft className="w-4 h-4" />
+                                    <ArrowLeft className="w-4 h-4" strokeWidth={1.5}/>
                                     Back to Components
                                         </button>
                             </div>
@@ -2632,7 +2622,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                 }}
                                                 className="text-xs text-foreground hover:text-foreground flex items-center gap-1"
                                             >
-                                                <HiClipboard className="w-4 h-4" />
+                                                <Clipboard className="w-4 h-4" strokeWidth={1.5}/>
                                                 Copy
                                             </button>
                                         </div>
@@ -2647,7 +2637,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         // Non-premium: Show banner
                         <div className="max-w-4xl mx-auto">
                             <div className="bg-gradient-to-r from-primary/20 to-purple-600/20 border border-primary rounded-lg p-8 text-center">
-                                <HiSparkles className="w-12 h-12 text-foreground mx-auto mb-4" />
+                                <Sparkles className="w-12 h-12 text-foreground mx-auto mb-4" strokeWidth={1.5}/>
                                 <h3 className="text-xl font-bold text-foreground mb-2">Assistant is a paid feature</h3>
                                 <p className="text-sm text-muted-foreground mb-6">Generated components use the same paid assistant. The rest of the studio stays free.</p>
                                 <button
@@ -2688,7 +2678,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                             e.currentTarget.style.backgroundColor = theme.action.primary;
                                         }}
                                     >
-                                        <HiSparkles className="w-4 h-4" />
+                                        <Sparkles className="w-4 h-4" strokeWidth={1.5}/>
                                         View Generated Component
                                     </button>
                                 )}
@@ -2733,7 +2723,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         className="absolute top-2 right-2 p-1 rounded"
                         style={{ color: theme.text.secondary }}
                     >
-                        <HiX className="w-4 h-4" />
+                        <X className="w-4 h-4" strokeWidth={1.5}/>
                     </button>
                 </Toast.Close>
             </Toast.Root>

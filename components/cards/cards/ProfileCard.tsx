@@ -33,11 +33,11 @@ export default function ProfileCard({ theme }: { theme: ThemeColors }) {
         <h3 className="text-lg mb-4" style={{ color: theme.text.secondary }}>Product Designer</h3>
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <MapPin size={16} style={{ color: theme.text.tertiary }} />
+            <MapPin size={16} style={{ color: theme.text.tertiary }} strokeWidth={1.5}/>
             <span style={{ color: theme.text.secondary }}>Spain</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Briefcase size={16} style={{ color: theme.text.tertiary }} />
+            <Briefcase size={16} style={{ color: theme.text.tertiary }} strokeWidth={1.5}/>
             <span style={{ color: theme.text.secondary }}>Designer</span>
           </div>
         </div>

@@ -1,8 +1,8 @@
 
+import { Check, Pencil, Pipette, RotateCcw, Trash2, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { ColorData, ColorHSL } from '../types';
 import { hexToHsl, hslToRgb, rgbToHex, createColorDataFromHSL, hslToHsb, hsbToHsl } from '../utils/colorUtils';
-import { FaEyeDropper } from 'react-icons/fa';
 
 interface ColorRowInputProps {
   color: ColorData;
@@ -152,7 +152,7 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
                             onChange={handleNameChange}
                             placeholder={`Color ${index + 1}`}
                         />
-                        <svg className="w-2.5 h-2.5 text-muted-foreground absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/name:opacity-100 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        <Pencil className="pointer-events-none absolute right-0 top-1/2 size-2.5 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} aria-hidden />
                      </div>
                      <div className="flex bg-card rounded border border-border overflow-hidden shrink-0">
                         {(['HEX', 'RGB', 'HSL', 'HSB'] as ColorFormat[]).map(fmt => (
@@ -175,7 +175,7 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
                         onChange={handleTextChange} 
                     />
                     <button onClick={handleEyeDropper} className="p-1.5 text-muted-foreground hover:text-foreground bg-background rounded-md border border-border hover:bg-secondary transition-colors" title="Pick Color from Screen">
-                        <FaEyeDropper className="w-3.5 h-3.5" />
+                        <Pipette className="w-3.5 h-3.5" strokeWidth={1.5}/>
                     </button>
                 </div>
             </div>
@@ -188,7 +188,7 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
                             className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             title="Remove Color"
                         >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            <Trash2 className="size-4" strokeWidth={1.5} />
                         </button>
                     ) : (
                         <div className="flex gap-1 animate-in slide-in-from-right-2 duration-200">
@@ -197,14 +197,14 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-white bg-red-600 hover:bg-red-500 shadow-lg"
                                 title="Confirm Delete"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                <Check className="size-4" strokeWidth={1.5} />
                             </button>
                             <button 
                                 onClick={() => setIsDeleting(false)}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground bg-secondary hover:bg-accent"
                                 title="Cancel"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                <X className="size-4" strokeWidth={1.5} />
                             </button>
                         </div>
                     )}
@@ -216,14 +216,14 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
         <div className="group/slider relative">
              <div className="flex justify-between items-end mb-2">
                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Luminance</label>
+                    <label className="text-[13px] text-muted-foreground">Luminance</label>
                     {hasLuminanceChanged && (
                         <button 
                             onClick={handleResetLuminance}
                             className="text-[9px] text-foreground hover:text-foreground font-mono bg-accent px-1.5 py-0.5 rounded border border-primary/20 hover:border-primary transition-colors flex items-center gap-1 animate-in fade-in duration-200"
                             title={`Reset to original luminance (${baseLuminance}%)`}
                         >
-                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            <RotateCcw className="size-2.5" strokeWidth={1.5} />
                             Reset
                         </button>
                     )}

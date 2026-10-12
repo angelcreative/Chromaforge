@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Inbox, Library, Loader2, Trash2, X } from 'lucide-react';
 import { SavedPalette } from '../services/storageService';
 import { ColorData } from '../types';
 
@@ -28,7 +29,7 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
           <div>
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <span className="p-1.5 bg-accent rounded-lg text-foreground">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    <Library className="size-5" strokeWidth={1.5} />
                 </span>
                 My Saved Palettes
             </h2>
@@ -37,20 +38,20 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
             </div>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="size-5" strokeWidth={1.5} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
-                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <Loader2 className="size-8 animate-spin text-foreground" strokeWidth={1.5} />
                     <p>Loading your palettes...</p>
                 </div>
             ) : palettes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 border-2 border-dashed border-border rounded-xl">
                     <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center">
-                        <svg className="w-8 h-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                        <Inbox className="size-8 opacity-50" strokeWidth={1.5} />
                     </div>
                     <p className="text-sm">No saved palettes yet.</p>
                 </div>
@@ -62,10 +63,10 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                                 <h3 className="font-bold text-foreground text-sm truncate pr-2">{palette.name}</h3>
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); onDeletePalette(palette.id); }}
-                                    className="text-muted-foreground hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Delete"
+                                    className="text-muted-foreground hover:text-red-400 p-1"
+                                    aria-label="Delete palette"
                                 >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    <Trash2 className="size-4" strokeWidth={1.5} />
                                 </button>
                             </div>
                             

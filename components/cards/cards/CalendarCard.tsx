@@ -14,10 +14,10 @@ export default function CalendarCard({ theme }: { theme: ThemeColors }) {
         <h2 className="text-xl font-bold" style={{ color: theme.text.main }}>September 2024</h2>
         <div className="flex gap-2">
           <IconButton theme={theme}>
-            <ChevronLeft size={20} />
+            <ChevronLeft size={20} strokeWidth={1.5}/>
           </IconButton>
           <IconButton theme={theme}>
-            <ChevronRight size={20} />
+            <ChevronRight size={20} strokeWidth={1.5}/>
           </IconButton>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function CalendarCard({ theme }: { theme: ThemeColors }) {
       <div className="space-y-3">
         <div className="p-4 rounded-lg flex items-center justify-between" style={{ backgroundColor: `${theme.action.primary}20` }}>
           <div className="flex items-center gap-3">
-            <Music size={20} style={{ color: theme.action.primary }} />
+            <Music size={20} style={{ color: theme.action.primary }} strokeWidth={1.5}/>
             <div>
               <div className="font-semibold" style={{ color: theme.text.main }}>Music</div>
               <div className="text-xs" style={{ color: theme.text.secondary }}>5 hours per day</div>
@@ -57,7 +57,7 @@ export default function CalendarCard({ theme }: { theme: ThemeColors }) {
         </div>
         <div className="p-4 rounded-lg flex items-center justify-between" style={{ backgroundColor: `${theme.semantic.success.main}20` }}>
           <div className="flex items-center gap-3">
-            <Utensils size={20} style={{ color: theme.semantic.success.main }} />
+            <Utensils size={20} style={{ color: theme.semantic.success.main }} strokeWidth={1.5}/>
             <div>
               <div className="font-semibold" style={{ color: theme.text.main }}>Food</div>
               <div className="text-xs" style={{ color: theme.text.secondary }}>5 hours per day</div>

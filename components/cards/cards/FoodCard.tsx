@@ -16,7 +16,7 @@ export default function FoodCard({ theme }: { theme: ThemeColors }) {
         />
         <div className="absolute top-4 right-4">
           <IconButton theme={theme}>
-            <Heart size={20} />
+            <Heart size={20} strokeWidth={1.5}/>
           </IconButton>
         </div>
       </div>
@@ -30,15 +30,15 @@ export default function FoodCard({ theme }: { theme: ThemeColors }) {
         </div>
         <div className="flex items-center gap-6 mb-6">
           <div className="flex items-center gap-1">
-            <Star size={16} fill={theme.action.primary} style={{ color: theme.action.primary }} />
+            <Star size={16} style={{ color: theme.action.primary }} strokeWidth={1.5}/>
             <span className="text-sm font-semibold" style={{ color: theme.text.main }}>4.7 (900)</span>
           </div>
           <div className="flex items-center gap-1">
-            <ThumbsUp size={16} style={{ color: theme.text.secondary }} />
+            <ThumbsUp size={16} style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
             <span className="text-sm" style={{ color: theme.text.secondary }}>280</span>
           </div>
           <div className="flex items-center gap-1">
-            <Bookmark size={16} style={{ color: theme.text.secondary }} />
+            <Bookmark size={16} style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
             <span className="text-sm" style={{ color: theme.text.secondary }}>470</span>
           </div>
         </div>

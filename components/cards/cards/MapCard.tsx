@@ -19,27 +19,27 @@ export default function MapCard({ theme }: { theme: ThemeColors }) {
           <div className="flex-1">
             <h2 className="text-xl font-bold mb-2" style={{ color: theme.text.main }}>Green Cup Café</h2>
             <div className="flex items-center gap-1 mb-2">
-              <Star size={16} fill={theme.action.primary} style={{ color: theme.action.primary }} />
+              <Star size={16} style={{ color: theme.action.primary }} strokeWidth={1.5}/>
               <span className="text-sm font-semibold" style={{ color: theme.text.main }}>4.5</span>
             </div>
             <p className="text-sm" style={{ color: theme.text.secondary }}>Churchill square</p>
           </div>
           <IconButton theme={theme}>
-            <X size={20} />
+            <X size={20} strokeWidth={1.5}/>
           </IconButton>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <Button theme={theme} variant="secondary" icon={<Navigation size={16} />}>
+          <Button theme={theme} variant="secondary" icon={<Navigation size={16} strokeWidth={1.5}/>}>
             4 mins
           </Button>
-          <Button theme={theme} variant="secondary" icon={<Phone size={16} />}>
+          <Button theme={theme} variant="secondary" icon={<Phone size={16} strokeWidth={1.5}/>}>
             Call
           </Button>
-          <Button theme={theme} variant="secondary" icon={<Bookmark size={16} />}>
+          <Button theme={theme} variant="secondary" icon={<Bookmark size={16} strokeWidth={1.5}/>}>
             Save
           </Button>
-          <Button theme={theme} variant="secondary" icon={<Share size={16} />}>
+          <Button theme={theme} variant="secondary" icon={<Share size={16} strokeWidth={1.5}/>}>
             Share
           </Button>
         </div>

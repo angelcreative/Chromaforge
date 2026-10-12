@@ -16,7 +16,7 @@ export default function InstagramCard({ theme }: { theme: ThemeColors }) {
           <span className="font-semibold" style={{ color: theme.text.main }}>username</span>
         </div>
         <IconButton theme={theme}>
-          <MoreHorizontal size={20} />
+          <MoreHorizontal size={20} strokeWidth={1.5}/>
         </IconButton>
       </div>
 
@@ -30,17 +30,17 @@ export default function InstagramCard({ theme }: { theme: ThemeColors }) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <IconButton theme={theme}>
-              <Heart size={24} />
+              <Heart size={24} strokeWidth={1.5}/>
             </IconButton>
             <IconButton theme={theme}>
-              <MessageCircle size={24} />
+              <MessageCircle size={24} strokeWidth={1.5}/>
             </IconButton>
             <IconButton theme={theme}>
-              <Send size={24} />
+              <Send size={24} strokeWidth={1.5}/>
             </IconButton>
           </div>
           <IconButton theme={theme}>
-            <Bookmark size={24} />
+            <Bookmark size={24} strokeWidth={1.5}/>
           </IconButton>
         </div>
         <div className="text-sm font-semibold mb-1" style={{ color: theme.text.main }}>1,234 likes</div>

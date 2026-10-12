@@ -52,7 +52,7 @@ const ThemeToggle: React.FC = () => {
               active ? 'text-primary-foreground' : 'text-foreground'
             }`}
           >
-            <Icon className="size-3.5 shrink-0" aria-hidden />
+            <Icon className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
             <span className="hidden sm:inline">{option.label}</span>
           </button>
         );

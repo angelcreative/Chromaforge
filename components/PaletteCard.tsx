@@ -1,5 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
+import { Eye, Info, Lock, SlidersHorizontal } from 'lucide-react';
 import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades, rgbToCmyk } from '../utils/colorUtils';
 
@@ -83,11 +84,6 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                     style={{ backgroundColor: color.hex }}
                     onClick={() => onOpenInfo(color)}
                 >
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[2px]">
-                        <span className="bg-white/90 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg transform scale-95 group-hover:scale-100 transition-transform">
-                            View Details
-                        </span>
-                    </div>
                 </div>
             )}
 
@@ -141,29 +137,24 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                         <button 
                             onClick={() => onEditScale(color)}
                             className={`p-2 rounded-lg transition-colors ${color.scaleConfig && (color.scaleConfig.hueShift !== 0 || color.scaleConfig.saturationBoost !== 0 || color.scaleConfig.useOkLCH) ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
-                            title="Edit Scale (Curves)"
+                            aria-label="Edit scale"
                         >
-                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                             <SlidersHorizontal className="size-5" strokeWidth={1.5} />
                         </button>
                         <button 
                             onClick={() => onOpenGrid(color)}
                             className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                            title="Contrast Grid"
+                            aria-label="Contrast"
                         >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
+                            <Eye className="size-5" strokeWidth={1.5} />
                         </button>
-                        {isCompact && (
-                            <button 
-                                onClick={() => onOpenInfo(color)}
-                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                                title="Info"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            </button>
-                        )}
+                        <button 
+                            onClick={() => onOpenInfo(color)}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                            aria-label="Color details"
+                        >
+                            <Info className="size-5" strokeWidth={1.5} />
+                        </button>
                     </div>
                 </div>
 
@@ -188,17 +179,18 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                             return (
                                 <div 
                                     key={shade.level} 
-                                    className="aspect-square rounded md:rounded-none md:aspect-auto md:flex-1 md:min-w-0 md:hover:flex-[3] transition-all duration-300 ease-out cursor-pointer relative group/shade flex flex-col justify-center items-center shadow-sm md:shadow-none"
+                                    className="aspect-square rounded md:rounded-none md:aspect-auto md:flex-1 md:min-w-0 cursor-pointer relative flex flex-col justify-center items-center shadow-sm md:shadow-none"
                                     style={{ backgroundColor: shade.hex }}
                                     onClick={() => handleCopy(shade.hex)}
+                                    aria-label={`Step ${shade.level}, ${shade.hex}`}
                                 >
                                     {shade.isInput && (
-                                        <div className={`absolute top-1 right-1 opacity-60 ${isLight ? 'text-black' : 'text-white'}`}>
-                                            <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                        <div className={`absolute top-1 right-1 ${isLight ? 'text-black' : 'text-white'}`}>
+                                            <Lock className="size-2.5" strokeWidth={1.5} aria-hidden />
                                         </div>
                                     )}
-                                    <div className={`palette-ink opacity-0 group-hover/shade:opacity-100 flex flex-col items-center justify-center transition-opacity duration-200 ${textColor} delay-75`}>
-                                        <span className="font-bold text-[8px] md:text-[10px] leading-none mb-0.5">{shade.level}</span>
+                                    <div className={`flex flex-col items-center justify-center ${textColor}`}>
+                                        <span className="font-mono text-[10px] leading-none">{shade.level}</span>
                                     </div>
                                 </div>
                             );

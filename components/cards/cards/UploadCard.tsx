@@ -22,7 +22,7 @@ export default function UploadCard({ theme }: { theme: ThemeColors }) {
           e.currentTarget.style.borderColor = theme.border.subtle;
         }}
       >
-        <Upload size={48} className="mx-auto mb-4" style={{ color: theme.text.tertiary }} />
+        <Upload size={48} className="mx-auto mb-4" style={{ color: theme.text.tertiary }} strokeWidth={1.5}/>
         <p className="text-sm" style={{ color: theme.text.secondary }}>No Files Selected</p>
       </div>
 
@@ -34,7 +34,7 @@ export default function UploadCard({ theme }: { theme: ThemeColors }) {
       </div>
 
       <div className="flex items-center justify-between">
-        <Button theme={theme} variant="tertiary" icon={<HelpCircle size={16} />}>
+        <Button theme={theme} variant="tertiary" icon={<HelpCircle size={16} strokeWidth={1.5}/>}>
           Support
         </Button>
         <div className="flex gap-3">

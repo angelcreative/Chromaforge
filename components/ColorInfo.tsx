@@ -1,70 +1,60 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import { ColorData } from '../types';
-import { getLuminance, rgbToLab, rgbToCmyk, rgbToOklch } from '../utils/colorUtils';
+import { rgbToCmyk, rgbToOklch } from '../utils/colorUtils';
 
 interface ColorInfoProps {
   color: ColorData;
   onClose: () => void;
 }
 
+const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex items-baseline justify-between gap-4 border-b border-border py-3">
+    <span className="text-[13px] text-muted-foreground">{label}</span>
+    <span className="text-right font-mono text-[13px] text-foreground">{value}</span>
+  </div>
+);
+
 const ColorInfo: React.FC<ColorInfoProps> = ({ color, onClose }) => {
-  const lum = getLuminance(color.rgb.r, color.rgb.g, color.rgb.b) * 100;
   const cmyk = rgbToCmyk(color.rgb.r, color.rgb.g, color.rgb.b);
   const oklch = rgbToOklch(color.rgb.r, color.rgb.g, color.rgb.b);
-  
+  const nameNote = color.exactMatch ? 'Exact name' : 'Approximate name';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200">
-        
-        <div className="h-48 w-full relative" style={{ backgroundColor: color.hex }}>
-            <button onClick={onClose} className="absolute top-4 right-4 p-1 bg-black/20 hover:bg-black/40 text-foreground rounded-full transition">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div className="absolute bottom-4 right-4 text-white/50 text-xs font-mono">
-                {color.hex}
-            </div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={onClose}>
+      <div
+        className="flex max-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-card shadow-2xl sm:max-h-[90vh] sm:rounded-2xl sm:border sm:border-border"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="color-detail-title"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <h2 id="color-detail-title" className="text-[15px] font-medium text-foreground">Color</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[13px] text-foreground hover:bg-accent"
+          >
+            <X className="size-4" strokeWidth={1.5} aria-hidden />
+            Close
+          </button>
         </div>
 
-        <div className="p-6">
-            <h2 className="text-3xl font-bold text-foreground mb-1">{color.name}</h2>
-            <div className="text-muted-foreground text-sm mb-6 flex gap-2">
-                <span>{color.exactMatch ? 'Exact Match' : 'Approximate Name'}</span>
-            </div>
+        <div className="overflow-y-auto px-4 py-4">
+          <div className="h-28 w-full rounded-xl ring-1 ring-border" style={{ backgroundColor: color.hex }} />
 
-            <div className="grid grid-cols-1 gap-y-4 font-mono text-sm text-muted-foreground">
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">RGB [hex]</span>
-                    <span>{color.hex.replace('#', '')}</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">RGB [0-255]</span>
-                    <span>{color.rgb.r}, {color.rgb.g}, {color.rgb.b}</span>
-                </div>
-                 <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">RGB [0-100%]</span>
-                    <span>{(color.rgb.r/2.55).toFixed(1)}, {(color.rgb.g/2.55).toFixed(1)}, {(color.rgb.b/2.55).toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">HSL</span>
-                    <span>{color.hsl.h}°, {color.hsl.s}%, {color.hsl.l}%</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">CMYK (Print)</span>
-                    <span>{cmyk.c}%, {cmyk.m}%, {cmyk.y}%, {cmyk.k}%</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">Luminosity</span>
-                    <span>{lum.toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">LAB (Approx)</span>
-                    <span>{rgbToLab(color.rgb.r, color.rgb.g, color.rgb.b)}</span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-2">
-                    <span className="text-muted-foreground">OKLCH</span>
-                    <span>{oklch.l.toFixed(2)}, {oklch.c.toFixed(2)}, {oklch.h.toFixed(2)}</span>
-                </div>
-            </div>
+          <p className="mt-4 font-mono text-2xl text-foreground">{color.hex}</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {nameNote}: {color.name}
+          </p>
+
+          <div className="mt-4">
+            <Row label="RGB" value={`${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}`} />
+            <Row label="HSL" value={`${color.hsl.h}°, ${color.hsl.s}%, ${color.hsl.l}%`} />
+            <Row label="OKLCH" value={`${oklch.l.toFixed(2)}, ${oklch.c.toFixed(2)}, ${oklch.h.toFixed(2)}`} />
+            <Row label="CMYK" value={`${cmyk.c}%, ${cmyk.m}%, ${cmyk.y}%, ${cmyk.k}%`} />
+          </div>
         </div>
       </div>
     </div>

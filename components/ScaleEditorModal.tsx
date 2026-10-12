@@ -1,5 +1,5 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
+import { Check, X } from 'lucide-react';
 import { ColorData, ScaleConfiguration } from '../types';
 import { generateShades, createColorData, hexToHsl, rgbToOklch } from '../utils/colorUtils';
 
@@ -18,49 +18,49 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
     saturationBoost: 0,
     lightnessEase: 'linear',
     useOkLCH: true,
-    mode: 'curves' // Default to curves
+    mode: 'curves'
   });
 
   const [isZoomed, setIsZoomed] = useState(true);
   const [activeShade, setActiveShade] = useState<number | null>(null);
 
-  // Initialize Linear Config if missing when switching modes
   useEffect(() => {
       if (config.mode === 'linear' && !config.linearConfig) {
           const oklch = rgbToOklch(color.rgb.r, color.rgb.g, color.rgb.b);
           setConfig(prev => ({
               ...prev,
               linearConfig: {
-                  start: { l: 0.98, c: 0.02, h: oklch.h }, // Near White
-                  end: { l: 0.05, c: oklch.c, h: oklch.h }, // Near Black (keeping base hue/chroma)
+                  start: { l: 0.98, c: 0.02, h: oklch.h },
+                  end: { l: 0.05, c: oklch.c, h: oklch.h },
                   steps: 11
               }
           }));
       }
   }, [config.mode, color.rgb]);
 
-  // Generate live preview
   const previewColor = useMemo(() => createColorData(color.hex, config), [color.hex, config]);
   const shades = useMemo(() => generateShades(previewColor), [previewColor]);
 
-  // Find active shade data
-  const activeShadeData = useMemo(() => 
-    shades.find(s => s.level === activeShade), 
+  const activeShadeData = useMemo(() =>
+    shades.find(s => s.level === activeShade),
   [shades, activeShade]);
+
+  const activeHsl = useMemo(
+    () => (activeShadeData ? hexToHsl(activeShadeData.hex) : null),
+    [activeShadeData]
+  );
 
   const handleSave = () => {
     onSave(color.hex, config);
     onClose();
   };
 
-  // --- Visualization Helpers ---
   const size = 320;
   const center = size / 2;
-  const radius = 120; // Radius for the plotting area
+  const radius = 120;
 
-  // Convert HSL to Polar Coordinates (Standard Color Wheel)
   const getPolarCoords = (h: number, s: number) => {
-      const angle = (h - 90) * (Math.PI / 180); 
+      const angle = (h - 90) * (Math.PI / 180);
       const r = (s / 100) * radius;
       return {
           x: center + r * Math.cos(angle),
@@ -68,19 +68,18 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
       };
   };
 
-  // Calculate Points & Zoom ViewBox
   const { points, viewBox } = useMemo(() => {
       let minX = size, maxX = 0, minY = size, maxY = 0;
-      
+
       const pts = shades.map(shade => {
           const hsl = hexToHsl(shade.hex);
           const p = getPolarCoords(hsl.h, hsl.s);
-          
+
           if (p.x < minX) minX = p.x;
           if (p.x > maxX) maxX = p.x;
           if (p.y < minY) minY = p.y;
           if (p.y > maxY) maxY = p.y;
-          
+
           return { ...p, hex: shade.hex, level: shade.level, hsl };
       });
 
@@ -88,461 +87,340 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
           return { points: pts, viewBox: `0 0 ${size} ${size}` };
       }
 
-      const padding = 40; 
-      const width = Math.max(maxX - minX, 20); 
+      const padding = 40;
+      const width = Math.max(maxX - minX, 20);
       const height = Math.max(maxY - minY, 20);
       const zoomSize = Math.max(width, height) + (padding * 2);
       const finalSize = Math.min(zoomSize, size);
-      
+
       const midX = (minX + maxX) / 2;
       const midY = (minY + maxY) / 2;
-      
+
       const vbX = midX - (finalSize / 2);
       const vbY = midY - (finalSize / 2);
 
-      return { 
-          points: pts, 
-          viewBox: `${vbX} ${vbY} ${finalSize} ${finalSize}` 
+      return {
+          points: pts,
+          viewBox: `${vbX} ${vbY} ${finalSize} ${finalSize}`
       };
   }, [shades, isZoomed]);
 
   const pathData = useMemo(() => {
       if (points.length === 0) return '';
-      return points.map((p, i) => 
+      return points.map((p, i) =>
         (i === 0 ? 'M' : 'L') + ` ${p.x.toFixed(1)},${p.y.toFixed(1)}`
       ).join(' ');
   }, [points]);
 
+  const curveMode = !config.mode || config.mode === 'curves';
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-background border border-border rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col md:flex-row max-h-[90vh] overflow-hidden">
-        
-        {/* Left: Visualization (The "Wheel") */}
-        <div className="w-full md:w-1/2 bg-muted p-6 md:p-8 flex flex-col border-b md:border-b-0 md:border-r border-border min-h-[500px]">
-             
-             {/* Header Section */}
-             <div className="flex justify-between items-start shrink-0 mb-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-                        {color.name}
-                        {!isPremium && usageCount !== undefined && limit !== undefined && (
-                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${usageCount >= limit ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-border text-muted-foreground'}`}>
-                                {usageCount}/{limit}
-                            </span>
-                        )}
-                    </h2>
-                    <p className="text-sm text-muted-foreground font-mono mt-1">Hue & Saturation Path</p>
-                </div>
-                
-                <button 
-                    onClick={() => setIsZoomed(!isZoomed)}
-                    className={`text-[10px] px-3 py-1.5 rounded-lg border font-bold tracking-wider transition-all flex items-center gap-2 ${
-                        isZoomed 
-                        ? 'bg-accent text-foreground border-primary hover:opacity-90/20' 
-                        : 'bg-secondary text-muted-foreground border-border hover:text-foreground hover:border-border'
-                    }`}
-                >
-                    {isZoomed ? (
-                        <>
-                           <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-                           AUTO ZOOM
-                        </>
-                    ) : (
-                        "FULL VIEW"
-                    )}
-                </button>
-             </div>
-
-             {/* The Wheel Visualizer */}
-             <div className="flex-1 flex items-center justify-center py-4 select-none group relative w-full overflow-hidden">
-                 <div className="relative w-[320px] h-[320px]">
-                    <svg 
-                        width={size} 
-                        height={size} 
-                        viewBox={viewBox} 
-                        className="overflow-hidden bg-muted rounded-full shadow-inner ring-1 ring-white/5 transition-[viewBox] duration-500 ease-in-out cursor-pointer"
-                        onClick={() => setActiveShade(null)} 
-                    >
-                        <defs>
-                            <radialGradient id="wheelGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                <stop offset="0%" stopColor={color.hex} stopOpacity="0.15" />
-                                <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                            </radialGradient>
-                        </defs>
-                        
-                        <circle cx={center} cy={center} r={radius * 1.3} fill="url(#wheelGrad)" />
-                        
-                        <g className="opacity-30 pointer-events-none">
-                            <circle cx={center} cy={center} r={radius} fill="none" stroke="#64748b" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
-                            <circle cx={center} cy={center} r={radius * 0.5} fill="none" stroke="#64748b" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
-                            <line x1={center} y1={center - radius} x2={center} y2={center + radius} stroke="#64748b" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                            <line x1={center - radius} y1={center} x2={center + radius} y2={center} stroke="#64748b" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                        </g>
-
-                        <path 
-                            d={pathData} 
-                            fill="none" 
-                            stroke="white" 
-                            strokeWidth="2" 
-                            strokeOpacity="0.5"
-                            strokeLinecap="round" 
-                            strokeLinejoin="round"
-                            vectorEffect="non-scaling-stroke"
-                            className="pointer-events-none"
-                        />
-
-                        {points.map((s) => {
-                            const isMain = s.level === 500;
-                            const isActive = activeShade === s.level;
-                            const r = isMain ? 4 : 2.5; 
-                            
-                            return (
-                                <g 
-                                    key={s.level} 
-                                    className="group/point cursor-pointer"
-                                    onClick={(e) => { e.stopPropagation(); setActiveShade(s.level); }}
-                                >
-                                    <circle cx={s.x} cy={s.y} r={r * 4} fill="transparent" vectorEffect="non-scaling-stroke" />
-                                    <circle 
-                                        cx={s.x} 
-                                        cy={s.y} 
-                                        r={isActive ? r + 2 : r} 
-                                        fill={s.hex} 
-                                        stroke={isMain || isActive ? "white" : "rgba(255,255,255,0.4)"} 
-                                        strokeWidth={isActive ? 2 : (isMain ? 1.5 : 1)}
-                                        vectorEffect="non-scaling-stroke"
-                                        className={`transition-all duration-200 ${isActive ? 'shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'shadow-lg'}`}
-                                    />
-                                    {isActive && (
-                                        <circle 
-                                            cx={s.x} 
-                                            cy={s.y} 
-                                            r={r * 2.5} 
-                                            fill="none" 
-                                            stroke="white" 
-                                            strokeWidth="1" 
-                                            strokeOpacity="0.5"
-                                            strokeDasharray="2 2"
-                                            vectorEffect="non-scaling-stroke"
-                                            className="animate-spin-slow"
-                                        />
-                                    )}
-                                </g>
-                            );
-                        })}
-                    </svg>
-                    
-                    <div className="absolute -bottom-6 w-full text-center pointer-events-none h-6">
-                        {activeShadeData ? (
-                            <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-1 duration-200">
-                                <span className="text-[11px] font-bold text-foreground tracking-widest uppercase">
-                                    SHADE {activeShadeData.level}
-                                </span>
-                                <span className="text-[9px] font-mono text-muted-foreground">
-                                    {activeShadeData.hex}
-                                </span>
-                            </div>
-                        ) : (
-                            <span className="text-[9px] text-muted-foreground font-mono tracking-widest uppercase opacity-50">
-                                {isZoomed ? "Focused View (H/S)" : "Full Polar Projection"}
-                            </span>
-                        )}
-                    </div>
-                 </div>
-             </div>
-             
-             {/* Strip Preview Footer */}
-             <div className="shrink-0 w-full pt-8">
-                <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold mb-2 px-1">
-                    <span>Dark (950)</span>
-                    <span>Base (500)</span>
-                    <span>Light (50)</span>
-                </div>
-                <div className="h-4 w-full flex rounded-full overflow-hidden ring-1 ring-border bg-card">
-                    {[...shades].reverse().map(s => {
-                        const isActive = activeShade === s.level;
-                        return (
-                            <div 
-                                key={s.level} 
-                                onClick={() => setActiveShade(s.level)}
-                                className={`flex-1 h-full cursor-pointer transition-all duration-200 ${isActive ? 'ring-2 ring-white z-10 scale-y-125 rounded-sm shadow-lg' : 'hover:opacity-90'}`} 
-                                style={{ backgroundColor: s.hex }} 
-                                title={`${s.level}: ${s.hex}`} 
-                            />
-                        );
-                    })}
-                </div>
-             </div>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+      <div className="flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden bg-background sm:h-auto sm:max-h-[90vh] sm:rounded-2xl sm:border sm:border-border sm:shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-medium text-foreground">Edit scale</h2>
+            <p className="truncate text-[13px] text-muted-foreground">{color.name}</p>
+            {!isPremium && usageCount !== undefined && limit !== undefined && (
+              <p className="text-[12px] text-muted-foreground">{usageCount} of {limit} edits</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent"
+          >
+            <X className="size-4" strokeWidth={1.5} aria-hidden />
+            Close
+          </button>
         </div>
 
-        {/* Right: Controls */}
-        <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col h-full bg-background overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-center mb-8 shrink-0">
-                
-                {/* Engine Toggle Switch */}
-                <div className="flex bg-card p-1 rounded-lg border border-border">
-                    <button 
-                        onClick={() => setConfig({ ...config, mode: 'curves' })}
-                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${!config.mode || config.mode === 'curves' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+            <section>
+              <h3 className="mb-2 text-[13px] text-muted-foreground">Ramp</h3>
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {shades.map((shade) => {
+                  const selected = activeShade === shade.level;
+                  return (
+                    <button
+                      key={shade.level}
+                      type="button"
+                      onClick={() => setActiveShade(shade.level)}
+                      className="w-12 shrink-0 text-left"
+                      aria-pressed={selected}
                     >
-                        Curve Engine
+                      <span
+                        className={`block h-14 rounded-md ring-2 ring-offset-2 ring-offset-background ${selected ? 'ring-foreground' : 'ring-transparent'}`}
+                        style={{ backgroundColor: shade.hex }}
+                      />
+                      <span className="mt-1 block text-center font-mono text-[11px] text-muted-foreground">{shade.level}</span>
                     </button>
-                    <button 
-                        onClick={() => setConfig({ ...config, mode: 'linear' })}
-                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${config.mode === 'linear' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        Linear Blend
-                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-3 rounded-xl border border-border bg-card p-3">
+                {activeShadeData && activeHsl ? (
+                  <div>
+                    <p className="text-[13px] text-foreground">Step {activeShadeData.level}</p>
+                    <p className="mt-1 font-mono text-sm text-foreground">{activeShadeData.hex}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      Hue {activeHsl.h}°, saturation {activeHsl.s}%, lightness {activeHsl.l}%
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">Tap a step to read that color.</p>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h3 className="text-[13px] text-muted-foreground">Hue and saturation path</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsZoomed(!isZoomed)}
+                  className="h-8 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground hover:bg-accent"
+                >
+                  {isZoomed ? 'Focused view' : 'Full view'}
+                </button>
+              </div>
+              <div className="mx-auto w-full max-w-[280px]">
+                <svg
+                  viewBox={viewBox}
+                  className="aspect-square w-full overflow-hidden rounded-full bg-muted text-foreground ring-1 ring-border"
+                  onClick={() => setActiveShade(null)}
+                >
+                  <g className="pointer-events-none opacity-40">
+                    <circle cx={center} cy={center} r={radius} fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                    <circle cx={center} cy={center} r={radius * 0.5} fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                    <line x1={center} y1={center - radius} x2={center} y2={center + radius} stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <line x1={center - radius} y1={center} x2={center + radius} y2={center} stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                  </g>
+                  <path
+                    d={pathData}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeOpacity="0.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                    className="pointer-events-none"
+                  />
+                  {points.map((s) => {
+                    const isMain = s.level === 500;
+                    const isActive = activeShade === s.level;
+                    const r = isMain ? 5 : 3.5;
+                    return (
+                      <g
+                        key={s.level}
+                        className="cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); setActiveShade(s.level); }}
+                      >
+                        <circle cx={s.x} cy={s.y} r={16} fill="transparent" />
+                        <circle
+                          cx={s.x}
+                          cy={s.y}
+                          r={isActive ? r + 2 : r}
+                          fill={s.hex}
+                          stroke="currentColor"
+                          strokeWidth={isActive ? 2 : 1.5}
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            </section>
+
+            <section className="space-y-6">
+              <div className="grid grid-cols-2 rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Curve mode">
+                <button
+                  type="button"
+                  onClick={() => setConfig({ ...config, mode: 'curves' })}
+                  className={`h-9 rounded-md text-[13px] ${curveMode ? 'bg-primary text-primary-foreground' : 'text-foreground'}`}
+                  aria-pressed={curveMode}
+                >
+                  Curve
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfig({ ...config, mode: 'linear' })}
+                  className={`h-9 rounded-md text-[13px] ${config.mode === 'linear' ? 'bg-primary text-primary-foreground' : 'text-foreground'}`}
+                  aria-pressed={config.mode === 'linear'}
+                >
+                  Linear blend
+                </button>
+              </div>
+
+              {config.mode === 'linear' && config.linearConfig && (
+                <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">
+                    Linear blend draws a straight path between a light color and a dark color.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-[13px] text-muted-foreground">Light end</p>
+                      {(['l', 'c', 'h'] as const).map((key) => (
+                        <label key={`start-${key}`} className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-2">
+                          <span className="w-4 font-mono text-[12px] text-muted-foreground">{key}</span>
+                          <input
+                            type="number"
+                            step={key === 'c' ? 0.01 : 1}
+                            min={0}
+                            max={key === 'h' ? 360 : key === 'c' ? 0.4 : 100}
+                            value={key === 'l' ? Math.round(config.linearConfig!.start.l * 100) : key === 'h' ? Math.round(config.linearConfig!.start.h) : config.linearConfig!.start.c}
+                            onChange={(e) => {
+                              const raw = Number(e.target.value);
+                              const value = key === 'l' ? raw / 100 : raw;
+                              setConfig({
+                                ...config,
+                                linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, [key]: value } }
+                              });
+                            }}
+                            className="w-full bg-transparent font-mono text-[13px] text-foreground focus:outline-none"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[13px] text-muted-foreground">Dark end</p>
+                      {(['l', 'c', 'h'] as const).map((key) => (
+                        <label key={`end-${key}`} className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-2">
+                          <span className="w-4 font-mono text-[12px] text-muted-foreground">{key}</span>
+                          <input
+                            type="number"
+                            step={key === 'c' ? 0.01 : 1}
+                            min={0}
+                            max={key === 'h' ? 360 : key === 'c' ? 0.4 : 100}
+                            value={key === 'l' ? Math.round(config.linearConfig!.end.l * 100) : key === 'h' ? Math.round(config.linearConfig!.end.h) : config.linearConfig!.end.c}
+                            onChange={(e) => {
+                              const raw = Number(e.target.value);
+                              const value = key === 'l' ? raw / 100 : raw;
+                              setConfig({
+                                ...config,
+                                linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, [key]: value } }
+                              });
+                            }}
+                            className="w-full bg-transparent font-mono text-[13px] text-foreground focus:outline-none"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <button 
-                    onClick={onClose} 
-                    className="group flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    Close
-                    <div className="p-1 rounded-full bg-card group-hover:bg-secondary border border-border group-hover:border-border transition-colors">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              {curveMode && (
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-3">
+                    <div>
+                      <p className="text-[13px] text-foreground">Perceptual brightness</p>
+                      <p className="mt-1 text-[13px] text-muted-foreground">Spreads lightness evenly in OKLCH.</p>
                     </div>
-                </button>
-            </div>
+                    <button
+                      type="button"
+                      onClick={() => setConfig({ ...config, useOkLCH: !config.useOkLCH })}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full ${config.useOkLCH ? 'bg-primary' : 'bg-[var(--switch)]'}`}
+                      aria-pressed={!!config.useOkLCH}
+                      aria-label="Perceptual brightness"
+                    >
+                      <span className={`inline-block size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition ${config.useOkLCH ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
 
-            <div className="space-y-8 flex-1">
-                 
-                 {/* MODE: LINEAR BLEND */}
-                 {config.mode === 'linear' && config.linearConfig && (
-                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                         <div className="p-4 rounded-xl bg-card border border-primary/20 shadow-inner">
-                             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                                 <b>Linear Mode:</b> Generates a perfectly straight mathematical path between two points in perceptual color space. Ideal for fixing sparse palettes (e.g. 100-900 ranges) or creating strict 2-point ramps.
-                             </p>
-                             
-                             <div className="grid grid-cols-2 gap-4">
-                                 {/* Start Color Inputs */}
-                                 <div className="space-y-2">
-                                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Start Color (Light)</label>
-                                     <div className="space-y-1">
-                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
-                                             <span className="text-[10px] font-mono text-muted-foreground w-4">L</span>
-                                             <input 
-                                                type="number" step="1" min="0" max="100"
-                                                value={Math.round(config.linearConfig.start.l * 100)}
-                                                onChange={(e) => setConfig({
-                                                    ...config, 
-                                                    linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, l: Number(e.target.value) / 100 } }
-                                                })}
-                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
-                                             />
-                                         </div>
-                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
-                                             <span className="text-[10px] font-mono text-muted-foreground w-4">C</span>
-                                             <input 
-                                                type="number" step="0.01" min="0" max="0.4"
-                                                value={config.linearConfig.start.c}
-                                                onChange={(e) => setConfig({
-                                                    ...config, 
-                                                    linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, c: Number(e.target.value) } }
-                                                })}
-                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
-                                             />
-                                         </div>
-                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
-                                             <span className="text-[10px] font-mono text-muted-foreground w-4">H</span>
-                                             <input 
-                                                type="number" step="1" min="0" max="360"
-                                                value={Math.round(config.linearConfig.start.h)}
-                                                onChange={(e) => setConfig({
-                                                    ...config, 
-                                                    linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, h: Number(e.target.value) } }
-                                                })}
-                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
-                                             />
-                                         </div>
-                                     </div>
-                                 </div>
-
-                                 {/* End Color Inputs */}
-                                 <div className="space-y-2">
-                                     <label className="text-[10px] font-bold text-muted-foreground uppercase">End Color (Dark)</label>
-                                     <div className="space-y-1">
-                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
-                                             <span className="text-[10px] font-mono text-muted-foreground w-4">L</span>
-                                             <input 
-                                                type="number" step="1" min="0" max="100"
-                                                value={Math.round(config.linearConfig.end.l * 100)}
-                                                onChange={(e) => setConfig({
-                                                    ...config, 
-                                                    linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, l: Number(e.target.value) / 100 } }
-                                                })}
-                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
-                                             />
-                                         </div>
-                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
-                                             <span className="text-[10px] font-mono text-muted-foreground w-4">C</span>
-                                             <input 
-                                                type="number" step="0.01" min="0" max="0.4"
-                                                value={config.linearConfig.end.c}
-                                                onChange={(e) => setConfig({
-                                                    ...config, 
-                                                    linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, c: Number(e.target.value) } }
-                                                })}
-                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
-                                             />
-                                         </div>
-                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
-                                             <span className="text-[10px] font-mono text-muted-foreground w-4">H</span>
-                                             <input 
-                                                type="number" step="1" min="0" max="360"
-                                                value={Math.round(config.linearConfig.end.h)}
-                                                onChange={(e) => setConfig({
-                                                    ...config, 
-                                                    linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, h: Number(e.target.value) } }
-                                                })}
-                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
-                                             />
-                                         </div>
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 )}
-
-                 {/* MODE: CURVE ENGINE (Standard) */}
-                 {(!config.mode || config.mode === 'curves') && (
-                    <div className="space-y-10 animate-in slide-in-from-left-4 duration-300">
-                        {/* OKLCH Toggle */}
-                        <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-primary transition-all">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-foreground uppercase">Use OKLCH Engine</span>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground mt-1">Perceptually uniform brightness distribution. Highly recommended.</p>
-                            </div>
-                            <button 
-                                onClick={() => setConfig({ ...config, useOkLCH: !config.useOkLCH })}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config.useOkLCH ? 'bg-primary' : 'bg-accent'}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-primary-foreground transition duration-200 ease-in-out ${config.useOkLCH ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-
-                        {/* Hue Shift Control */}
-                        <div className="relative">
-                            <div className="flex justify-between mb-4 items-end">
-                                <label className="text-base font-medium text-foreground">Hue Rotation</label>
-                                <span className={`text-sm font-mono px-2 py-1 rounded bg-card border border-border ${config.hueShift !== 0 ? 'text-foreground border-primary' : 'text-muted-foreground'}`}>
-                                    {config.hueShift > 0 ? '+' : ''}{config.hueShift}°
-                                </span>
-                            </div>
-                            
-                            <div className="relative h-12 flex items-center">
-                                <div className="absolute w-full h-2 bg-secondary rounded-full overflow-hidden">
-                                    <div className="absolute w-full h-full bg-gradient-to-r from-cyan-500 via-slate-700 to-orange-500 opacity-20"></div>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="-60" 
-                                    max="60" 
-                                    step="1"
-                                    value={config.hueShift}
-                                    onChange={(e) => setConfig({ ...config, hueShift: Number(e.target.value) })}
-                                    className="w-full absolute z-10 h-12 opacity-0 cursor-pointer"
-                                />
-                                <div 
-                                    className="absolute h-5 w-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none transition-all duration-75"
-                                    style={{ left: `calc(${((config.hueShift + 60) / 120) * 100}% - 10px)` }}
-                                >
-                                    <div className="absolute inset-0 rounded-full bg-primary opacity-20 animate-ping"></div>
-                                </div>
-                            </div>
-                            <div className="flex justify-between text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1">
-                                <span>Cooler</span>
-                                <span>Warmer</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                                Shifts the hue as the color gets darker/lighter to create natural, vibrant gradients.
-                            </p>
-                        </div>
-
-                        {/* Saturation Boost Control */}
-                        <div>
-                            <div className="flex justify-between mb-4 items-end">
-                                <label className="text-base font-medium text-foreground">Saturation Curve</label>
-                                <span className={`text-sm font-mono px-2 py-1 rounded bg-card border border-border ${config.saturationBoost !== 0 ? 'text-pink-400 border-pink-500/30' : 'text-muted-foreground'}`}>
-                                    {config.saturationBoost > 0 ? '+' : ''}{config.saturationBoost}%
-                                </span>
-                            </div>
-                            
-                            <div className="relative h-12 flex items-center">
-                                <div className="absolute w-full h-2 bg-secondary rounded-full overflow-hidden">
-                                    <div className="absolute left-1/2 top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent to-pink-500 opacity-20"></div>
-                                    <div className="absolute right-1/2 top-0 bottom-0 w-1/2 bg-gradient-to-l from-transparent to-slate-500 opacity-20"></div>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="-100" 
-                                    max="100" 
-                                    step="1"
-                                    value={config.saturationBoost}
-                                    onChange={(e) => setConfig({ ...config, saturationBoost: Number(e.target.value) })}
-                                    className="w-full absolute z-10 h-12 opacity-0 cursor-pointer"
-                                />
-                                <div 
-                                    className="absolute h-5 w-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none transition-all duration-75"
-                                    style={{ left: `calc(${((config.saturationBoost + 100) / 200) * 100}% - 10px)` }}
-                                />
-                            </div>
-                            <div className="flex justify-between text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1">
-                                <span>Flatten</span>
-                                <span>Boost Mids</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                                Adjusts saturation/chroma in the mid-tones. Boosting prevents colors from looking "washed out".
-                            </p>
-                        </div>
-
-                        {/* Lightness Easing */}
-                        <div className={`transition-opacity duration-300 ${config.useOkLCH ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                            <div className="flex justify-between items-center mb-4">
-                                <label className="text-base font-medium text-foreground block">Lightness Distribution</label>
-                                {config.useOkLCH && <span className="text-[10px] text-foreground">Handled by OKLCH</span>}
-                            </div>
-                            <div className="grid grid-cols-4 gap-3">
-                                {(['linear', 'ease-in', 'ease-out', 'ease-in-out'] as const).map((mode) => (
-                                    <button
-                                        key={mode}
-                                        onClick={() => setConfig({ ...config, lightnessEase: mode })}
-                                        className={`py-3 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wide transition-all border ${
-                                            config.lightnessEase === mode 
-                                            ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' 
-                                            : 'bg-card text-muted-foreground border-border hover:border-border hover:text-foreground'
-                                        }`}
-                                    >
-                                        {mode.replace('-', ' ')}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                  <div>
+                    <div className="mb-2 flex items-end justify-between">
+                      <label className="text-[15px] text-foreground" htmlFor="hue-rotation">Hue rotation</label>
+                      <span className="font-mono text-[13px] text-foreground">{config.hueShift > 0 ? '+' : ''}{config.hueShift}°</span>
                     </div>
-                 )}
-            </div>
+                    <input
+                      id="hue-rotation"
+                      type="range"
+                      min={-60}
+                      max={60}
+                      step={1}
+                      value={config.hueShift}
+                      onChange={(e) => setConfig({ ...config, hueShift: Number(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="mt-1 flex justify-between text-[12px] text-muted-foreground">
+                      <span>Cooler</span>
+                      <span>Warmer</span>
+                    </div>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                      Shifts hue as the step gets lighter or darker.
+                    </p>
+                  </div>
 
-            {/* Actions */}
-            <div className="pt-8 mt-auto border-t border-border flex gap-4 shrink-0">
-                <button 
-                    onClick={onClose}
-                    className="flex-1 py-4 text-sm font-medium text-muted-foreground hover:text-foreground transition rounded-xl hover:bg-card border border-transparent hover:border-border"
-                >
-                    Discard
-                </button>
-                <button 
-                    onClick={handleSave}
-                    className="flex-[2] py-4 bg-primary hover:opacity-90 text-primary-foreground text-sm font-bold rounded-xl shadow-lg shadow-none transition-all flex items-center justify-center gap-2 transform active:scale-[0.98]"
-                >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Apply Changes
-                </button>
-            </div>
+                  <div>
+                    <div className="mb-2 flex items-end justify-between">
+                      <label className="text-[15px] text-foreground" htmlFor="saturation-curve">Saturation curve</label>
+                      <span className="font-mono text-[13px] text-foreground">{config.saturationBoost > 0 ? '+' : ''}{config.saturationBoost}%</span>
+                    </div>
+                    <input
+                      id="saturation-curve"
+                      type="range"
+                      min={-100}
+                      max={100}
+                      step={1}
+                      value={config.saturationBoost}
+                      onChange={(e) => setConfig({ ...config, saturationBoost: Number(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="mt-1 flex justify-between text-[12px] text-muted-foreground">
+                      <span>Flatten</span>
+                      <span>Boost mids</span>
+                    </div>
+                  </div>
+
+                  <div className={config.useOkLCH ? 'opacity-50' : ''}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-[15px] text-foreground">Lightness</p>
+                      {config.useOkLCH && <span className="text-[12px] text-muted-foreground">Handled by OKLCH</span>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {(['linear', 'ease-in', 'ease-out', 'ease-in-out'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          disabled={!!config.useOkLCH}
+                          onClick={() => setConfig({ ...config, lightnessEase: mode })}
+                          className={`h-10 rounded-lg border text-[13px] ${
+                            config.lightnessEase === mode
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-card text-foreground'
+                          }`}
+                        >
+                          {mode === 'linear' ? 'Linear' : mode === 'ease-in' ? 'Ease in' : mode === 'ease-out' ? 'Ease out' : 'Ease in out'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 gap-2 border-t border-border bg-background px-4 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-11 flex-1 rounded-lg border border-border text-[13px] text-foreground hover:bg-accent"
+          >
+            Discard
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="inline-flex h-11 flex-[2] items-center justify-center gap-2 rounded-lg bg-primary text-[13px] text-primary-foreground hover:opacity-90"
+          >
+            <Check className="size-4" strokeWidth={1.5} aria-hidden />
+            Apply changes
+          </button>
         </div>
       </div>
     </div>

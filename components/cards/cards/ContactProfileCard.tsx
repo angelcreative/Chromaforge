@@ -19,23 +19,23 @@ export default function ContactProfileCard({ theme }: { theme: ThemeColors }) {
           </div>
         </div>
         <IconButton theme={theme}>
-          <UserPlus size={20} />
+          <UserPlus size={20} strokeWidth={1.5}/>
         </IconButton>
       </div>
 
-      <Button theme={theme} className="w-full mb-3" icon={<Mail size={16} />}>
+      <Button theme={theme} className="w-full mb-3" icon={<Mail size={16} strokeWidth={1.5}/>}>
         Send email
       </Button>
 
       <div className="flex gap-2 mb-6">
         <IconButton theme={theme} className="flex-1">
-          <MessageCircle size={20} />
+          <MessageCircle size={20} strokeWidth={1.5}/>
         </IconButton>
         <IconButton theme={theme} className="flex-1">
-          <Video size={20} />
+          <Video size={20} strokeWidth={1.5}/>
         </IconButton>
         <IconButton theme={theme} className="flex-1">
-          <Calendar size={20} />
+          <Calendar size={20} strokeWidth={1.5}/>
         </IconButton>
       </div>
 
@@ -45,7 +45,7 @@ export default function ContactProfileCard({ theme }: { theme: ThemeColors }) {
         style={{ color: theme.action.primary }}
       >
         View detailed profile
-        <ArrowRight size={16} />
+        <ArrowRight size={16} strokeWidth={1.5}/>
       </a>
     </BaseCard>
   );

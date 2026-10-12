@@ -62,11 +62,11 @@ export default function WorkoutCard({ theme }: { theme: ThemeColors }) {
 
         <div className="space-y-2 mb-6">
           <div className="flex items-center gap-2 text-sm">
-            <MapPin size={16} style={{ color: theme.text.secondary }} />
+            <MapPin size={16} style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
             <span style={{ color: theme.text.main }}>Central Park Route</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Activity size={16} style={{ color: theme.text.secondary }} />
+            <Activity size={16} style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
             <span style={{ color: theme.text.main }}>Pace: 6'15"/km</span>
           </div>
         </div>

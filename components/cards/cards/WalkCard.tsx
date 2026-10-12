@@ -23,7 +23,7 @@ export default function WalkCard({ theme }: { theme: ThemeColors }) {
         <Button theme={theme} className="flex-1">Start Now</Button>
       </div>
       <div className="flex items-center gap-2 text-sm" style={{ color: theme.text.tertiary }}>
-        <Clock size={16} />
+        <Clock size={16} strokeWidth={1.5}/>
         <span>Health assistant</span>
       </div>
     </BaseCard>

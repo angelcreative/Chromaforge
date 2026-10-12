@@ -1,3 +1,4 @@
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import React from 'react';
 import { ThemeColors } from './BaseComponents';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
@@ -7,7 +8,6 @@ import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import * as LabelPrimitive from '@radix-ui/react-label';
-import { HiCheck, HiChevronDown, HiChevronUp } from 'react-icons/hi';
 
 // Helper functions for interactive effects
 const lightenColor = (color: string, amount: number = 0.2): string => {
@@ -699,7 +699,7 @@ export const Checkbox: React.FC<{
       >
         <RippleEffect position={ripplePosition} isActive={isRippling} />
         <CheckboxPrimitive.Indicator className="relative z-10">
-          <HiCheck className="w-4 h-4" style={{ color: disabled ? theme.disabled.text : theme.text.onPrimary }} />
+          <Check className="w-4 h-4" style={{ color: disabled ? theme.disabled.text : theme.text.onPrimary }} strokeWidth={1.5}/>
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
       {label && (
@@ -939,7 +939,7 @@ export const Select: React.FC<{
         <span className="relative z-10 flex items-center justify-between w-full">
           <SelectPrimitive.Value placeholder={placeholder} />
           <SelectPrimitive.Icon>
-            <HiChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-4 h-4" strokeWidth={1.5}/>
           </SelectPrimitive.Icon>
         </span>
       </SelectPrimitive.Trigger>
@@ -952,7 +952,7 @@ export const Select: React.FC<{
           }}
         >
           <SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6">
-            <HiChevronUp className="w-4 h-4" style={{ color: theme.text.secondary }} />
+            <ChevronUp className="w-4 h-4" style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
           </SelectPrimitive.ScrollUpButton>
           <SelectPrimitive.Viewport>
             {options.map((option) => (
@@ -960,7 +960,7 @@ export const Select: React.FC<{
             ))}
           </SelectPrimitive.Viewport>
           <SelectPrimitive.ScrollDownButton className="flex items-center justify-center h-6">
-            <HiChevronDown className="w-4 h-4" style={{ color: theme.text.secondary }} />
+            <ChevronDown className="w-4 h-4" style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
           </SelectPrimitive.ScrollDownButton>
         </SelectPrimitive.Content>
       </SelectPrimitive.Portal>
