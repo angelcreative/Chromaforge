@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { generateShades, getContrastRatio, getLuminance } from '../utils/colorUtils';
-import { ColorData } from '../types';
+import { ColorData, GlobalCurveConfig } from '../types';
 
 interface ContrastGridProps {
   color: ColorData;
+  globalConfig?: GlobalCurveConfig;
   onClose: () => void;
 }
 
-const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
+const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClose }) => {
   const [hoveredCell, setHoveredCell] = useState<{
     x: number;
     y: number;
@@ -17,7 +18,7 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
     txtHex: string;
   } | null>(null);
 
-  const shades = generateShades(color);
+  const shades = generateShades(color, globalConfig);
   
   // Add Black and White to scales
   const scale = [
