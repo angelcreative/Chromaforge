@@ -1,17 +1,66 @@
 import * as THREE from 'three';
 
-const FRAME = 1.78;
+const FRAME = 1.16;
 
-/** A transparent, monochrome flower head. Call dispose() when unmounting. */
+/** Valley-to-tip radii of one petal, every 3°, traced from the Pigmo mark. */
+const PETAL = [0.508, 0.574, 0.799, 0.829, 0.845, 0.870, 0.895, 0.921, 0.960, 1, 1];
+
+const EYE_X = 0.155;
+const EYE_Y = 0.122;
+const EYE_R = 0.055;
+
+const petalRadius = (angle) => {
+  const turn = Math.PI * 2;
+  let a = angle % turn;
+  if (a < 0) a += turn;
+  const sector = Math.PI / 3;
+  const local = a % sector;
+  const fromValley = Math.min(local, sector - local);
+  const t = Math.min(fromValley / (Math.PI / 60), PETAL.length - 1);
+  const i = Math.floor(t);
+  const f = t - i;
+  return PETAL[i] * (1 - f) + PETAL[Math.min(i + 1, PETAL.length - 1)] * f;
+};
+
+const flowerGeometry = () => {
+  const shape = new THREE.Shape();
+  const steps = 192;
+  for (let i = 0; i <= steps; i += 1) {
+    const angle = (i / steps) * Math.PI * 2;
+    const radius = petalRadius(angle);
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    if (i === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  }
+  return new THREE.ShapeGeometry(shape);
+};
+
+/** Thick smile traced from the mark. Outer path is counter-clockwise, the hole clockwise. */
+const smileGeometry = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.194, -0.068);
+  shape.lineTo(0.194, -0.068);
+  shape.bezierCurveTo(0.194, -0.11, 0.186, -0.15, 0.163, -0.175);
+  shape.bezierCurveTo(0.132, -0.21, 0.08, -0.252, 0, -0.252);
+  shape.bezierCurveTo(-0.08, -0.252, -0.132, -0.21, -0.163, -0.175);
+  shape.bezierCurveTo(-0.186, -0.15, -0.194, -0.11, -0.194, -0.068);
+  const hole = new THREE.Path();
+  hole.moveTo(0.158, -0.112);
+  hole.lineTo(-0.158, -0.112);
+  hole.bezierCurveTo(-0.158, -0.15, -0.12, -0.19, -0.07, -0.21);
+  hole.bezierCurveTo(-0.03, -0.222, 0.03, -0.222, 0.07, -0.21);
+  hole.bezierCurveTo(0.12, -0.19, 0.158, -0.15, 0.158, -0.112);
+  shape.holes.push(hole);
+  return new THREE.ShapeGeometry(shape, 16);
+};
+
+/** A transparent flower mark. Only the eyes blink. Call dispose() when unmounting. */
 export class ChromaCompanion {
   constructor(container, { variant = 'positive', name = 'Pigmo', onActivate } = {}) {
     if (!(container instanceof HTMLElement)) throw new TypeError('Expected an HTMLElement');
     this.container = container;
     this.variant = variant;
-    this.hovered = false;
-    this.focused = false;
-    this.pointer = new THREE.Vector2();
-    this.eyeTarget = new THREE.Vector2();
     this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(-FRAME, FRAME, FRAME, -FRAME, 0.1, 20);
@@ -24,90 +73,54 @@ export class ChromaCompanion {
     this.canvas.setAttribute('role', 'button');
     this.canvas.setAttribute('aria-label', name);
     this.canvas.tabIndex = 0;
-    this.canvas.style.cssText = 'display:block;width:100%;height:100%;border-radius:50%;touch-action:manipulation;cursor:pointer;outline:none';
+    this.canvas.style.cssText = 'display:block;width:100%;height:100%;border-radius:50%;touch-action:manipulation;cursor:pointer;outline:none;background:transparent';
     container.append(this.canvas);
-    this.head = new THREE.Group();
-    this.scene.add(this.head);
+
     this.ink = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
     this.faceInk = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-    this.geometries = new Set();
-    this.petals = [];
-    // One mirror-symmetric module; six exact rotations generate the D6 silhouette.
-    const petal = new THREE.Shape();
-    petal.moveTo(-0.29, 0.70);
-    petal.lineTo(0.29, 0.70);
-    petal.lineTo(0.49, 1.04);
-    petal.quadraticCurveTo(0.54, 1.15, 0.45, 1.24);
-    petal.lineTo(0.09, 1.56);
-    petal.quadraticCurveTo(0, 1.65, -0.09, 1.56);
-    petal.lineTo(-0.45, 1.24);
-    petal.quadraticCurveTo(-0.54, 1.15, -0.49, 1.04);
-    petal.closePath();
-    const petalGeometry = this.keep(new THREE.ShapeGeometry(petal, 32));
-    for (let i = 0; i < 6; i++) {
-      const mesh = new THREE.Mesh(petalGeometry, this.ink);
-      mesh.rotation.z = i * Math.PI / 3;
-      this.head.add(mesh);
-      this.petals.push(mesh);
-    }
-    // A circular center connects the shorter petals into a friendly flower head.
-    this.center = new THREE.Mesh(this.keep(new THREE.CircleGeometry(0.81, 96)), this.ink);
-    this.center.position.z = 0.01;
-    this.head.add(this.center);
-    this.face = new THREE.Group();
-    this.face.position.z = 0.05;
-    this.head.add(this.face);
-    const eyeGeometry = this.keep(new THREE.CircleGeometry(0.09, 32));
-    this.eyes = [-1, 1].map(sign => {
+    this.geometries = [];
+
+    const keep = (geometry) => {
+      this.geometries.push(geometry);
+      return geometry;
+    };
+
+    const flower = new THREE.Mesh(keep(flowerGeometry()), this.ink);
+    this.scene.add(flower);
+
+    const face = new THREE.Group();
+    face.position.z = 0.02;
+    this.scene.add(face);
+    const eyeGeometry = keep(new THREE.CircleGeometry(EYE_R, 32));
+    this.eyes = [-1, 1].map((sign) => {
       const eye = new THREE.Mesh(eyeGeometry, this.faceInk);
-      eye.position.set(sign * 0.245, 0.12, 0);
-      this.face.add(eye);
+      eye.position.set(sign * EYE_X, EYE_Y, 0);
+      face.add(eye);
       return eye;
     });
-    this.smile = new THREE.Mesh(this.smileGeometry(0.11), this.faceInk);
-    this.face.add(this.smile);
-    this.smileLevel = 0.11;
-    this.raycaster = new THREE.Raycaster();
+    face.add(new THREE.Mesh(keep(smileGeometry()), this.faceInk));
+
     this.cleanups = [];
     const listen = (target, event, fn) => {
       target.addEventListener(event, fn);
       this.cleanups.push(() => target.removeEventListener(event, fn));
     };
-    listen(window, 'pointermove', e => this.track(e));
-    listen(document, 'pointerleave', () => this.resetPointer());
-    listen(window, 'blur', () => this.resetPointer());
-    listen(this.canvas, 'pointerleave', () => { this.hovered = false; });
-    listen(this.canvas, 'focus', () => { this.focused = true; });
-    listen(this.canvas, 'blur', () => { this.focused = false; });
-    this.activate = () => { this.bounceAt = performance.now(); onActivate?.(); };
+    this.activate = () => onActivate?.();
     listen(this.canvas, 'click', this.activate);
-    listen(this.canvas, 'keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.activate(); }
+    listen(this.canvas, 'keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.activate();
+      }
     });
+    this.onMotion = () => this.syncMotion();
+    listen(this.reducedMotion, 'change', this.onMotion);
+
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
     this.setVariant(variant);
     this.resize();
-    this.started = performance.now();
-    this.previous = this.started;
-    this.nextBlink = this.started + 3200;
-    this.tick(this.started);
-  }
-
-  keep(geometry) { this.geometries.add(geometry); return geometry; }
-
-  smileGeometry(depth) {
-    const extra = (depth - 0.11) * 0.9;
-    const shape = new THREE.Shape();
-    shape.moveTo(-0.32, -0.10);
-    shape.lineTo(0.32, -0.10);
-    shape.bezierCurveTo(0.32, -0.51 - extra, -0.32, -0.51 - extra, -0.32, -0.10);
-    const opening = new THREE.Path();
-    opening.moveTo(-0.235, -0.18);
-    opening.bezierCurveTo(-0.205, -0.405 - extra, 0.205, -0.405 - extra, 0.235, -0.18);
-    opening.closePath();
-    shape.holes.push(opening);
-    return this.keep(new THREE.ShapeGeometry(shape, 40));
+    this.syncMotion();
   }
 
   setVariant(variant) {
@@ -115,6 +128,7 @@ export class ChromaCompanion {
     this.variant = variant;
     this.ink.color.set(variant === 'positive' ? 0x000000 : 0xffffff);
     this.faceInk.color.set(variant === 'positive' ? 0xffffff : 0x000000);
+    this.render();
   }
 
   resize() {
@@ -127,66 +141,54 @@ export class ChromaCompanion {
     this.camera.bottom = -FRAME * Math.max(1, 1 / aspect);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+    this.render();
   }
 
-  resetPointer() { this.eyeTarget.set(0, 0); this.hovered = false; }
-
-  track(event) {
-    const rect = this.canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const dx = (event.clientX - rect.left - rect.width / 2) / (rect.width / 2);
-    const dy = -(event.clientY - rect.top - rect.height / 2) / (rect.height / 2);
-    this.eyeTarget.set(dx, dy).clampLength(0, 1).multiplyScalar(0.085);
-    this.pointer.set(dx, dy);
-    this.scene.updateMatrixWorld(true);
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    this.hovered = this.raycaster.intersectObjects([...this.petals, this.center], false).length > 0;
+  syncMotion() {
+    cancelAnimationFrame(this.frame);
+    this.eyes.forEach((eye) => { eye.scale.y = 1; });
+    if (this.reducedMotion.matches) {
+      this.render();
+      return;
+    }
+    const now = performance.now();
+    this.previous = now;
+    this.nextBlink = now + 1400 + Math.random() * 2600;
+    this.frame = requestAnimationFrame((time) => this.tick(time));
   }
 
   tick(now) {
     if (this.disposed) return;
-    const dt = Math.min((now - this.previous) / 1000, 0.05);
     this.previous = now;
-    const blend = this.reducedMotion.matches ? 1 : 1 - Math.exp(-12 * dt);
-    const active = this.hovered || this.focused;
-    const reduced = this.reducedMotion.matches;
-    const target = reduced ? new THREE.Vector2() : this.eyeTarget;
-    this.eyes.forEach((eye, i) => {
-      eye.position.x = THREE.MathUtils.lerp(eye.position.x, (i ? 1 : -1) * 0.245 + target.x, blend);
-      eye.position.y = THREE.MathUtils.lerp(eye.position.y, 0.12 + target.y, blend);
-    });
     let blink = 1;
-    if (!reduced && now >= this.nextBlink) {
+    if (now >= this.nextBlink) {
       const elapsed = now - this.nextBlink;
-      if (elapsed < 180) blink = Math.max(0.08, Math.abs(elapsed - 90) / 90);
-      else this.nextBlink = now + 3200 + Math.random() * 2400;
+      const duration = 150;
+      if (elapsed < duration) {
+        const close = Math.sin((elapsed / duration) * Math.PI);
+        blink = 1 - close * 0.92;
+      } else {
+        this.nextBlink = now + 1800 + Math.random() * 4200;
+      }
     }
-    this.eyes.forEach(eye => { eye.scale.y = blink; });
-    const scale = reduced ? 1 : active ? 1.045 : 1;
-    const bounce = !reduced && this.bounceAt ? Math.max(0, 1 - (now - this.bounceAt) / 450) * Math.sin((now - this.bounceAt) / 450 * Math.PI) * 0.10 : 0;
-    const nextScale = THREE.MathUtils.lerp(this.head.scale.x, scale + bounce, blend);
-    this.head.scale.setScalar(nextScale);
-    // Radial expansion keeps all six petals symmetric, even during hover.
-    this.petals.forEach(petal => petal.scale.setScalar(THREE.MathUtils.lerp(petal.scale.x, !reduced && active ? 1.035 : 1, blend)));
-    const level = THREE.MathUtils.lerp(this.smileLevel, active && !reduced ? 0.17 : 0.11, blend);
-    if (Math.abs(level - this.smileLevel) > 0.0006) {
-      const old = this.smile.geometry;
-      this.smile.geometry = this.smileGeometry(level);
-      this.geometries.delete(old);
-      old.dispose();
-      this.smileLevel = level;
-    }
+    this.eyes.forEach((eye) => { eye.scale.y = blink; });
+    this.render();
+    this.frame = requestAnimationFrame((time) => this.tick(time));
+  }
+
+  render() {
+    if (this.disposed) return;
     this.renderer.render(this.scene, this.camera);
-    this.frame = requestAnimationFrame(time => this.tick(time));
   }
 
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.frame);
     this.resizeObserver.disconnect();
-    this.cleanups.forEach(fn => fn());
-    this.geometries.forEach(g => g.dispose());
-    this.ink.dispose(); this.faceInk.dispose();
+    this.cleanups.forEach((fn) => fn());
+    this.geometries.forEach((geometry) => geometry.dispose());
+    this.ink.dispose();
+    this.faceInk.dispose();
     this.renderer.dispose();
     this.canvas.remove();
   }

@@ -44,7 +44,7 @@ const PigmoButton: React.FC<PigmoButtonProps> = ({ open, onActivate }) => {
   return (
     <div
       ref={hostRef}
-      className="fixed bottom-4 right-4 z-50 size-[4.5rem] overflow-hidden rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-[3px] focus-within:outline-[var(--ring)]"
+      className="fixed bottom-4 right-4 z-50 size-[4.5rem] max-h-[128px] max-w-[128px] overflow-hidden rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-[3px] focus-within:outline-[var(--ring)]"
     />
   );
 };
