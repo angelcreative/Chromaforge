@@ -15,7 +15,7 @@ import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
 import LogoMark from './components/LogoMark';
 import DescribeHeading from './components/DescribeHeading';
-import PaletteCatalog from './components/PaletteCatalog';
+import PlaygroundCards from './components/PlaygroundCards';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
@@ -703,6 +703,27 @@ const App: React.FC = () => {
       </form>
   );
 
+  const handlePlaygroundColor = (hex: string) => {
+    if (!/^#[0-9A-F]{6}$/i.test(hex)) return;
+    const source = creationMode === 'manual' ? customColors : palette;
+    const index = Math.min(Math.max(playgroundConfig.primaryIndex, 0), Math.max(source.length - 1, 0));
+    const current = source[index];
+    if (!current) return;
+    const next = createColorData(hex, current.scaleConfig, current.name);
+    if (creationMode === 'manual') {
+      setCustomColors(prev => prev.map((color, i) => i === index ? next : color));
+    } else if (index === 0) {
+      const hsl = hexToHsl(hex);
+      setBaseColor(hsl);
+      setBrightness(hsl.l);
+      if (harmony === 'custom') setHarmony('monochromatic');
+    } else {
+      setCustomColors(source.map((color, i) => i === index ? next : color));
+      setCreationMode('manual');
+    }
+    setIsSaved(false);
+  };
+
   const updateListedColor = (tab: PaletteTab, index: number, updatedColor: ColorData) => {
     if (tab === 'neutrals') {
       setNeutralPalette(prev => prev.map((color, i) => i === index ? updatedColor : color));
@@ -914,7 +935,7 @@ const App: React.FC = () => {
             <div className="mt-10">
               <p className="mb-3 text-[13px] text-muted-foreground">Try a demo</p>
               <div className="flex gap-3 overflow-x-auto pb-2">
-                {DEMO_PALETTES.map((demo, index) => (
+                {DEMO_PALETTES.filter((demo) => demo.name !== 'Clay').map((demo, index) => (
                   <button
                     key={demo.name}
                     type="button"
@@ -981,19 +1002,13 @@ const App: React.FC = () => {
               )}
 
               {showWork && hasPalette && viewMode === 'cards' && (
-                <PaletteCatalog
-                  groups={[
-                    { id: 'brand', label: 'Brand', colors: palette },
-                    { id: 'neutrals', label: 'Neutrals', colors: neutralPalette },
-                    { id: 'system', label: 'Semantic', colors: semanticPalette },
-                  ]}
-                  onOpenInfo={setSelectedColorForInfo}
-                  onOpenGrid={setSelectedColorForGrid}
-                  onEditScale={handleEditClick}
-                  onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
-                  onColorUpdate={updateListedColor}
-                  isPrintMode={isPrintMode}
+                <PlaygroundCards
+                  brandPalette={workingColors}
+                  neutralPalette={neutralPalette}
+                  semanticPalette={semanticPalette}
+                  config={playgroundConfig}
                   globalConfig={globalCurveConfig}
+                  onPrimaryColorChange={handlePlaygroundColor}
                 />
               )}
 

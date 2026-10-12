@@ -80,6 +80,8 @@ const CARD_CATEGORIES = [
   },
 ];
 
+export const PLAYGROUND_CARDS = CARD_CATEGORIES.flatMap((category) => category.cards);
+
 interface CardsSidebarProps {
   theme: ThemeColors;
   selectedCardId: string | null;
