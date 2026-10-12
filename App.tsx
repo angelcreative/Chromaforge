@@ -129,6 +129,7 @@ const App: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false); 
   const [paletteToDelete, setPaletteToDelete] = useState<string | null>(null);
+  const [activeSavedId, setActiveSavedId] = useState<string | null>(null);
 
   // Legal Modal State
   const [legalModalType, setLegalModalType] = useState<LegalPageType | null>(null);
@@ -266,6 +267,12 @@ const App: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [refineOpen]);
 
+  useEffect(() => {
+    if (!isChatLoading && messages.length === 0 && !showWork) {
+      setShellOpen(false);
+    }
+  }, [isChatLoading, messages.length, showWork]);
+
   const goHome = () => {
     setStudioPane('composer');
     setViewMode('ramp');
@@ -273,6 +280,7 @@ const App: React.FC = () => {
     setMessages([]);
     setChatInput('');
     setShellOpen(false);
+    setActiveSavedId(null);
     setCopilotOpen(false);
     setSelectedColorForEdit(null);
     setSelectedColorForGrid(null);
@@ -290,6 +298,7 @@ const App: React.FC = () => {
     setStudioPane('composer');
     setShowWork(false);
     setShellOpen(false);
+    setActiveSavedId(null);
     setRefineOpen(false);
     setSelectedColorForGrid(null);
     showToast("Workspace reset successfully");
@@ -329,6 +338,8 @@ const App: React.FC = () => {
       setIsImportOpen(false);
       setShowWork(true);
       setShellOpen(true);
+      setActiveSavedId(null);
+      setSelectedColorForGrid(null);
       setStudioPane('composer');
       showToast(`Imported ${colors.length} colors`);
   };
@@ -344,6 +355,8 @@ const App: React.FC = () => {
       if (!showWork) setViewMode('ramp');
       setShowWork(true);
       setShellOpen(true);
+      setActiveSavedId(null);
+      setSelectedColorForGrid(null);
   };
 
   const handleChatSubmit = async (e?: React.FormEvent, preset?: string) => {
@@ -498,6 +511,8 @@ const App: React.FC = () => {
              createdAt: { seconds: Date.now() / 1000 } 
           };
           setSavedPalettes(prev => [newPaletteEntry, ...prev]);
+          setActiveSavedId(newId);
+          setShellOpen(true);
           showToast("Saved on this browser");
       } catch {
           showToast("Failed to save palette.");
@@ -517,7 +532,8 @@ const App: React.FC = () => {
       handleApplyPalette(p.colors);
       setPaletteName(p.name);
       setIsLibraryOpen(false);
-      setIsSaved(true); 
+      setIsSaved(true);
+      setActiveSavedId(p.id);
       showToast(`Loaded "${p.name}"`);
   };
 
@@ -533,6 +549,7 @@ const App: React.FC = () => {
       const id = paletteToDelete;
       setPaletteToDelete(null);
       setSavedPalettes(prev => prev.filter(p => p.id !== id));
+      setActiveSavedId((current) => (current === id ? null : current));
       
       try {
         await deletePaletteFromFirestore(id);
@@ -746,6 +763,9 @@ const App: React.FC = () => {
           open={shellOpen}
           onOpenChange={setShellOpen}
           onSavedPalettes={handleOpenLibrary}
+          palettes={savedPalettes}
+          onLoadPalette={handleLoadPalette}
+          activePaletteId={activeSavedId}
       />
 
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>
