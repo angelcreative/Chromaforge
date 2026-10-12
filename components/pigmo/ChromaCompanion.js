@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import markUrl from './pigmo-mark-dark.png';
 
-const FIT = 0.92;
+const FIT = 0.66;
 const INK = 16;
 
 const loadImage = (url) => new Promise((resolve, reject) => {

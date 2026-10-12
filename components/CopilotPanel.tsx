@@ -1,11 +1,15 @@
 import { AnimatePresence, motion } from 'motion/react';
-import React from 'react';
-import { Send } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowUp } from 'lucide-react';
 import { CloseButton } from './FloatingDrawer';
 import { ChatMessage } from '../types';
 import { formatCompact } from '../services/credits';
 import PigmoButton from './pigmo/PigmoButton';
 import { MotionButton, enterMotion, presencePop, useReduced } from './uiMotion';
+
+const PIGMO_GREETING = "Hi! I'm Pigmo your Ai assistant, I can modify your palette add colors, etc";
+const PIGMO_STATUSES = ['Thinking', 'Working', 'Painting'] as const;
+const STATUS_STEP_MS = 1000;
 
 export interface CopilotPanelProps {
   open: boolean;
@@ -36,13 +40,27 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
 }) => {
   const reduce = useReduced();
   const pop = presencePop(reduce, 'bottom right');
+  const [statusIndex, setStatusIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      setStatusIndex(0);
+      return;
+    }
+    setStatusIndex(0);
+    const timer = window.setInterval(() => {
+      setStatusIndex((current) => Math.min(current + 1, PIGMO_STATUSES.length - 1));
+    }, STATUS_STEP_MS);
+    return () => window.clearInterval(timer);
+  }, [loading]);
+
   return (
   <>
     <AnimatePresence>
     {open && (
       <motion.form
         key="assistant"
-        className="fixed bottom-[6.75rem] right-4 z-50 flex max-h-[min(28rem,calc(100dvh-9rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
+        className="fixed bottom-[calc(46px+2.25rem)] right-4 z-50 flex max-h-[min(28rem,calc(100dvh-9rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -54,6 +72,11 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
           <CloseButton onClick={onClose} />
         </div>
         <div className="mb-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+          <div className="flex justify-start">
+            <div className="max-w-[90%] rounded-2xl bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground ring-1 ring-border">
+              {PIGMO_GREETING}
+            </div>
+          </div>
           {messages.map((message, index) => (
             <motion.div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`} {...enterMotion(reduce, index)}>
               <div className={`max-w-[90%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground ring-1 ring-border'}`}>
@@ -64,6 +87,13 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
               </div>
             </motion.div>
           ))}
+          {loading && (
+            <div className="flex justify-start" role="status" aria-live="polite">
+              <div className="rounded-2xl bg-background px-3 py-2 text-[13px] text-muted-foreground ring-1 ring-border">
+                {PIGMO_STATUSES[statusIndex]}
+              </div>
+            </div>
+          )}
         </div>
         {balanceLabel ? (
           <div className="mb-2">
@@ -97,7 +127,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
             aria-label="Send"
           >
-            <Send className="size-4" strokeWidth={1.5} />
+            <ArrowUp className="size-4" strokeWidth={1.5} />
           </MotionButton>
         </div>
       </motion.form>
