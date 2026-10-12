@@ -97,7 +97,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     >
                       <span className="block truncate text-[13px] text-foreground">{palette.name}</span>
                       {swatches.length > 0 && (
-                        <span className="mt-1.5 flex h-2 overflow-hidden rounded-sm ring-1 ring-border" aria-hidden>
+                        <span className="mt-1.5 flex h-3 overflow-hidden rounded-sm ring-1 ring-border" aria-hidden>
                           {swatches.map((color, index) => (
                             <span
                               key={`${palette.id}-${index}`}

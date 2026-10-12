@@ -765,7 +765,7 @@ const App: React.FC = () => {
           onSavedPalettes={handleOpenLibrary}
           palettes={savedPalettes}
           onLoadPalette={handleLoadPalette}
-          activePaletteId={isSaved ? activeSavedId : null}
+          activePaletteId={activeSavedId}
       />
 
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>
