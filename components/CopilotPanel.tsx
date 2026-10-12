@@ -57,14 +57,6 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => onSubmit('Fix a palette')}
-          disabled={loading}
-          className="mb-2 h-8 self-start rounded-full border border-border bg-background px-3 text-[13px] text-foreground hover:bg-accent disabled:opacity-40"
-        >
-          Fix a palette
-        </button>
         <div className="mb-2">
           {onCredits ? (
             <button type="button" onClick={onCredits} className="text-[13px] text-muted-foreground hover:text-foreground" title={balanceTitle} aria-label={balanceTitle}>
