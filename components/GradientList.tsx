@@ -1,15 +1,16 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy } from 'lucide-react';
-import { ColorData } from '../types';
+import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades } from '../utils/colorUtils';
 
 interface GradientListProps {
   colors: ColorData[];
   onCopy: (text: string) => void;
+  globalConfig?: GlobalCurveConfig;
 }
 
-const GradientList: React.FC<GradientListProps> = ({ colors, onCopy }) => {
+const GradientList: React.FC<GradientListProps> = ({ colors, onCopy, globalConfig }) => {
   if (colors.length < 2) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground gap-4 opacity-50 animate-in fade-in">
@@ -38,6 +39,7 @@ const GradientList: React.FC<GradientListProps> = ({ colors, onCopy }) => {
             index={idx}
             onCopy={onCopy}
             allColors={colors}
+            globalConfig={globalConfig}
         />
       ))}
     </div>
@@ -49,8 +51,9 @@ const GradientCard: React.FC<{
     initialC2: ColorData, 
     index: number, 
     onCopy: (t: string) => void,
-    allColors: ColorData[]
-}> = ({ initialC1, initialC2, index, onCopy, allColors }) => {
+    allColors: ColorData[],
+    globalConfig?: GlobalCurveConfig,
+}> = ({ initialC1, initialC2, index, onCopy, allColors, globalConfig }) => {
     // Config State
     const [angle, setAngle] = useState(90);
     
@@ -65,8 +68,20 @@ const GradientCard: React.FC<{
     const [stop2, setStop2] = useState(100);
 
     // Helper to get exact hex for current selection
+    const shadeOptions = useMemo(
+        () => generateShades(initialC1, globalConfig).map((shade) => shade.level),
+        [initialC1, globalConfig],
+    );
+
+    useEffect(() => {
+        if (!shadeOptions.length) return;
+        const fallback = shadeOptions[Math.floor((shadeOptions.length - 1) / 2)];
+        if (!shadeOptions.includes(shade1Level)) setShade1Level(fallback);
+        if (!shadeOptions.includes(shade2Level)) setShade2Level(fallback);
+    }, [shadeOptions, shade1Level, shade2Level]);
+
     const getHex = (base: ColorData, level: number) => {
-        const shades = generateShades(base);
+        const shades = generateShades(base, globalConfig);
         return shades.find(s => s.level === level)?.hex || base.hex;
     };
 
@@ -81,8 +96,6 @@ const GradientCard: React.FC<{
         { deg: 270, label: 'Left', Icon: ArrowLeft },
         { deg: 90, label: 'Right', Icon: ArrowRight },
     ];
-
-    const shadeOptions = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
     const handleColorChange = (isStart: boolean, hex: string) => {
         const selected = allColors.find(c => c.hex === hex) || (isStart ? initialC1 : initialC2);

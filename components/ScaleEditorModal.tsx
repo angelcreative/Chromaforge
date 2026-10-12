@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
-import { ColorData, ScaleConfiguration } from '../types';
+import { ColorData, GlobalCurveConfig, ScaleConfiguration } from '../types';
 import { generateShades, createColorData, hexToRgb, rgbToOklch } from '../utils/colorUtils';
 
 interface ScaleEditorModalProps {
   color: ColorData;
+  globalConfig?: GlobalCurveConfig;
   onClose: () => void;
   onSave: (colorHex: string, newConfig: ScaleConfiguration) => void;
   onPreview?: (colorHex: string, config: ScaleConfiguration | undefined) => void;
@@ -18,7 +19,7 @@ const CENTER = SIZE / 2;
 const RADIUS = 142;
 const PLOT_RADIUS = RADIUS * 0.86;
 
-const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onSave, onPreview, usageCount, limit, isPremium }) => {
+const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig, onClose, onSave, onPreview, usageCount, limit, isPremium }) => {
   const originalConfig = useRef<ScaleConfiguration | undefined>(color.scaleConfig);
   const onPreviewRef = useRef(onPreview);
   onPreviewRef.current = onPreview;
@@ -72,7 +73,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
   }, [config, color.hex]);
 
   const previewColor = useMemo(() => createColorData(color.hex, config), [color.hex, config]);
-  const shades = useMemo(() => generateShades(previewColor), [previewColor]);
+  const shades = useMemo(() => generateShades(previewColor, globalConfig), [previewColor, globalConfig]);
 
   const handleDiscard = () => finish(true);
 

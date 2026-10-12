@@ -15,6 +15,7 @@ import ImportModal from './components/ImportModal';
 import ComposerAttach from './components/ComposerAttach';
 import DescribeHeading from './components/DescribeHeading';
 import GradientList from './components/GradientList';
+import RampScaleControls from './components/RampScaleControls';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
@@ -76,9 +77,6 @@ const App: React.FC = () => {
       hueTorsion: 0,
       steps: 11 // Default steps
   });
-  
-  // NEW: Collapsible state for Curve Controls (Default closed as requested)
-  const [isCurveControlsOpen, setIsCurveControlsOpen] = useState(false);
   
   // NEW: View Toggle
   // NEW: Sidebar Expand/Collapse
@@ -806,7 +804,7 @@ const App: React.FC = () => {
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>
       <div key={viewKey} className="studio-in flex min-h-0 flex-1 flex-col">
       {selectedColorForGrid ? (
-        <ContrastGrid color={selectedColorForGrid} onClose={() => setSelectedColorForGrid(null)} />
+        <ContrastGrid color={selectedColorForGrid} globalConfig={globalCurveConfig} onClose={() => setSelectedColorForGrid(null)} />
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">
@@ -966,6 +964,8 @@ const App: React.FC = () => {
               )}
 
               {showWork && hasPalette && (viewMode === 'list' || viewMode === 'ramp') && (
+                <>
+                <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
                 <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
                   {activeColors.map((color, idx) => (
                     <PaletteCard
@@ -981,10 +981,11 @@ const App: React.FC = () => {
                     />
                   ))}
                 </div>
+                </>
               )}
 
               {showWork && hasPalette && viewMode === 'gradients' && (
-                <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
+                <GradientList colors={activeColors} globalConfig={globalCurveConfig} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
               )}
               <div ref={chatEndRef} />
             </div>
@@ -1030,6 +1031,7 @@ const App: React.FC = () => {
       {selectedColorForEdit && (
           <ScaleEditorModal
               color={selectedColorForEdit}
+              globalConfig={globalCurveConfig}
               onClose={() => setSelectedColorForEdit(null)}
               onSave={handleScaleSave}
               onPreview={handleScalePreview}
