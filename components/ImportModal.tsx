@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, X } from 'lucide-react';
 import { ColorData } from '../types';
-import { extractColorsFromImage, parseInputToGroups } from '../utils/colorUtils';
+import { collectPaletteColors, extractColorsFromImage } from '../utils/colorUtils';
 import LogoMark from './LogoMark';
 
 interface ImportModalProps {
@@ -9,6 +9,7 @@ interface ImportModalProps {
   onImport: (colors: ColorData[]) => void;
   limit?: number;
   isPremium?: boolean;
+  imageFile?: File | null;
 }
 
 type Tab = 'image' | 'code';
@@ -20,11 +21,11 @@ interface SelectableColor {
 
 const CLOSE_MS = 160;
 
-const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5, isPremium = false }) => {
+const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5, isPremium = false, imageFile = null }) => {
   const [activeTab, setActiveTab] = useState<Tab>('image');
   const [inputText, setInputText] = useState('');
   const [colorSelection, setColorSelection] = useState<SelectableColor[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(Boolean(imageFile));
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -80,11 +81,9 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
     setActiveTab(tab);
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const readImageFile = (file: File) => {
     const requestId = ++requestRef.current;
+    setActiveTab('image');
     setReadError(null);
     setLimitWarning(null);
     setColorSelection([]);
@@ -120,6 +119,20 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
     reader.readAsDataURL(file);
   };
 
+  useEffect(() => {
+    if (!imageFile) return;
+    readImageFile(imageFile);
+    return () => {
+      requestRef.current += 1;
+    };
+  }, [imageFile]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    readImageFile(file);
+  };
+
   const handleToggleSelection = (index: number) => {
     setLimitWarning(null);
     const currentSelectedCount = colorSelection.filter((color) => color.selected).length;
@@ -139,22 +152,10 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
   };
 
   const handleProcessCode = () => {
-    const groups = parseInputToGroups(inputText);
-    let allColors: ColorData[] = [];
-    groups.forEach((group) => {
-      allColors = [...allColors, ...group.colors];
-    });
-
-    if (allColors.length === 0) {
-      const rawGroups = parseInputToGroups(`{ "colors": ${inputText} }`);
-      if (rawGroups.length > 0 && rawGroups[0].colors.length > 0) {
-        allColors = rawGroups[0].colors;
-      }
-    }
-
+    const allColors = collectPaletteColors(inputText);
     if (allColors.length > 0) {
       setReadError(null);
-      initializeSelection(allColors.slice(0, 30));
+      initializeSelection(allColors);
       return;
     }
     setReadError('No colors found in that text.');
