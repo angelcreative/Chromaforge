@@ -909,7 +909,7 @@ const App: React.FC = () => {
                     key={demo.name}
                     type="button"
                     onClick={() => loadDemo(demo)}
-                    className="w-36 shrink-0 rounded-xl bg-card p-2.5 text-left shadow-panel ring-1 ring-border hover:bg-accent"
+                    className="w-36 shrink-0 rounded-xl bg-card p-2.5 text-left ring-1 ring-border hover:bg-accent"
                     {...enterMotion(reduce, index)}
                   >
                     <span className="flex h-14 overflow-hidden rounded-lg">
