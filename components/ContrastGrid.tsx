@@ -48,11 +48,11 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col p-4 md:p-8 overflow-hidden animate-in fade-in duration-200">
-      <div className="flex justify-between items-center mb-6 shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Contrast Grid ({color.name})</h2>
-          <p className="text-muted-foreground">APCA / WCAG approx. matrix</p>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-4">
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <h2 className="shrink-0 text-[13px] text-foreground">Contrast grid</h2>
+          <span className="truncate text-[13px] text-muted-foreground">{color.name}</span>
         </div>
         <button onClick={onClose} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
           <X className="size-4" strokeWidth={1.5} />
