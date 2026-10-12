@@ -13,7 +13,6 @@ import ScaleEditorModal from './components/ScaleEditorModal';
 import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
 import DescribeHeading from './components/DescribeHeading';
-import PlaygroundCards from './components/PlaygroundCards';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
@@ -43,7 +42,7 @@ import LegalModal, { LegalPageType } from './components/LegalModal';
 import { showToast, ToastHost } from './components/Toast';
 
 type MobileTab = 'canvas' | 'editor';
-type ViewMode = 'cards' | 'list' | 'ramp' | 'gradients';
+type ViewMode = 'list' | 'ramp' | 'gradients';
 type CreationMode = 'generator' | 'manual';
 
 const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
@@ -101,7 +100,7 @@ const App: React.FC = () => {
   const [refineOpen, setRefineOpen] = useState(false);
   const [refinePad, setRefinePad] = useState(false);
   const [refineIndex, setRefineIndex] = useState(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [viewMode, setViewMode] = useState<ViewMode>('ramp');
   const [copilotOpen, setCopilotOpen] = useState(false); 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -269,7 +268,7 @@ const App: React.FC = () => {
 
   const goHome = () => {
     setStudioPane('composer');
-    setViewMode('cards');
+    setViewMode('ramp');
     setShowWork(false);
     setMessages([]);
     setChatInput('');
@@ -283,7 +282,7 @@ const App: React.FC = () => {
   const handleGlobalReset = () => {
     setBaseColor({ h: 215, s: 25, l: 47 }); setBrightness(47); setHarmony('monochromatic'); setPaletteName('Design Tokens');
     setMessages([]); setChatInput('');     setIsPrintMode(false); setActiveTab('brand');
-    setViewMode('cards');
+    setViewMode('ramp');
     setCreationMode('generator');
     setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
     setGlobalCurveConfig({ vibrancy: 0, contrast: 0, hueTorsion: 0, steps: 11 }); // Reset global controls
@@ -342,7 +341,7 @@ const App: React.FC = () => {
       }
       setActiveTab('brand'); showToast("Palette applied");
       setIsSaved(false);
-      if (!showWork) setViewMode('cards');
+      if (!showWork) setViewMode('ramp');
       setShowWork(true);
       setShellOpen(true);
   };
@@ -585,7 +584,7 @@ const App: React.FC = () => {
   const loadDemo = (demo: typeof DEMO_PALETTES[number]) => {
     handleApplyPalette(demo.colors.map(([hex, name]) => createColorData(hex, undefined, name)));
     setPaletteName(demo.name);
-    setViewMode('cards');
+    setViewMode('ramp');
     setStudioPane('composer');
   };
   const pendingRequest = [...messages].reverse().find((message) => message.role === 'user')?.text ?? '';
@@ -695,27 +694,6 @@ const App: React.FC = () => {
           </div>
       </form>
   );
-
-  const handlePlaygroundColor = (hex: string) => {
-    if (!/^#[0-9A-F]{6}$/i.test(hex)) return;
-    const source = creationMode === 'manual' ? customColors : palette;
-    const index = Math.min(Math.max(playgroundConfig.primaryIndex, 0), Math.max(source.length - 1, 0));
-    const current = source[index];
-    if (!current) return;
-    const next = createColorData(hex, current.scaleConfig, current.name);
-    if (creationMode === 'manual') {
-      setCustomColors(prev => prev.map((color, i) => i === index ? next : color));
-    } else if (index === 0) {
-      const hsl = hexToHsl(hex);
-      setBaseColor(hsl);
-      setBrightness(hsl.l);
-      if (harmony === 'custom') setHarmony('monochromatic');
-    } else {
-      setCustomColors(source.map((color, i) => i === index ? next : color));
-      setCreationMode('manual');
-    }
-    setIsSaved(false);
-  };
 
   const updateListedColor = (tab: PaletteTab, index: number, updatedColor: ColorData) => {
     if (tab === 'neutrals') {
@@ -889,7 +867,6 @@ const App: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette view">
                     {([
-                      ['cards', 'Cards'],
                       ['list', 'List'],
                       ['ramp', 'Ramp'],
                       ['gradients', 'Gradients'],
@@ -905,37 +882,24 @@ const App: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                  {viewMode !== 'cards' && (
-                    <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette group">
-                      {([
-                        ['brand', 'Brand'],
-                        ['neutrals', 'Neutrals'],
-                        ['system', 'Semantic'],
-                      ] as const).map(([id, label]) => (
-                        <button
-                          key={id}
-                          type="button"
-                          aria-pressed={activeTab === id}
-                          onClick={() => setActiveTab(id)}
-                          className={`h-8 rounded-md px-3 text-[13px] ${activeTab === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette group">
+                    {([
+                      ['brand', 'Brand'],
+                      ['neutrals', 'Neutrals'],
+                      ['system', 'Semantic'],
+                    ] as const).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={activeTab === id}
+                        onClick={() => setActiveTab(id)}
+                        className={`h-8 rounded-md px-3 text-[13px] ${activeTab === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-
-              {showWork && hasPalette && viewMode === 'cards' && (
-                <PlaygroundCards
-                  brandPalette={workingColors}
-                  neutralPalette={neutralPalette}
-                  semanticPalette={semanticPalette}
-                  config={playgroundConfig}
-                  globalConfig={globalCurveConfig}
-                  onPrimaryColorChange={handlePlaygroundColor}
-                />
               )}
 
               {showWork && hasPalette && (viewMode === 'list' || viewMode === 'ramp') && (
