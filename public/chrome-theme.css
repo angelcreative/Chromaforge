@@ -125,6 +125,23 @@ body {
 .describe-word-in { animation: describe-word-in 160ms ease-out both; }
 .describe-word-out { animation: describe-word-out 160ms ease-out both; }
 
+.oklch-dot,
+.oklch-ring,
+.oklch-swatch {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 140ms cubic-bezier(0.2, 0, 0, 1), opacity 140ms cubic-bezier(0.2, 0, 0, 1), box-shadow 140ms cubic-bezier(0.2, 0, 0, 1);
+}
+.oklch-dot[data-selected="true"] { transform: scale(1.32); }
+.oklch-ring {
+  opacity: 0;
+  transform: scale(0.7);
+}
+.oklch-ring[data-selected="true"] {
+  opacity: 0.9;
+  transform: scale(1);
+}
+
 @media (max-width: 1023px) {
   .drawer-in,
   .drawer-out { animation-name: studio-in; }
@@ -142,5 +159,10 @@ body {
   .describe-word-in,
   .describe-word-out {
     animation: none;
+  }
+  .oklch-dot,
+  .oklch-ring,
+  .oklch-swatch {
+    transition: none;
   }
 }
