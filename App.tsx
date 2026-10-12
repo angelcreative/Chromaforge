@@ -787,9 +787,6 @@ const App: React.FC = () => {
           open={shellOpen}
           onOpenChange={setShellOpen}
           onSavedPalettes={handleOpenLibrary}
-          palettes={savedPalettes}
-          onLoadPalette={handleLoadPalette}
-          activePaletteId={activeSavedId}
           onNewPalette={goHome}
           paletteOpen={paletteOpen}
           onSave={handleSavePalette}
