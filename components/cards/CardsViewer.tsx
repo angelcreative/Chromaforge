@@ -80,6 +80,22 @@ interface CardsViewerProps {
   theme: ThemeColors;
 }
 
+export const PlaygroundCardPreview: React.FC<{ cardId: string; theme: ThemeColors }> = ({ cardId, theme }) => {
+  const CardComponent = CARD_COMPONENTS[cardId];
+  if (!CardComponent) return null;
+  return (
+    <Suspense
+      fallback={
+        <div className="grid min-h-48 w-full max-w-[380px] place-items-center text-[13px]" style={{ color: theme.text.secondary }}>
+          Loading
+        </div>
+      }
+    >
+      <CardComponent theme={theme} />
+    </Suspense>
+  );
+};
+
 export const CardsViewer: React.FC<CardsViewerProps> = ({ selectedCardId, theme }) => {
   if (!selectedCardId) {
     return (
