@@ -1,5 +1,7 @@
+import { motion } from 'motion/react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { slideMotion, uiTransition, useReduced } from './uiMotion';
 import { ColorData, GlobalCurveConfig, ScaleConfiguration } from '../types';
 import { generateShades, createColorData, hexToRgb, rgbToOklch } from '../utils/colorUtils';
 
@@ -35,6 +37,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
 
   const [activeShade, setActiveShade] = useState<number | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const reduce = useReduced();
 
   const finish = (revert: boolean) => {
     if (leaving) return;
@@ -124,10 +127,11 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
   };
 
   return (
-    <div
+    <motion.div
       role="dialog"
       aria-labelledby="edit-scale-title"
-      className={`fixed inset-0 z-[160] flex h-[100dvh] flex-col bg-card text-foreground lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[380px] lg:border-l lg:border-border lg:shadow-panel ${leaving ? 'drawer-out' : 'drawer-in'}`}
+      className="fixed inset-0 z-[160] flex h-[100dvh] flex-col bg-card text-foreground lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[380px] lg:border-l lg:border-border lg:shadow-panel"
+      {...slideMotion(reduce, leaving, { x: '100%' })}
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
@@ -323,7 +327,13 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                   aria-pressed={!!config.useOkLCH}
                   aria-label="Perceptual brightness"
                 >
-                  <span className={`inline-block size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition ${config.useOkLCH ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <motion.span
+                    aria-hidden
+                    className="inline-block size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10"
+                    initial={false}
+                    animate={{ x: config.useOkLCH ? 24 : 4 }}
+                    transition={uiTransition(reduce, 0.16)}
+                  />
                 </button>
               </div>
 
@@ -412,7 +422,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
           Apply
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

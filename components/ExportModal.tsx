@@ -1,6 +1,8 @@
 
+import { motion } from 'motion/react';
 import { Check, Copy, Download, X } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
+import { MotionButton, popMotion, uiTransition, useReduced } from './uiMotion';
 import { ColorData, ExportFormat, ColorGroup, GlobalCurveConfig } from '../types';
 import { 
     exportToCSS, exportToSCSS, exportToTailwind, exportToJSON, exportToFigma, exportToProcreate, createASE,
@@ -23,6 +25,8 @@ const FORMAT_LABELS: Partial<Record<ExportFormat, string>> = {
 };
 
 const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPalette, neutralPalette, semanticPalette, onClose, globalConfig }) => {
+  const reduce = useReduced();
+  const pop = popMotion(reduce);
   const [format, setFormat] = useState<ExportFormat>('skill');
   const [copied, setCopied] = useState(false);
 
@@ -118,8 +122,18 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="flex max-h-[90vh] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={uiTransition(reduce, 0.16)}
+    >
+      <motion.div
+        className="flex max-h-[90vh] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        initial={pop.initial}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={pop.transition}
+      >
         
         <div className="flex shrink-0 items-center justify-between border-b border-border p-6">
           <div>
@@ -128,9 +142,9 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
             </h2>
             <p className="text-xs text-muted-foreground font-mono mt-1">{displayName}</p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
+          <MotionButton type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-6 h-6" strokeWidth={1.5}/>
-          </button>
+          </MotionButton>
         </div>
 
         <div className="flex min-h-0 flex-auto flex-col overflow-hidden p-6">
@@ -211,8 +225,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

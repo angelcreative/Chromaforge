@@ -1,6 +1,8 @@
+import { motion } from 'motion/react';
 import React, { useEffect, useState } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { ThemePreference, applyThemePreference, readThemePreference, writeThemePreference } from '../utils/theme';
+import { MotionButton, uiTransition, useReduced } from './uiMotion';
 
 const OPTIONS: { id: ThemePreference; label: string; icon: typeof Sun }[] = [
   { id: 'system', label: 'System', icon: Monitor },
@@ -25,6 +27,7 @@ const ThemeToggle: React.FC<{ showLabels?: boolean }> = ({ showLabels = false })
     writeThemePreference(next);
   };
 
+  const reduce = useReduced();
   const index = Math.max(0, OPTIONS.findIndex((option) => option.id === pref));
 
   return (
@@ -33,28 +36,30 @@ const ThemeToggle: React.FC<{ showLabels?: boolean }> = ({ showLabels = false })
       role="group"
       aria-label="Color theme"
     >
-      <span
+      <motion.span
         aria-hidden
-        className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-2px)] rounded-md bg-primary transition-transform duration-200 ease-out"
-        style={{ transform: `translateX(${index * 100}%)` }}
+        className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-2px)] rounded-md bg-primary"
+        initial={false}
+        animate={{ x: `${index * 100}%` }}
+        transition={uiTransition(reduce, 0.18)}
       />
       {OPTIONS.map((option) => {
         const active = pref === option.id;
         const Icon = option.icon;
         return (
-          <button
+          <MotionButton
             key={option.id}
             type="button"
             onClick={() => choose(option.id)}
             aria-label={option.label}
             aria-pressed={active}
-            className={`relative z-10 flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[13px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5 ${
+            className={`relative z-10 flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5 ${
               active ? 'text-primary-foreground' : 'text-foreground'
             }`}
           >
             <Icon className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
             <span className={showLabels ? 'inline' : 'hidden sm:inline'}>{option.label}</span>
-          </button>
+          </MotionButton>
         );
       })}
     </div>

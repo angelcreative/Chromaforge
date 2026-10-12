@@ -1,5 +1,7 @@
+import { motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { slideMotion, useReduced } from './uiMotion';
 import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades, maxOklchChroma, oklchToRgb, rgbToHex, rgbToOklch } from '../utils/colorUtils';
 
@@ -49,6 +51,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
   onClose,
   onChange,
 }) => {
+  const reduce = useReduced();
   const [present, setPresent] = useState(open);
   const [shown, setShown] = useState(open);
   const [hexDraft, setHexDraft] = useState(color.hex.toUpperCase());
@@ -97,10 +100,11 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
   if (!present) return null;
 
   return (
-    <aside
+    <motion.aside
       role="dialog"
       aria-labelledby="refine-color-title"
-      className={`fixed top-14 right-0 bottom-0 z-30 flex w-[min(380px,calc(100vw-3rem))] flex-col border-l border-border bg-card text-foreground shadow-panel ${shown ? 'refine-drawer-in' : 'refine-drawer-out'}`}
+      className="fixed top-14 right-0 bottom-0 z-30 flex w-[min(380px,calc(100vw-3rem))] flex-col border-l border-border bg-card text-foreground shadow-panel"
+      {...slideMotion(reduce, !shown, { x: '100%' })}
     >
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
         <h2 id="refine-color-title" className="text-[15px] font-medium text-foreground">Refine color</h2>
@@ -212,7 +216,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
           />
         </div>
       </div>
-    </aside>
+    </motion.aside>
   );
 };
 

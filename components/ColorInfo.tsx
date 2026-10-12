@@ -1,5 +1,7 @@
+import { motion } from 'motion/react';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { popMotion, useReduced } from './uiMotion';
 import { ColorRGB } from '../types';
 import { getContrastRatio, getLuminance, rgbToCmyk, rgbToOklch } from '../utils/colorUtils';
 
@@ -67,6 +69,8 @@ const ColorInfo: React.FC<ColorInfoProps> = ({ hex, rgb, step, printOn, anchor, 
   const onRequestCloseRef = useRef(onRequestClose);
   onRequestCloseRef.current = onRequestClose;
   const finished = useRef(false);
+  const reduce = useReduced();
+  const pop = popMotion(reduce, closing);
   const [box, setBox] = useState<{ top: number; left: number; transformOrigin: string } | null>(null);
 
   const oklch = rgbToOklch(rgb.r, rgb.g, rgb.b);
@@ -133,15 +137,15 @@ const ColorInfo: React.FC<ColorInfoProps> = ({ hex, rgb, step, printOn, anchor, 
   }, [closing]);
 
   return createPortal(
-    <div
+    <motion.div
       ref={panelRef}
       role="dialog"
       aria-label="Color"
-      className={`color-info-pop fixed z-[70] rounded-xl bg-popover p-3 text-popover-foreground shadow-panel ring-1 ring-border ${closing ? 'is-leaving' : ''}`}
+      className="color-info-pop fixed z-[70] rounded-xl bg-popover p-3 text-popover-foreground shadow-panel ring-1 ring-border"
       style={box ? { top: box.top, left: box.left, transformOrigin: box.transformOrigin } : { top: -9999, left: 0 }}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && closing) finish();
-      }}
+      initial={pop.initial}
+      animate={pop.animate}
+      transition={pop.transition}
     >
       <div className="h-12 w-full rounded-lg ring-1 ring-border" style={{ backgroundColor: hex }} />
 
@@ -190,7 +194,7 @@ const ColorInfo: React.FC<ColorInfoProps> = ({ hex, rgb, step, printOn, anchor, 
           <span className="font-mono text-[12px] text-muted-foreground">{cmyk.c}%, {cmyk.m}%, {cmyk.y}%, {cmyk.k}%</span>
         </div>
       ) : null}
-    </div>,
+    </motion.div>,
     document.body,
   );
 };

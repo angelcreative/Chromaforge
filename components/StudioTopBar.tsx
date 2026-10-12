@@ -1,7 +1,9 @@
+import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Copy, Download, FileDown, Heart, Pipette, Plus } from 'lucide-react';
 import LogoMark, { type LogoMotion } from './LogoMark';
 import ThemeToggle from './ThemeToggle';
+import { MotionButton, SwitchThumb, presencePop, useReduced } from './uiMotion';
 
 export interface StudioTopBarProps {
   onHome: () => void;
@@ -37,6 +39,8 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onTogglePrint,
   markMotion = 'enter',
 }) => {
+  const reduce = useReduced();
+  const menu = presencePop(reduce, 'top right');
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -62,31 +66,31 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
 
   return (
     <header className="z-40 flex h-14 shrink-0 items-center gap-1 border-b border-border bg-card px-3">
-      <button
+      <MotionButton
         type="button"
         onClick={onHome}
         className="grid size-10 place-items-center text-foreground"
         aria-label="Chromaforge"
       >
         <LogoMark className="size-6" motion={markMotion} />
-      </button>
-      <button type="button" onClick={onNewPalette} className={barButton}>
+      </MotionButton>
+      <MotionButton type="button" onClick={onNewPalette} className={barButton}>
         <Plus className="size-4" strokeWidth={1.5} aria-hidden />
         New palette
-      </button>
+      </MotionButton>
       <div className="ml-auto flex items-center gap-1">
         {paletteOpen && (
           <>
-            <button type="button" onClick={onSave} disabled={saving} aria-pressed={saved} className={barButton}>
+            <MotionButton type="button" onClick={onSave} disabled={saving} aria-pressed={saved} className={barButton}>
               <Heart className="size-4" strokeWidth={1.5} aria-hidden />
               {saved ? 'Saved' : 'Save'}
-            </button>
-            <button type="button" onClick={onRefine} aria-pressed={refineOpen} className={`${barButton} ${refineOpen ? 'bg-accent' : ''}`}>
+            </MotionButton>
+            <MotionButton type="button" onClick={onRefine} aria-pressed={refineOpen} className={`${barButton} ${refineOpen ? 'bg-accent' : ''}`}>
               <Pipette className="size-4" strokeWidth={1.5} aria-hidden />
               Refine
-            </button>
+            </MotionButton>
             <div className="relative" ref={exportRef}>
-              <button
+              <MotionButton
                 type="button"
                 onClick={() => setExportOpen((value) => !value)}
                 aria-expanded={exportOpen}
@@ -95,9 +99,10 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
               >
                 <Download className="size-4" strokeWidth={1.5} aria-hidden />
                 Export
-              </button>
+              </MotionButton>
+              <AnimatePresence>
               {exportOpen && (
-                <div role="menu" className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border">
+                <motion.div role="menu" className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border" {...menu}>
                   <button
                     type="button"
                     role="menuitem"
@@ -124,12 +129,13 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
                     onClick={onTogglePrint}
                   >
                     <span className={`relative h-4 w-7 shrink-0 rounded-full ${printOn ? 'bg-primary' : 'bg-[var(--switch)]'}`}>
-                      <span className={`absolute top-0.5 left-0.5 size-3 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform ${printOn ? 'translate-x-3' : ''}`} />
+                      <SwitchThumb on={printOn} onX={12} />
                     </span>
                     Print
                   </button>
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
           </>
         )}

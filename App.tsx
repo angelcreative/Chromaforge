@@ -1,6 +1,8 @@
 
+import { motion } from 'motion/react';
 import { Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { MotionButton, SelectionMark, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex, collectPaletteColors, colorsFromPaletteText } from './utils/colorUtils';
 import RefineDrawer from './components/RefineDrawer';
@@ -711,9 +713,10 @@ const App: React.FC = () => {
   );
 
   const renderPromptForm = () => (
-      <form
+      <motion.form
           className="shrink-0 border-t border-border bg-background px-4 py-3"
           onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
+          {...enterMotion(reduce)}
       >
           <div className={`mx-auto flex w-full max-w-3xl flex-col gap-1 ${shellOpen ? '' : 'pl-12 md:pl-0'}`}>
               <div className="px-1">{renderCreditMeter()}</div>
@@ -732,17 +735,17 @@ const App: React.FC = () => {
                   }}
                   aria-label="Palette prompt"
               />
-              <button
+              <MotionButton
                   type="submit"
                   disabled={isChatLoading || !chatInput.trim()}
                   className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
                   aria-label="Send"
               >
                   <Send className="size-4" strokeWidth={1.5} />
-              </button>
+              </MotionButton>
               </div>
           </div>
-      </form>
+      </motion.form>
   );
 
   const updateListedColor = (tab: PaletteTab, index: number, updatedColor: ColorData) => {
@@ -758,6 +761,7 @@ const App: React.FC = () => {
     setIsSaved(false);
   };
 
+  const reduce = useReduced();
   const showLoader = isChatLoading && !showWork;
   const paletteOpen = showWork && hasPalette && !showHome;
 
@@ -802,7 +806,7 @@ const App: React.FC = () => {
       />
 
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>
-      <div key={viewKey} className="studio-in flex min-h-0 flex-1 flex-col">
+      <motion.div key={viewKey} className="flex min-h-0 flex-1 flex-col" {...fadeEnter(reduce)}>
       {selectedColorForGrid ? (
         <ContrastGrid color={selectedColorForGrid} globalConfig={globalCurveConfig} onClose={() => setSelectedColorForGrid(null)} />
       ) : studioPane === 'colors' ? (
@@ -825,14 +829,14 @@ const App: React.FC = () => {
               ))}
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={handleAddCustomColor} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card text-[13px] text-foreground hover:bg-accent">
+              <MotionButton type="button" onClick={handleAddCustomColor} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card text-[13px] text-foreground hover:bg-accent">
                 <Plus className="size-4" strokeWidth={1.5} />
                 Add color
-              </button>
-              <button type="button" onClick={() => setIsImportOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
+              </MotionButton>
+              <MotionButton type="button" onClick={() => setIsImportOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
                 <Upload className="size-4" strokeWidth={1.5} />
                 Import
-              </button>
+              </MotionButton>
             </div>
           </div>
         </div>
@@ -860,7 +864,7 @@ const App: React.FC = () => {
             <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-muted-foreground">
               The limit is your imagination.
             </p>
-            <form className="mt-8" onSubmit={(e) => { e.preventDefault(); submitHomeComposer(); }}>
+            <motion.form className="mt-8" onSubmit={(e) => { e.preventDefault(); submitHomeComposer(); }} {...enterMotion(reduce)}>
               <div className="rounded-2xl border border-border bg-card p-3 shadow-panel">
                 <textarea
                   rows={4}
@@ -886,27 +890,27 @@ const App: React.FC = () => {
                     />
                     {renderCreditMeter()}
                   </div>
-                  <button
+                  <MotionButton
                     type="submit"
                     disabled={!chatInput.trim()}
                     className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
                     aria-label="Send"
                   >
                     <Send className="size-4" strokeWidth={1.5} />
-                  </button>
+                  </MotionButton>
                 </div>
               </div>
-            </form>
+            </motion.form>
             <div className="mt-10">
               <p className="mb-3 text-[13px] text-muted-foreground">Try a demo</p>
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {DEMO_PALETTES.filter((demo) => demo.name !== 'Clay').map((demo, index) => (
-                  <button
+                  <MotionButton
                     key={demo.name}
                     type="button"
                     onClick={() => loadDemo(demo)}
-                    className="studio-card w-36 shrink-0 rounded-xl bg-card p-2.5 text-left shadow-panel ring-1 ring-border hover:bg-accent"
-                    style={{ animationDelay: `${index * 40}ms` }}
+                    className="w-36 shrink-0 rounded-xl bg-card p-2.5 text-left shadow-panel ring-1 ring-border hover:bg-accent"
+                    {...enterMotion(reduce, index)}
                   >
                     <span className="flex h-14 overflow-hidden rounded-lg">
                       {demo.colors.map(([hex]) => (
@@ -914,7 +918,7 @@ const App: React.FC = () => {
                       ))}
                     </span>
                     <span className="mt-2 block text-[13px] text-foreground">{demo.name}</span>
-                  </button>
+                  </MotionButton>
                 ))}
               </div>
             </div>
@@ -932,15 +936,16 @@ const App: React.FC = () => {
                       ['ramp', 'Ramp'],
                       ['gradients', 'Gradients'],
                     ] as const).map(([id, label]) => (
-                      <button
+                      <MotionButton
                         key={id}
                         type="button"
                         aria-pressed={viewMode === id}
                         onClick={() => { setStudioPane('composer'); setViewMode(id); }}
-                        className={`h-8 rounded-md px-3 text-[13px] ${viewMode === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        className={`relative h-8 rounded-md px-3 text-[13px] ${viewMode === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                       >
-                        {label}
-                      </button>
+                        <SelectionMark active={viewMode === id} layoutId="palette-view" />
+                        <span className="relative z-10">{label}</span>
+                      </MotionButton>
                     ))}
                   </div>
                   <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette group">
@@ -949,15 +954,16 @@ const App: React.FC = () => {
                       ['neutrals', 'Neutrals'],
                       ['system', 'Semantic'],
                     ] as const).map(([id, label]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        aria-pressed={activeTab === id}
-                        onClick={() => setActiveTab(id)}
-                        className={`h-8 rounded-md px-3 text-[13px] ${activeTab === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
-                      >
-                        {label}
-                      </button>
+                        <MotionButton
+                          key={id}
+                          type="button"
+                          aria-pressed={activeTab === id}
+                          onClick={() => setActiveTab(id)}
+                          className={`relative h-8 rounded-md px-3 text-[13px] ${activeTab === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        >
+                          <SelectionMark active={activeTab === id} layoutId="palette-group" />
+                          <span className="relative z-10">{label}</span>
+                        </MotionButton>
                     ))}
                   </div>
                 </div>
@@ -965,11 +971,13 @@ const App: React.FC = () => {
 
               {showWork && hasPalette && (viewMode === 'list' || viewMode === 'ramp') && (
                 <>
-                <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
+                <motion.div {...enterMotion(reduce)}>
+                  <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
+                </motion.div>
                 <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
                   {activeColors.map((color, idx) => (
+                    <motion.div key={`${color.hex}-${idx}`} {...enterMotion(reduce, idx)} whileTap={reduce ? undefined : { scale: 0.99 }}>
                     <PaletteCard
-                      key={`${color.hex}-${idx}`}
                       color={color}
                       onOpenGrid={setSelectedColorForGrid}
                       onEditScale={handleEditClick}
@@ -979,6 +987,7 @@ const App: React.FC = () => {
                       isCompact={viewMode === 'list'}
                       globalConfig={globalCurveConfig}
                     />
+                    </motion.div>
                   ))}
                 </div>
                 </>
@@ -992,7 +1001,7 @@ const App: React.FC = () => {
           </div>
         </>
       )}
-      </div>
+      </motion.div>
       </div>
 
       {workingColors.length > 0 && (

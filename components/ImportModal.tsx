@@ -1,5 +1,7 @@
+import { motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, X } from 'lucide-react';
+import { SelectionMark, enterMotion, popMotion, uiTransition, useReduced } from './uiMotion';
 import { ColorData } from '../types';
 import { collectPaletteColors, extractColorsFromImage } from '../utils/colorUtils';
 import LogoMark from './LogoMark';
@@ -29,6 +31,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const reduce = useReduced();
+  const pop = popMotion(reduce, leaving);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const requestRef = useRef(0);
   const closingRef = useRef(false);
@@ -165,12 +169,20 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
   const showSelection = colorSelection.length > 0 && !isProcessing;
 
   return (
-    <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md ${leaving ? 'dialog-fade-out' : 'dialog-fade-in'}`}>
-      <div
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: leaving && !reduce ? 0 : 1 }}
+      transition={uiTransition(reduce, 0.16)}
+    >
+      <motion.div
         role="dialog"
         aria-modal="true"
         aria-labelledby="import-colors-title"
-        className={`flex max-h-[min(40rem,90vh)] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl ${leaving ? 'dialog-out' : 'dialog-in'}`}
+        className="flex max-h-[min(40rem,90vh)] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        initial={pop.initial}
+        animate={pop.animate}
+        transition={pop.transition}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <h2 id="import-colors-title" className="text-xl font-medium text-foreground">Import colors</h2>
@@ -190,18 +202,20 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
             role="tab"
             aria-selected={activeTab === 'image'}
             onClick={() => switchTab('image')}
-            className={`flex-1 rounded-md py-2 text-[13px] transition-colors ${activeTab === 'image' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`relative flex-1 rounded-md py-2 text-[13px] ${activeTab === 'image' ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            From image
+            <SelectionMark active={activeTab === 'image'} layoutId="import-source" />
+            <span className="relative z-10">From image</span>
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'code'}
             onClick={() => switchTab('code')}
-            className={`flex-1 rounded-md py-2 text-[13px] transition-colors ${activeTab === 'code' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`relative flex-1 rounded-md py-2 text-[13px] ${activeTab === 'code' ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            From code
+            <SelectionMark active={activeTab === 'code'} layoutId="import-source" />
+            <span className="relative z-10">From code</span>
           </button>
         </div>
 
@@ -233,19 +247,21 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
             <div className="min-h-0 flex-auto overflow-y-auto px-6 py-3 custom-scrollbar">
               <div className="grid grid-cols-4 gap-3 p-2 sm:grid-cols-5">
                 {colorSelection.map((item, index) => (
-                  <button
+                  <motion.button
                     key={`${item.data.hex}-${index}`}
                     type="button"
                     aria-pressed={item.selected}
                     aria-label={item.selected ? `${item.data.hex}, selected` : item.data.hex}
                     onClick={() => handleToggleSelection(index)}
-                    className={`swatch-in group relative aspect-square w-full rounded-xl border-0 p-0 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground ${item.selected ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card' : 'ring-1 ring-border hover:ring-foreground/30'}`}
-                    style={{ backgroundColor: item.data.hex, animationDelay: `${index * 32}ms` }}
+                    className={`group relative aspect-square w-full rounded-xl border-0 p-0 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground ${item.selected ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card' : 'ring-1 ring-border hover:ring-foreground/30'}`}
+                    style={{ backgroundColor: item.data.hex }}
+                    {...enterMotion(reduce, index)}
+                    whileTap={reduce ? undefined : { scale: 0.96 }}
                   >
                     <span className="pointer-events-none absolute inset-x-1 bottom-1 truncate rounded bg-black/45 px-1 text-center font-mono text-[9px] text-white opacity-0 backdrop-blur-sm group-hover:opacity-100 group-focus-visible:opacity-100">
                       {item.data.hex}
                     </span>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -307,8 +323,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
             )}
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
