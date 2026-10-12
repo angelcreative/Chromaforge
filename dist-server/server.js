@@ -2,10 +2,12 @@ import express from 'express';
 import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
 import { compileComponent, cleanupOldBundles } from './services/componentCompiler.js';
+import { CreditLedger } from './services/creditLedger.js';
+import { buildPalettePrompt, callModelIfAllowed, creditsForTokens, DESIGN_RESERVED_OUTPUT_TOKENS, grantsFromCustomerDocuments, isWalletId, prepareTurn, tokensFromUsage, } from './services/credits.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Resolver la ruta base: si estamos en dist-server, subir un nivel
@@ -60,52 +62,28 @@ const firebaseUidFromIdToken = async (idToken) => {
     const data = await res.json().catch(() => null);
     return data?.users?.[0]?.localId || null;
 };
-const userHasPaidAi = async (idToken, uid) => {
-    const headers = { Authorization: `Bearer ${idToken}` };
-    const userUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}`;
-    const userRes = await fetch(userUrl, { headers });
-    if (userRes.ok) {
-        const doc = await userRes.json().catch(() => null);
-        if (doc?.fields?.isPro?.booleanValue === true)
-            return true;
-    }
-    const subUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/customers/${encodeURIComponent(uid)}/subscriptions`;
-    const subRes = await fetch(subUrl, { headers });
-    if (!subRes.ok)
-        return false;
-    const data = await subRes.json().catch(() => null);
-    const docs = Array.isArray(data?.documents) ? data.documents : [];
-    return docs.some((doc) => {
-        const status = doc?.fields?.status?.stringValue;
-        return status === 'active' || status === 'trialing';
-    });
+const ledger = new CreditLedger(process.env.CREDIT_LEDGER_PATH || join(baseDir, 'data', 'credit-ledger.json'));
+const listCustomerDocs = async (idToken, uid, collectionName) => {
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/customers/${encodeURIComponent(uid)}/${collectionName}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    if (!res.ok)
+        return [];
+    const data = await res.json().catch(() => null);
+    return Array.isArray(data?.documents) ? data.documents : [];
 };
-const paymentRequired = (res) => res.status(402).json({
-    name: 'Payment required',
-    colors: [],
-    code: '',
-    description: 'Subscribe to use the assistant. This request was not generated.',
-    paymentRequired: true,
-});
-/** Owner code or an active Stripe subscription. Checked before any model call. */
-const assertAiAccess = async (req, res) => {
-    if (isValidOwnerCode(req.body?.ownerAccess))
-        return true;
-    const token = bearerToken(req);
-    if (!token) {
-        paymentRequired(res);
-        return false;
-    }
-    try {
-        const uid = await firebaseUidFromIdToken(token);
-        if (uid && (await userHasPaidAi(token, uid)))
-            return true;
-    }
-    catch (error) {
-        console.warn('[Backend] Could not verify assistant subscription');
-    }
-    paymentRequired(res);
-    return false;
+/** Owner code skips the meter. Everyone else must have enough credits before Gemini. */
+const decideTurn = async (req, prompt, kind, reservedOutputTokens) => {
+    const owner = isValidOwnerCode(req.body?.ownerAccess);
+    const walletId = req.body?.walletId;
+    const balance = owner || !isWalletId(walletId) ? 0 : await ledger.balance(walletId);
+    return prepareTurn({ owner, walletId, prompt, balance, kind, reservedOutputTokens });
+};
+const chargeTurn = async (decision, prompt, output, usage) => {
+    if (decision.kind === 'owner')
+        return {};
+    const tokens = tokensFromUsage(usage, { prompt, output });
+    const settled = await ledger.debit(decision.walletId, creditsForTokens(tokens.inputTokens, tokens.outputTokens));
+    return { creditsSpent: settled.spent, creditsRemaining: settled.remaining };
 };
 // Middleware
 app.use(express.json());
@@ -119,11 +97,50 @@ app.post('/api/owner-unlock', (req, res) => {
     }
     return res.status(403).json({ ok: false });
 });
+app.post('/api/credits', async (req, res) => {
+    if (isValidOwnerCode(req.body?.ownerAccess)) {
+        return res.json({ owner: true, balance: null });
+    }
+    if (!isWalletId(req.body?.walletId)) {
+        return res.status(400).json({ owner: false, balance: 0 });
+    }
+    const balance = await ledger.balance(req.body.walletId);
+    return res.json({ owner: false, balance });
+});
+app.post('/api/credits/claim', async (req, res) => {
+    if (isValidOwnerCode(req.body?.ownerAccess)) {
+        return res.json({ owner: true, balance: null, added: 0 });
+    }
+    if (!isWalletId(req.body?.walletId)) {
+        return res.status(400).json({ owner: false, balance: 0, added: 0 });
+    }
+    const walletId = req.body.walletId;
+    let added = 0;
+    const token = bearerToken(req);
+    if (token) {
+        try {
+            const uid = await firebaseUidFromIdToken(token);
+            if (uid) {
+                const [payments, subscriptions] = await Promise.all([
+                    listCustomerDocs(token, uid, 'payments'),
+                    listCustomerDocs(token, uid, 'subscriptions'),
+                ]);
+                for (const grant of grantsFromCustomerDocuments(payments, subscriptions)) {
+                    const result = await ledger.grant(walletId, grant.id, grant.credits);
+                    added += result.added;
+                }
+            }
+        }
+        catch {
+            console.warn('[Backend] Could not claim credit packs');
+        }
+    }
+    const balance = await ledger.balance(walletId);
+    return res.json({ owner: false, balance, added });
+});
 // API endpoint for palette generation
 app.post('/api/palette', async (req, res) => {
     try {
-        if (!(await assertAiAccess(req, res)))
-            return;
         const { history, currentPalette } = req.body;
         if (!history || !Array.isArray(history)) {
             return res.status(400).json({
@@ -135,6 +152,10 @@ app.post('/api/palette', async (req, res) => {
                 error: 'Invalid request: currentPalette must be an array'
             });
         }
+        const context = buildPalettePrompt(history, currentPalette);
+        const decision = await decideTurn(req, context, 'palette');
+        if (decision.kind === 'refuse')
+            return res.status(decision.status).json(decision.body);
         // Get API key from environment
         const apiKey = process.env.API_KEY;
         if (!apiKey) {
@@ -159,40 +180,9 @@ app.post('/api/palette', async (req, res) => {
                 description: 'CRITICAL: Invalid API Key. Please check Google Cloud Run settings.'
             });
         }
-        // Initialize Gemini
+        // Initialize Gemini only after the balance covers this request.
         const ai = new GoogleGenAI({ apiKey: sanitizedKey });
-        // Build context
-        const historyText = history.map((m) => `${m.role === 'user' ? 'User' : 'Model'}: ${m.text}`).join('\n');
-        const currentPaletteContext = currentPalette.map((c) => `- Name: "${c.name}", Hex: ${c.hex}`).join('\n');
-        const context = `
-    You are a professional color expert and Design System Architect.
-    
-    === CURRENT PALETTE ON SCREEN ===
-    ${currentPaletteContext || 'The palette is currently empty.'}
-    =================================
-    
-    CONVERSATION HISTORY:
-    ${historyText}
-    
-    TASK:
-    Generate a JSON object representing the updated color palette based on the User's latest request.
-    
-    RULES:
-    1. **Context Awareness**: If the user refers to a specific color by name identify it in the list.
-    2. **Surgical Edits**: Change only what is requested. Keep others exactly as they are.
-    3. **New Palettes**: If a new theme is requested, generate a fresh set.
-    4. **Naming**: Always provide creative names.
-    5. **Strict JSON**: Output ONLY valid JSON.
-    
-    Return STRICTLY a JSON object with this schema:
-    {
-      "paletteName": "string",
-      "colors": [{ "hex": "#RRGGBB", "name": "Creative Name" }],
-      "description": "string" 
-    }
-    `;
-        // Call Gemini API
-        const response = await ai.models.generateContent({
+        const metered = await callModelIfAllowed(decision, () => ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: context,
             config: {
@@ -224,7 +214,10 @@ app.post('/api/palette', async (req, res) => {
                     required: ["paletteName", "colors", "description"]
                 }
             }
-        });
+        }));
+        if (metered.kind === 'refused')
+            return res.status(metered.status).json(metered.body);
+        const response = metered.value;
         let jsonStr = response.text;
         if (!jsonStr) {
             throw new Error("Empty response from AI");
@@ -233,13 +226,16 @@ app.post('/api/palette', async (req, res) => {
         jsonStr = jsonStr.replace(/^```(json)?\s*/, '').replace(/\s*```$/, '');
         const data = JSON.parse(jsonStr);
         if (data.colors && Array.isArray(data.colors)) {
+            const description = data.description || `I've updated the palette with ${data.colors.length} colors.`;
+            const charge = await chargeTurn(metered.decision, context, jsonStr, response.usageMetadata);
             return res.json({
                 name: data.paletteName || "AI Generated Palette",
-                description: data.description || `I've updated the palette with ${data.colors.length} colors.`,
+                description,
                 colors: data.colors.map((c) => ({
                     hex: c.hex,
                     name: c.name
-                }))
+                })),
+                ...charge,
             });
         }
         throw new Error("Invalid response structure: missing colors array");
@@ -274,8 +270,6 @@ app.post('/api/palette', async (req, res) => {
 // API endpoint for UI component generation
 app.post('/api/ui-design', async (req, res) => {
     try {
-        if (!(await assertAiAccess(req, res)))
-            return;
         const { prompt, palette, availableComponents, config } = req.body;
         if (!prompt || typeof prompt !== 'string') {
             return res.status(400).json({
@@ -485,20 +479,26 @@ app.post('/api/ui-design', async (req, res) => {
     - Reference colors from the theme, NEVER hardcoded colors
     - Export the component as default or named export
     `;
-        // Call Gemini API
-        const response = await ai.models.generateContent({
+        const decision = await decideTurn(req, context, 'design', DESIGN_RESERVED_OUTPUT_TOKENS);
+        if (decision.kind === 'refuse')
+            return res.status(decision.status).json(decision.body);
+        const metered = await callModelIfAllowed(decision, () => ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: context,
             config: {
                 systemInstruction: "You are a React/JSX code generator specializing in Material Design. You output only valid, executable React component code using Material-UI. Always use colors from the ChromaForge palette provided. No explanations, no markdown, just code.",
             }
-        });
+        }));
+        if (metered.kind === 'refused')
+            return res.status(metered.status).json(metered.body);
+        const response = metered.value;
         let code = response.text;
         if (!code) {
             throw new Error("Empty response from AI");
         }
         // Clean up potential markdown formatting
         code = code.replace(/^```(jsx|tsx|javascript|typescript)?\s*/i, '').replace(/\s*```$/i, '').trim();
+        const charge = await chargeTurn(metered.decision, context, code, response.usageMetadata);
         // Extract component name if possible
         const componentNameMatch = code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/);
         const componentName = componentNameMatch ? componentNameMatch[1] : 'GeneratedComponent';
@@ -544,6 +544,7 @@ app.post('/api/ui-design', async (req, res) => {
                 description: `Generated ${componentName} based on your request. (Compilation failed: ${compileResult.error})`,
                 componentName: componentName,
                 bundleId: null,
+                ...charge,
             });
         }
         // Limpiar bundles antiguos (en background)
@@ -553,6 +554,7 @@ app.post('/api/ui-design', async (req, res) => {
             description: `Generated ${componentName} based on your request.`,
             componentName: componentName,
             bundleId: compileResult.bundleId, // ID del bundle compilado
+            ...charge,
         });
     }
     catch (error) {
@@ -645,14 +647,20 @@ app.get('*', (req, res) => {
         res.status(500).send(`Error: ${error.message}`);
     }
 });
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] 🚀 Server running on port ${PORT}`);
-    if (process.env.API_KEY) {
-        const keyPreview = process.env.API_KEY.substring(0, 10) + '...';
-        console.log(`[Server] ✅ API_KEY is configured (${keyPreview})`);
-    }
-    else {
-        console.log(`[Server] ❌ API_KEY is NOT configured. Create .env.local with: API_KEY=your_gemini_api_key`);
-    }
-    console.log(`[Server] Owner unlock ${ownerSecret() ? 'configured' : 'disabled (set OWNER_ACCESS_CODE)'}`);
-});
+const invokedDirectly = process.argv[1]
+    ? fileURLToPath(import.meta.url) === resolve(process.argv[1])
+    : false;
+if (invokedDirectly) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`[Server] 🚀 Server running on port ${PORT}`);
+        if (process.env.API_KEY) {
+            const keyPreview = process.env.API_KEY.substring(0, 10) + '...';
+            console.log(`[Server] ✅ API_KEY is configured (${keyPreview})`);
+        }
+        else {
+            console.log(`[Server] ❌ API_KEY is NOT configured. Create .env.local with: API_KEY=your_gemini_api_key`);
+        }
+        console.log(`[Server] Owner unlock ${ownerSecret() ? 'configured' : 'disabled (set OWNER_ACCESS_CODE)'}`);
+    });
+}
+export { app };

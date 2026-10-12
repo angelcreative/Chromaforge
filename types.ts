@@ -63,6 +63,7 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   palettePreview?: ColorData[]; // Visual swatch strip for AI responses
+  creditsSpent?: number;
 }
 
 export interface Shade {

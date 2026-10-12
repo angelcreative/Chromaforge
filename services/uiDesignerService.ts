@@ -1,4 +1,5 @@
-import { ColorData } from "../types";
+import { getOwnerAccessCode } from "./ownerAccess";
+import { getCreditWalletId } from "./creditWallet";
 
 interface UIGenerationRequest {
   prompt: string;
@@ -41,7 +42,11 @@ export const generateUIFromPrompt = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(request)
+      body: JSON.stringify({
+        ...request,
+        ownerAccess: getOwnerAccessCode() || undefined,
+        walletId: getCreditWalletId(),
+      })
     });
 
     if (!response.ok) {

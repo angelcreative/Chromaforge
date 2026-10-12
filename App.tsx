@@ -23,13 +23,16 @@ import { subscribeToAuth, ensureBillingUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, SavedPalette } from './services/storageService';
 import { captureOwnerAccessFromUrl, clearOwnerAccess, confirmOwnerAccess, hasOwnerFlag, markOwnerUnlocked } from './services/ownerAccess';
+import { claimCreditPacks, fetchCreditBalance } from './services/creditClient';
+import { formatCompact, type CreditPackId } from './services/credits';
+import { getCreditWalletId } from './services/creditWallet';
 import { buildStudioColorSkill } from './utils/colorSkill';
 import StudioSidebar from './components/StudioSidebar';
 import StudioTopBar from './components/StudioTopBar';
 import CopilotPanel from './components/CopilotPanel';
 
 // Subscription Imports
-import { checkSubscriptionStatus, createCheckoutSession } from './services/subscriptionService';
+import { createCheckoutSession } from './services/subscriptionService';
 import PricingModal from './components/PricingModal';
 import ConfirmModal from './components/ConfirmModal';
 
@@ -56,10 +59,10 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isOwner, setIsOwner] = useState(false);
 
-  // Subscription. The studio itself does not wait on this.
-  const [isPremium, setIsPremium] = useState(false);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [checkoutPack, setCheckoutPack] = useState<CreditPackId | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
   // App State
   const [creationMode, setCreationMode] = useState<CreationMode>('generator');
   const [baseColor, setBaseColor] = useState<ColorHSL>({ h: 215, s: 25, l: 47 });
@@ -135,7 +138,7 @@ const App: React.FC = () => {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  const canUseAssistant = isOwner || isPremium;
+  const pendingClaim = useRef(false);
 
   // Initialize Custom Colors with default
   useEffect(() => {
@@ -167,19 +170,57 @@ const App: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Subscription status only. It never gates the canvas.
   useEffect(() => {
-    const unsubscribe = subscribeToAuth(async (currentUser) => {
+    const unsubscribe = subscribeToAuth((currentUser) => {
         setUser(currentUser);
-        if (currentUser) {
-            const status = await checkSubscriptionStatus(currentUser.uid);
-            setIsPremium(status);
-        } else {
-            setIsPremium(false);
-        }
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCreditBalance().then((snapshot) => {
+      if (cancelled || !snapshot || snapshot.owner || typeof snapshot.balance !== 'number') return;
+      setCredits(snapshot.balance);
+    });
+    return () => { cancelled = true; };
+  }, [isOwner]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') pendingClaim.current = true;
+    if (!params.get('checkout')) return;
+    params.delete('checkout');
+    params.delete('pack');
+    const qs = params.toString();
+    window.history.replaceState({}, document.title, `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingClaim.current) return;
+    let stopped = false;
+    let tries = 0;
+    const tick = async () => {
+      if (stopped || !pendingClaim.current) return;
+      let token: string | null = null;
+      try {
+        token = user ? await user.getIdToken() : null;
+      } catch {
+        token = null;
+      }
+      const snapshot = await claimCreditPacks(token);
+      if (stopped || !snapshot) return;
+      if (!snapshot.owner && typeof snapshot.balance === 'number') setCredits(snapshot.balance);
+      if ((snapshot.added ?? 0) > 0 || tries >= 4) {
+        pendingClaim.current = false;
+        return;
+      }
+      tries += 1;
+      window.setTimeout(tick, 1500);
+    };
+    void tick();
+    return () => { stopped = true; };
+  }, [user]);
 
   // --- CORE PALETTE CALCULATION LOGIC ---
   useEffect(() => {
@@ -311,11 +352,6 @@ const App: React.FC = () => {
     const text = (preset ?? chatInput).trim();
     if (!text || isChatLoading) return;
 
-    if (!canUseAssistant) {
-        setIsPricingOpen(true);
-        return;
-    }
-
     const userMsg: ChatMessage = { role: 'user', text };
     setMessages(prev => [...prev, userMsg]); setChatInput(''); setIsChatLoading(true); setIsChatOpen(true);
     
@@ -335,13 +371,12 @@ const App: React.FC = () => {
     );
     setIsChatLoading(false);
 
+    if (typeof result.creditsRemaining === 'number') setCredits(result.creditsRemaining);
+
     if (result.paymentRequired) {
-      if (isOwner) {
-        clearOwnerAccess();
-        setIsOwner(false);
-      }
       setIsPricingOpen(true);
-      setMessages(prev => [...prev, { role: 'model', text: result.description || 'Subscribe to use the assistant.' }]);
+      setCopilotOpen(true);
+      setMessages(prev => [...prev, { role: 'model', text: result.description || 'Not enough credits.' }]);
       return;
     }
 
@@ -349,7 +384,13 @@ const App: React.FC = () => {
       const uniqueColors = deduplicateColorNames(result.colors); 
       handleApplyPalette(uniqueColors); 
       setPaletteName(result.name);
-      setMessages(prev => [...prev, { role: 'model', text: result.description || `Updated palette: "${result.name}"`, palettePreview: uniqueColors }]);
+      setCopilotOpen(true);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        text: result.description || `Updated palette: "${result.name}"`,
+        palettePreview: uniqueColors,
+        creditsSpent: result.creditsSpent,
+      }]);
     } else {
        setMessages(prev => [...prev, { role: 'model', text: `${result.description || "No colors came back."} This reply was not billed.` }]);
     }
@@ -505,22 +546,36 @@ const App: React.FC = () => {
       }
   };
 
-  const handleUpgradeCheckout = async () => {
+  const handleUpgradeCheckout = async (packId: CreditPackId) => {
       setIsCheckoutLoading(true);
+      setCheckoutPack(packId);
       try {
           if (isDemoMode) {
-              await createCheckoutSession('demo');
+              await createCheckoutSession('demo', packId, getCreditWalletId());
               return;
           }
           const billingUser = user ?? await ensureBillingUser();
           setUser(billingUser);
-          await createCheckoutSession(billingUser.uid);
+          await createCheckoutSession(billingUser.uid, packId, getCreditWalletId());
       } catch {
           showToast('Payments are unavailable right now.');
       } finally {
           setIsCheckoutLoading(false);
+          setCheckoutPack(null);
       }
   };
+
+  const creditLabel = isOwner ? 'Owner' : credits === null ? 'Credits' : `${formatCompact(credits)} credits`;
+  const creditExact = isOwner ? 'Owner' : credits === null ? 'Credits' : `${credits} credits`;
+  const renderCreditMeter = () => (
+      isOwner ? (
+          <span className="text-[13px] text-muted-foreground" title={creditExact}>{creditLabel}</span>
+      ) : (
+          <button type="button" onClick={() => setIsPricingOpen(true)} className="text-[13px] text-muted-foreground hover:text-foreground" title={creditExact} aria-label={creditExact}>
+              {creditLabel}
+          </button>
+      )
+  );
 
   const activeColors = activeTab === 'neutrals' ? neutralPalette : activeTab === 'system' ? semanticPalette : palette;
   const workingColors = creationMode === 'manual' ? customColors : palette;
@@ -611,7 +666,9 @@ const App: React.FC = () => {
           className="shrink-0 border-t border-border bg-background px-4 py-3"
           onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
       >
-          <div className={`mx-auto flex w-full max-w-3xl items-end gap-2 ${shellOpen ? '' : 'pl-12 md:pl-0'}`}>
+          <div className={`mx-auto flex w-full max-w-3xl flex-col gap-1 ${shellOpen ? '' : 'pl-12 md:pl-0'}`}>
+              <div className="px-1">{renderCreditMeter()}</div>
+              <div className="flex items-end gap-2">
               <textarea
                   rows={2}
                   className="max-h-40 min-h-[3.25rem] flex-1 resize-none rounded-2xl border border-border bg-card px-3 py-2 text-[15px] text-foreground shadow-panel placeholder:text-muted-foreground focus:outline-none"
@@ -634,6 +691,7 @@ const App: React.FC = () => {
               >
                   <Send className="size-4" strokeWidth={1.5} />
               </button>
+              </div>
           </div>
       </form>
   );
@@ -783,7 +841,8 @@ const App: React.FC = () => {
                   }}
                   aria-label="Palette prompt"
                 />
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between">
+                  {renderCreditMeter()}
                   <button
                     type="submit"
                     disabled={!chatInput.trim()}
@@ -931,6 +990,9 @@ const App: React.FC = () => {
           onInput={setChatInput}
           onSubmit={(text) => { void handleChatSubmit(undefined, text); }}
           loading={isChatLoading}
+          balanceLabel={creditLabel}
+          balanceTitle={creditExact}
+          onCredits={isOwner ? undefined : () => setIsPricingOpen(true)}
         />
       )}
 
@@ -948,7 +1010,7 @@ const App: React.FC = () => {
       {isTunerOpen && <PaletteTunerModal onClose={() => setIsTunerOpen(false)} isPremium initialCode={getTunerCode()} />}
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={200} isPremium />}
       {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} isPremium />}
-      {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} limitType="ai" />}
+      {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} limitType="ai" />}
       {selectedColorForInfo && <ColorInfo color={selectedColorForInfo} onClose={() => setSelectedColorForInfo(null)} />}
       {selectedColorForGrid && <ContrastGrid color={selectedColorForGrid} onClose={() => setSelectedColorForGrid(null)} />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}

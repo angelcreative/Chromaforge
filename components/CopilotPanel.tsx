@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { ChatMessage } from '../types';
+import { formatCompact } from '../services/credits';
 
 export interface CopilotPanelProps {
   open: boolean;
@@ -11,6 +12,9 @@ export interface CopilotPanelProps {
   onInput: (value: string) => void;
   onSubmit: (text?: string) => void;
   loading: boolean;
+  balanceLabel: string;
+  balanceTitle: string;
+  onCredits?: () => void;
 }
 
 const CopilotPanel: React.FC<CopilotPanelProps> = ({
@@ -22,6 +26,9 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   onInput,
   onSubmit,
   loading,
+  balanceLabel,
+  balanceTitle,
+  onCredits,
 }) => (
   <>
     {open && (
@@ -43,6 +50,9 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[90%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground ring-1 ring-border'}`}>
                 {message.text}
+                {message.role === 'model' && typeof message.creditsSpent === 'number' && (
+                  <p className="mt-1 text-[12px] text-muted-foreground" title={`${message.creditsSpent} credits`}>{formatCompact(message.creditsSpent)} credits</p>
+                )}
               </div>
             </div>
           ))}
@@ -55,6 +65,15 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
         >
           Fix a palette
         </button>
+        <div className="mb-2">
+          {onCredits ? (
+            <button type="button" onClick={onCredits} className="text-[13px] text-muted-foreground hover:text-foreground" title={balanceTitle} aria-label={balanceTitle}>
+              {balanceLabel}
+            </button>
+          ) : (
+            <span className="text-[13px] text-muted-foreground" title={balanceTitle}>{balanceLabel}</span>
+          )}
+        </div>
         <div className="flex items-end gap-2">
           <textarea
             rows={2}

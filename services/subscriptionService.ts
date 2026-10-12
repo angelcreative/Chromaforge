@@ -1,10 +1,20 @@
 
 import { db, isDemoMode } from "../firebaseConfig";
 import { collection, addDoc, onSnapshot, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { buildCheckoutSession, type CreditPackId } from "./credits";
 
-// --- CONFIGURATION ---
-// PRODUCTION MODE (LIVE)
-const STRIPE_PRICE_ID = "price_1SkCflABAexLjmUyVPnaKjtq"; 
+interface ViteEnv {
+  env?: Record<string, string | undefined>;
+}
+
+const priceIdForPack = (packId: CreditPackId): string | undefined => {
+  const env = (import.meta as ImportMeta & ViteEnv).env;
+  const value = packId === 'pack_600'
+    ? env?.VITE_STRIPE_PRICE_CREDITS_600
+    : env?.VITE_STRIPE_PRICE_CREDITS_2400;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}; 
 
 export const checkSubscriptionStatus = async (userId: string): Promise<boolean> => {
     if (isDemoMode || !db) return false;
@@ -40,30 +50,27 @@ export const checkSubscriptionStatus = async (userId: string): Promise<boolean> 
     }
 };
 
-export const createCheckoutSession = async (userId: string) => {
+export const createCheckoutSession = async (userId: string, packId: CreditPackId, walletId: string) => {
     if (isDemoMode) {
         alert("In Demo Mode: This would redirect to Stripe Checkout.");
-        return;
-    }
-    
-    if (STRIPE_PRICE_ID.includes("REPLACE_ME")) {
-        alert("CRITICAL ERROR: Stripe Price ID not configured.");
         return;
     }
 
     if (!db) return;
 
     try {
-        const checkoutRef = await addDoc(collection(db, "customers", userId, "checkout_sessions"), {
-            price: STRIPE_PRICE_ID,
-            success_url: window.location.origin,
-            cancel_url: window.location.origin,
+        const session = buildCheckoutSession(packId, {
+            origin: window.location.origin,
+            path: window.location.pathname,
+            walletId,
+            priceId: priceIdForPack(packId),
         });
+        const checkoutRef = await addDoc(collection(db, "customers", userId, "checkout_sessions"), session);
 
         let isRedirecting = false;
         
         const unsubscribe = onSnapshot(checkoutRef, (snap) => {
-            const data = snap.data();
+            const data = snap.data() as { error?: { message?: string }; url?: string } | undefined;
             if (!data) return;
 
             const { error, url } = data;
