@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  BookOpen,
   Copy,
   Download,
   FileDown,
   Heart,
   LayoutGrid,
+  Library,
   Menu,
   Palette,
   PanelLeft,
@@ -180,7 +180,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
         </div>
 
         <nav className="flex-1 overflow-y-auto p-1.5" aria-label="Studio tools">
-          <ToolButton icon={BookOpen} label="Library" onClick={onLibrary} />
+          <ToolButton icon={Library} label="Saved palettes" onClick={onLibrary} />
           <ToolButton icon={Heart} label={saved ? 'Saved' : 'Save palette'} onClick={onSave} disabled={saving} pressed={saved} />
           <ToolButton icon={Pipette} label="Refine color" onClick={onRefine} disabled={!canRefine} />
           <ToolButton icon={Pencil} label="Edit colors" onClick={onEditColors} />
