@@ -214,7 +214,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
 
         {isProcessing ? (
           <div className="flex min-h-64 flex-1 flex-col items-center justify-center gap-3 px-6 py-12" role="status" aria-live="polite" aria-busy="true">
-            <LogoMark animated className="size-16 text-foreground" />
+            <LogoMark motion="loading" className="size-16 text-foreground" />
             <p className="text-[15px] text-muted-foreground">Reading colors</p>
           </div>
         ) : showSelection ? (
