@@ -31,7 +31,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh] relative overflow-hidden">
+      <div className="relative flex min-h-0 max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
         
         <div className="p-6 border-b border-border flex justify-between items-start shrink-0 bg-card z-10">
           <div>
@@ -43,7 +43,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-muted">
+        <div className="min-h-0 flex-auto overflow-y-auto bg-muted p-6 custom-scrollbar">
            {renderContent(data.content)}
         </div>
         

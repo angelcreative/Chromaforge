@@ -42,7 +42,7 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 custom-scrollbar">
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
                     <Loader2 className="size-8 animate-spin text-foreground" strokeWidth={1.5} />

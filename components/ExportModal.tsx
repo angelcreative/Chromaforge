@@ -119,9 +119,9 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="flex max-h-[90vh] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
         
-        <div className="p-6 border-b border-border flex justify-between items-center">
+        <div className="flex shrink-0 items-center justify-between border-b border-border p-6">
           <div>
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                 Export palette
@@ -133,7 +133,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
           </button>
         </div>
 
-        <div className="p-6 flex-1 overflow-hidden flex flex-col">
+        <div className="flex min-h-0 flex-auto flex-col overflow-hidden p-6">
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-4 bg-muted p-1 rounded-lg w-full border border-border">
             {(['skill', 'css', 'scss', 'tailwind', 'json', 'figma', 'ase', 'procreate'] as ExportFormat[]).map(f => {
@@ -156,7 +156,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
           </div>
 
           {/* Content Area */}
-          <div className="relative flex-1 bg-background rounded-lg border border-border overflow-hidden group flex flex-col min-h-[300px]">
+          <div className="group relative flex min-h-0 flex-auto flex-col overflow-hidden rounded-lg border border-border bg-background">
             
             {isBinaryFormat ? (
                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-300">
@@ -177,7 +177,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                  </div>
             ) : (
                 <>
-                    <pre className="p-4 text-xs md:text-sm font-mono text-muted-foreground overflow-auto h-full scrollbar-thin scrollbar-thumb-slate-700 custom-scrollbar">
+                    <pre className="min-h-0 flex-auto overflow-auto p-4 font-mono text-xs text-muted-foreground custom-scrollbar md:text-sm">
                     {code}
                     </pre>
 
