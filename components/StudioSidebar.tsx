@@ -77,7 +77,7 @@ export interface StudioSidebarProps {
 const TABS: { id: PaletteTab; label: string }[] = [
   { id: 'brand', label: 'Brand' },
   { id: 'neutrals', label: 'Neutrals' },
-  { id: 'system', label: 'System' },
+  { id: 'system', label: 'Semantic' },
 ];
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({

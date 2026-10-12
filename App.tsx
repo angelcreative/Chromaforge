@@ -214,17 +214,17 @@ const App: React.FC = () => {
             const single = createColorDataFromHSL(currentHSL.h, currentHSL.s, currentHSL.l);
             setPalette([single]);
         }
-        // Update System Colors based on Wheel
-        setNeutralPalette(generateNeutrals(currentHSL));
-        setSemanticPalette(generateSemantics(currentHSL));
+        const neutrals = generateNeutrals(currentHSL);
+        setNeutralPalette(neutrals);
+        setSemanticPalette(generateSemantics(currentHSL, neutrals));
     } 
     // MANUAL MODE
     else {
         setPalette(customColors);
-        // Update System Colors based on FIRST Custom Color (Primary)
         if (customColors.length > 0) {
-            setNeutralPalette(generateNeutrals(customColors[0].hsl));
-            setSemanticPalette(generateSemantics(customColors[0].hsl));
+            const neutrals = generateNeutrals(customColors[0].hsl);
+            setNeutralPalette(neutrals);
+            setSemanticPalette(generateSemantics(customColors[0].hsl, neutrals));
         }
     }
 
@@ -419,8 +419,8 @@ const App: React.FC = () => {
         }
         // Add Semantics
         if (semanticPalette.length > 0) {
-            data['System'] = {};
-            semanticPalette.forEach(c => data['System'][c.name] = c.hex);
+            data['Semantic'] = {};
+            semanticPalette.forEach(c => data['Semantic'][c.name] = c.hex);
         }
         return JSON.stringify(data, null, 2);
   };
@@ -993,7 +993,7 @@ const App: React.FC = () => {
                   groups={[
                     { id: 'brand', label: 'Brand', colors: palette },
                     { id: 'neutrals', label: 'Neutrals', colors: neutralPalette },
-                    { id: 'system', label: 'System', colors: semanticPalette },
+                    { id: 'system', label: 'Semantic', colors: semanticPalette },
                   ]}
                   onOpenInfo={setSelectedColorForInfo}
                   onOpenGrid={setSelectedColorForGrid}
@@ -1008,7 +1008,7 @@ const App: React.FC = () => {
               {showWork && hasPalette && viewMode !== 'playground' && (
                 <section>
                   <p className="mb-3 text-[13px] text-muted-foreground">
-                    {activeTab === 'neutrals' ? 'Neutrals' : activeTab === 'system' ? 'System' : 'Brand'}
+                    {activeTab === 'neutrals' ? 'Neutrals' : activeTab === 'system' ? 'Semantic' : 'Brand'}
                   </p>
                   {viewMode === 'gradients' ? (
                     <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />

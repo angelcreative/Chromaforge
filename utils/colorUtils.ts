@@ -380,7 +380,7 @@ export const generateHarmonies = (base: ColorHSL, type: string): ColorData[] => 
   return colors;
 };
 
-// --- System Colors Generator ---
+// --- Neutrals and semantic roles ---
 export const generateNeutrals = (base: ColorHSL): ColorData[] => {
     const hue = base.h;
     const tinted = createColorDataFromHSL(hue, 6, 50, "Tinted Neutral");
@@ -388,17 +388,25 @@ export const generateNeutrals = (base: ColorHSL): ColorData[] => {
     return [tinted, gray];
 };
 
-export const generateSemantics = (base: ColorHSL): ColorData[] => {
-    const hues = { success: 145, warning: 45, error: 350, info: 210 };
-    const targetS = Math.max(65, Math.min(95, base.s + 10));
-    const targetL = Math.max(45, Math.min(60, base.l));
+const SEMANTIC_HUES = [
+    { name: 'Success', h: 145 },
+    { name: 'Warning', h: 75 },
+    { name: 'Error', h: 25 },
+    { name: 'Info', h: 255 },
+] as const;
 
-    return [
-        createColorDataFromHSL(hues.success, targetS, targetL, "Success"),
-        createColorDataFromHSL(hues.warning, targetS, targetL, "Warning"),
-        createColorDataFromHSL(hues.error, targetS, targetL, "Error"),
-        createColorDataFromHSL(hues.info, targetS, targetL, "Info"),
-    ];
+const colorFromOklch = (l: number, c: number, h: number, name: string): ColorData => {
+    const rgb = oklchToRgb(l, c, h);
+    return createColorData(rgbToHex(rgb.r, rgb.g, rgb.b), undefined, name);
+};
+
+export const generateSemantics = (base: ColorHSL, neutrals: ColorData[] = []): ColorData[] => {
+    const rgb = hslToRgb(base.h, base.s, base.l);
+    const anchor = rgbToOklch(rgb.r, rgb.g, rgb.b);
+    const roles = SEMANTIC_HUES.map((role) => colorFromOklch(anchor.l, anchor.c, role.h, role.name));
+    const neutral = neutrals[1] ?? neutrals[0];
+    if (neutral) roles.push(createColorData(neutral.hex, undefined, 'Disabled'));
+    return roles;
 };
 
 // --- Shades & Advanced Interpolation ---
