@@ -616,12 +616,10 @@ const App: React.FC = () => {
       }
   };
 
-  const creditLabel = isOwner ? 'Owner' : credits === null ? 'Credits' : `${formatCompact(credits)} credits`;
-  const creditExact = isOwner ? 'Owner' : credits === null ? 'Credits' : `${credits} credits`;
+  const creditLabel = credits === null ? 'Credits' : `${formatCompact(credits)} credits`;
+  const creditExact = credits === null ? 'Credits' : `${credits} credits`;
   const renderCreditMeter = () => (
-      isOwner ? (
-          <span className="text-[13px] text-muted-foreground" title={creditExact}>{creditLabel}</span>
-      ) : (
+      isOwner ? null : (
           <button type="button" onClick={() => setIsPricingOpen(true)} className="text-[13px] text-muted-foreground hover:text-foreground" title={creditExact} aria-label={creditExact}>
               {creditLabel}
           </button>
@@ -719,7 +717,7 @@ const App: React.FC = () => {
           {...enterMotion(reduce)}
       >
           <div className={`mx-auto flex w-full max-w-3xl flex-col gap-1 ${shellOpen ? '' : 'pl-12 md:pl-0'}`}>
-              <div className="px-1">{renderCreditMeter()}</div>
+              {!isOwner && <div className="px-1">{renderCreditMeter()}</div>}
               <div className="flex items-end gap-2">
               <textarea
                   rows={2}
@@ -1030,8 +1028,8 @@ const App: React.FC = () => {
           onInput={setChatInput}
           onSubmit={(text) => { void handleChatSubmit(undefined, text); }}
           loading={isChatLoading}
-          balanceLabel={creditLabel}
-          balanceTitle={creditExact}
+          balanceLabel={isOwner ? '' : creditLabel}
+          balanceTitle={isOwner ? '' : creditExact}
           onCredits={isOwner ? undefined : () => setIsPricingOpen(true)}
         />
       )}

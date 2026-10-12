@@ -66,15 +66,17 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             </motion.div>
           ))}
         </div>
-        <div className="mb-2">
-          {onCredits ? (
-            <button type="button" onClick={onCredits} className="text-[13px] text-muted-foreground hover:text-foreground" title={balanceTitle} aria-label={balanceTitle}>
-              {balanceLabel}
-            </button>
-          ) : (
-            <span className="text-[13px] text-muted-foreground" title={balanceTitle}>{balanceLabel}</span>
-          )}
-        </div>
+        {balanceLabel ? (
+          <div className="mb-2">
+            {onCredits ? (
+              <button type="button" onClick={onCredits} className="text-[13px] text-muted-foreground hover:text-foreground" title={balanceTitle} aria-label={balanceTitle}>
+                {balanceLabel}
+              </button>
+            ) : (
+              <span className="text-[13px] text-muted-foreground" title={balanceTitle}>{balanceLabel}</span>
+            )}
+          </div>
+        ) : null}
         <div className="flex items-end gap-2">
           <textarea
             rows={2}
