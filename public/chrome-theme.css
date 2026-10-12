@@ -221,6 +221,19 @@ body {
 }
 .color-info-pop.is-leaving { animation: color-info-out 120ms ease-in both; }
 
+@keyframes palette-color-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes palette-color-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}
+.palette-color-pop {
+  animation: palette-color-in 160ms ease-out both;
+}
+.palette-color-pop.is-leaving { animation: palette-color-out 120ms ease-in both; }
+
 @media (max-width: 1023px) {
   .drawer-in,
   .drawer-out { animation-name: studio-in; }
@@ -246,7 +259,8 @@ body {
   .dialog-in,
   .dialog-out,
   .swatch-in,
-  .color-info-pop {
+  .color-info-pop,
+  .palette-color-pop {
     animation: none;
   }
   .oklch-dot,
