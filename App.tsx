@@ -1,9 +1,9 @@
 
-import { Pipette, Plus, Send, Upload } from 'lucide-react';
+import { Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex } from './utils/colorUtils';
-import ColorWheel from './components/ColorWheel';
+import RefineDrawer from './components/RefineDrawer';
 import { generatePaletteFromPrompt } from './services/geminiService';
 import ContrastGrid from './components/ContrastGrid';
 import ColorInfo from './components/ColorInfo';
@@ -93,9 +93,11 @@ const App: React.FC = () => {
   // UI State
   const [activeTab, setActiveTab] = useState<PaletteTab>('brand');
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor'); // Default to editor on mobile
-  const [studioPane, setStudioPane] = useState<'composer' | 'refine' | 'colors'>('composer');
+  const [studioPane, setStudioPane] = useState<'composer' | 'colors'>('composer');
   const [shellOpen, setShellOpen] = useState(false);
   const [showWork, setShowWork] = useState(false);
+  const [refineOpen, setRefineOpen] = useState(false);
+  const [refinePad, setRefinePad] = useState(false);
   const [refineIndex, setRefineIndex] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [copilotOpen, setCopilotOpen] = useState(false); 
@@ -110,7 +112,6 @@ const App: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isTunerOpen, setIsTunerOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [localHexInput, setLocalHexInput] = useState('');
   
   // Playground Config State
   const [playgroundConfig, setPlaygroundConfig] = useState<PlaygroundConfig>({
@@ -215,14 +216,17 @@ const App: React.FC = () => {
      setIsSaved(false);
   }, [paletteName]);
 
-  // Sync Hex Input for Generator Mode
-  useEffect(() => { 
-      if (creationMode === 'generator' && palette[0] && palette[0].hex !== localHexInput) {
-          setLocalHexInput(palette[0].hex);
-      }
-  }, [palette[0]?.hex, creationMode]);
-
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isChatLoading, studioPane]);
+
+  useEffect(() => {
+    if (refineOpen) {
+      setRefinePad(true);
+      return;
+    }
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timer = window.setTimeout(() => setRefinePad(false), reduce ? 0 : 180);
+    return () => window.clearTimeout(timer);
+  }, [refineOpen]);
 
   const goHome = () => {
     setStudioPane('composer');
@@ -233,6 +237,7 @@ const App: React.FC = () => {
     setShellOpen(false);
     setCopilotOpen(false);
     setSelectedColorForEdit(null);
+    setRefineOpen(false);
   };
 
   const handleGlobalReset = () => {
@@ -246,18 +251,8 @@ const App: React.FC = () => {
     setStudioPane('composer');
     setShowWork(false);
     setShellOpen(false);
+    setRefineOpen(false);
     showToast("Workspace reset successfully");
-  };
-
-  const handleWheelChange = (hsl: ColorHSL) => { setBaseColor(hsl); if (harmony === 'custom') setHarmony('monochromatic'); };
-  
-  const handleManualHexInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.toUpperCase();
-    setLocalHexInput(val);
-    if (/^#[0-9A-F]{6}$/i.test(val)) {
-      const hsl = hexToHsl(val); setBaseColor(hsl); setBrightness(hsl.l);
-      if (harmony === 'custom') setHarmony('monochromatic');
-    }
   };
 
   // --- MANUAL MODE HANDLERS ---
@@ -296,22 +291,6 @@ const App: React.FC = () => {
       setShellOpen(true);
       setStudioPane('composer');
       showToast(`Imported ${colors.length} colors`);
-  };
-
-  const handleEyeDropper = async () => {
-      if (!window.EyeDropper) { showToast("EyeDropper API not supported."); return; }
-      try {
-          const eyeDropper = new window.EyeDropper(); const result = await eyeDropper.open();
-          
-          if (creationMode === 'generator') {
-             const hsl = hexToHsl(result.sRGBHex); setBaseColor(hsl); setBrightness(hsl.l);
-             if (harmony === 'custom') setHarmony('monochromatic');
-          } else {
-             // Manual Mode: Update first color or add new? Update first is safer interaction context.
-             const newColor = createColorData(result.sRGBHex);
-             handleUpdateCustomColor(0, newColor);
-          }
-      } catch (e) { console.log("EyeDropper cancelled"); }
   };
 
   const handleApplyPalette = (colors: ColorData[]) => {
@@ -555,7 +534,6 @@ const App: React.FC = () => {
     setStudioPane('composer');
   };
   const pendingRequest = [...messages].reverse().find((message) => message.role === 'user')?.text ?? '';
-  const HarmonyButton = ({ type, label }: { type: HarmonyType, label: string }) => (<button onClick={() => setHarmony(type)} className={`flex h-9 items-center justify-center rounded-lg border transition-colors ${harmony === type ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground hover:bg-accent border-border'}`}><span className="text-[13px]">{label}</span></button>);
 
   const openColors = () => {
     if (creationMode === 'generator') {
@@ -569,59 +547,35 @@ const App: React.FC = () => {
     setStudioPane('colors');
   };
 
-  const openRefine = (index = 0) => {
+  const openRefine = () => {
     const list = creationMode === 'manual' ? customColors : palette;
     if (list.length === 0) return;
-    const safe = Math.min(Math.max(index, 0), list.length - 1);
-    setRefineIndex(safe);
-    setLocalHexInput(list[safe].hex.toUpperCase());
+    const preferred = creationMode === 'manual' ? playgroundConfig.primaryIndex : 0;
+    setRefineIndex(Math.min(Math.max(preferred, 0), list.length - 1));
     setShowWork(true);
-    setStudioPane('refine');
+    setRefineOpen(true);
   };
 
-  const refineLightness = creationMode === 'generator'
-    ? brightness
-    : (customColors[refineIndex]?.hsl.l ?? brightness);
-
-  const handleRefineWheel = (hsl: ColorHSL) => {
-    if (creationMode === 'generator') {
-      setBaseColor(hsl);
-      if (harmony === 'custom') setHarmony('monochromatic');
-      return;
-    }
-    setCustomColors(prev => prev.map((color, index) => {
-      if (index !== refineIndex) return color;
-      const next = createColorDataFromHSL(hsl.h, hsl.s, hsl.l, color.name);
-      return { ...next, scaleConfig: color.scaleConfig };
-    }));
-    setLocalHexInput(createColorDataFromHSL(hsl.h, hsl.s, hsl.l).hex.toUpperCase());
-  };
-
-  const setRefineLightness = (value: number) => {
-    if (creationMode === 'generator') {
-      setBrightness(value);
-      return;
-    }
-    const current = customColors[refineIndex];
+  const applyRefineHex = (hex: string) => {
+    if (!/^#[0-9A-F]{6}$/i.test(hex)) return;
+    const source = creationMode === 'manual' ? customColors : palette;
+    const index = Math.min(Math.max(refineIndex, 0), Math.max(source.length - 1, 0));
+    const current = source[index];
     if (!current) return;
-    handleRefineWheel({ ...current.hsl, l: value });
-  };
-
-  const refineBase: ColorHSL = creationMode === 'generator'
-    ? baseColor
-    : (customColors[refineIndex]?.hsl ?? baseColor);
-
-  const pickRefineFromScreen = async () => {
-    if (!window.EyeDropper) return;
-    try {
-      const eyeDropper = new window.EyeDropper();
-      const result = await eyeDropper.open();
-      const hsl = hexToHsl(result.sRGBHex);
-      handleRefineWheel({ ...hsl, l: refineLightness });
-      setLocalHexInput(result.sRGBHex.toUpperCase());
-    } catch {
-      /* cancelled */
+    const next = createColorData(hex, current.scaleConfig, current.name);
+    if (creationMode === 'manual') {
+      setCustomColors(prev => prev.map((color, i) => i === index ? next : color));
+    } else if (index === 0) {
+      const hsl = hexToHsl(hex);
+      setBaseColor(hsl);
+      setBrightness(hsl.l);
+      if (harmony === 'custom') setHarmony('monochromatic');
+    } else {
+      setCustomColors(source.map((color, i) => i === index ? next : color));
+      setCreationMode('manual');
     }
+    setPlaygroundConfig(prev => prev.primaryIndex === index ? prev : { ...prev, primaryIndex: index });
+    setIsSaved(false);
   };
 
   // --- RENDER LOGIC ---
@@ -741,8 +695,8 @@ const App: React.FC = () => {
           onSave={handleSavePalette}
           saved={isSaved}
           saving={isSaving}
-          refineOpen={studioPane === 'refine'}
-          onRefine={() => { if (studioPane === 'refine') setStudioPane('composer'); else openRefine(0); }}
+          refineOpen={refineOpen}
+          onRefine={() => { if (refineOpen) setRefineOpen(false); else openRefine(); }}
           onCopySkill={handleCopySkill}
           onDownloadSkill={handleDownloadSkill}
           printOn={isPrintMode}
@@ -756,81 +710,9 @@ const App: React.FC = () => {
           onSavedPalettes={handleOpenLibrary}
       />
 
-      <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${selectedColorForEdit ? 'lg:pr-[380px]' : ''}`}>
+      <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>
       <div key={viewKey} className="studio-in flex min-h-0 flex-1 flex-col">
-      {studioPane === 'refine' ? (
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-16">
-            <div>
-              <h2 className="text-2xl font-medium tracking-tight">Refine color</h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">Adjust this color, then return to the composer and the ramp.</p>
-            </div>
-            {creationMode === 'manual' && customColors.length > 1 && (
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Color to refine">
-                {customColors.map((color, index) => (
-                  <button
-                    key={`${color.hex}-${index}`}
-                    type="button"
-                    onClick={() => { setRefineIndex(index); setLocalHexInput(color.hex.toUpperCase()); }}
-                    className={`h-10 w-10 rounded-lg ring-2 ring-offset-2 ring-offset-background ${refineIndex === index ? 'ring-foreground' : 'ring-transparent'}`}
-                    style={{ backgroundColor: color.hex }}
-                    aria-label={color.name}
-                    aria-pressed={refineIndex === index}
-                  />
-                ))}
-              </div>
-            )}
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
-              <div className="size-10 rounded-lg ring-1 ring-border" style={{ backgroundColor: creationMode === 'manual' ? customColors[refineIndex]?.hex : palette[0]?.hex }} />
-              <input
-                type="text"
-                value={localHexInput}
-                onChange={(e) => {
-                  const val = e.target.value.toUpperCase();
-                  setLocalHexInput(val);
-                  if (/^#[0-9A-F]{6}$/i.test(val)) handleRefineWheel(hexToHsl(val));
-                }}
-                className="min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground focus:outline-none"
-                aria-label="Hex"
-              />
-              <button type="button" onClick={pickRefineFromScreen} className="grid size-9 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground" aria-label="Pick color from screen">
-                <Pipette className="size-4" strokeWidth={1.5} />
-              </button>
-            </div>
-            <div>
-              <div className="mb-1.5 flex justify-between text-[13px] text-muted-foreground">
-                <label htmlFor="refine-lightness">Luminance</label>
-                <span className="font-mono text-foreground">{Math.round(refineLightness)}%</span>
-              </div>
-              <input id="refine-lightness" type="range" min={0} max={100} value={refineLightness} onChange={(e) => setRefineLightness(Number(e.target.value))} className="w-full" />
-            </div>
-            <div className="flex justify-center">
-              <ColorWheel
-                mode="wheel"
-                baseColor={refineBase}
-                onChange={handleRefineWheel}
-                brightness={refineLightness}
-                isPrintMode={isPrintMode}
-                isMixing={false}
-                harmonyColors={creationMode === 'generator' ? palette.slice(1) : []}
-              />
-            </div>
-            {creationMode === 'generator' && (
-              <div className="grid grid-cols-3 gap-2">
-                <HarmonyButton type="monochromatic" label="Mono" />
-                <HarmonyButton type="analogous" label="Analog" />
-                <HarmonyButton type="complementary" label="Complement" />
-                <HarmonyButton type="split-complementary" label="Split" />
-                <HarmonyButton type="triadic" label="Triad" />
-                <HarmonyButton type="square" label="Square" />
-              </div>
-            )}
-            <button type="button" onClick={() => setStudioPane('composer')} className="h-11 rounded-xl bg-primary text-[13px] text-primary-foreground hover:opacity-90">
-              Done
-            </button>
-          </div>
-        </div>
-      ) : studioPane === 'colors' ? (
+      {studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">
             <div>
@@ -1022,6 +904,22 @@ const App: React.FC = () => {
       )}
       </div>
       </div>
+
+      {workingColors.length > 0 && (
+        <RefineDrawer
+          open={refineOpen}
+          color={workingColors[Math.min(refineIndex, workingColors.length - 1)]}
+          globalConfig={globalCurveConfig}
+          siblings={creationMode === 'manual' ? customColors : undefined}
+          colorIndex={Math.min(refineIndex, Math.max(workingColors.length - 1, 0))}
+          onSelectColor={(index) => {
+            setRefineIndex(index);
+            setPlaygroundConfig((prev) => ({ ...prev, primaryIndex: index }));
+          }}
+          onClose={() => setRefineOpen(false)}
+          onChange={applyRefineHex}
+        />
+      )}
 
       {paletteOpen && (
         <CopilotPanel

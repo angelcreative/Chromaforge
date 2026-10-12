@@ -189,6 +189,43 @@ export const oklchToRgb = (l: number, c: number, h: number): ColorRGB => {
     return { r, g, b };
 };
 
+const oklchToLinear = (l: number, c: number, h: number) => {
+    const hRad = h * Math.PI / 180;
+    const a = c * Math.cos(hRad);
+    const b_ = c * Math.sin(hRad);
+    const l_ = l + 0.3963377774 * a + 0.2158037573 * b_;
+    const m_ = l - 0.1055613458 * a - 0.0638541728 * b_;
+    const s_ = l - 0.0894841775 * a - 1.2914855480 * b_;
+    const l__ = l_ * l_ * l_;
+    const m__ = m_ * m_ * m_;
+    const s__ = s_ * s_ * s_;
+    return {
+        r: 4.0767416621 * l__ - 3.3077115913 * m__ + 0.2309699292 * s__,
+        g: -1.2684380046 * l__ + 2.6097574011 * m__ - 0.3413193965 * s__,
+        b: -0.0041960863 * l__ - 0.7034186147 * m__ + 1.7076147010 * s__,
+    };
+};
+
+export const oklchInGamut = (l: number, c: number, h: number): boolean => {
+    const { r, g, b } = oklchToLinear(l, c, h);
+    const eps = 1e-4;
+    return r >= -eps && r <= 1 + eps && g >= -eps && g <= 1 + eps && b >= -eps && b <= 1 + eps;
+};
+
+/** Highest chroma that stays inside sRGB at this lightness and hue. */
+export const maxOklchChroma = (l: number, h: number): number => {
+    if (!oklchInGamut(l, 0, h)) return 0;
+    let lo = 0;
+    let hi = 0.4;
+    if (oklchInGamut(l, hi, h)) return hi;
+    for (let i = 0; i < 14; i++) {
+        const mid = (lo + hi) / 2;
+        if (oklchInGamut(l, mid, h)) lo = mid;
+        else hi = mid;
+    }
+    return lo;
+};
+
 
 // --- Luminance & Contrast ---
 

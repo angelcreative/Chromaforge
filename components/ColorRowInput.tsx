@@ -1,5 +1,5 @@
 
-import { Check, Pencil, Pipette, RotateCcw, Trash2, X } from 'lucide-react';
+import { Check, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { ColorData, ColorHSL } from '../types';
 import { hexToHsl, hslToRgb, rgbToHex, createColorDataFromHSL, hslToHsb, hsbToHsl } from '../utils/colorUtils';
@@ -115,21 +115,6 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
       onChange(newData);
   };
 
-  const handleEyeDropper = async () => {
-      if (!window.EyeDropper) return;
-      try {
-          const eyeDropper = new window.EyeDropper();
-          const result = await eyeDropper.open();
-          
-          const newHsl = hexToHsl(result.sRGBHex);
-          setBaseLuminance(newHsl.l);
-          const newData = createColorDataFromHSL(newHsl.h, newHsl.s, newHsl.l, color.name);
-          onChange(newData);
-      } catch (e) {
-          console.log("EyeDropper cancelled");
-      }
-  };
-
   const hasLuminanceChanged = Math.abs(localLuminance - baseLuminance) > 1;
 
   return (
@@ -172,11 +157,9 @@ const ColorRowInput: React.FC<ColorRowInputProps> = ({ color, onChange, onDelete
                         type="text" 
                         className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-mono text-foreground placeholder:text-muted-foreground" 
                         value={inputValue} 
-                        onChange={handleTextChange} 
+                        onChange={handleTextChange}
+                        aria-label="Color value"
                     />
-                    <button onClick={handleEyeDropper} className="p-1.5 text-muted-foreground hover:text-foreground bg-background rounded-md border border-border hover:bg-secondary transition-colors" title="Pick Color from Screen">
-                        <Pipette className="w-3.5 h-3.5" strokeWidth={1.5}/>
-                    </button>
                 </div>
             </div>
 

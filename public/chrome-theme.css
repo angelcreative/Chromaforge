@@ -121,6 +121,8 @@ body {
 .shell-out { animation: studio-in-left 180ms ease-out reverse both; }
 .drawer-in { animation: studio-in-right 200ms ease-out both; }
 .drawer-out { animation: studio-in-right 180ms ease-out reverse both; }
+.refine-drawer-in { animation: studio-in-right 180ms ease-out both; }
+.refine-drawer-out { animation: studio-in-right 160ms ease-out reverse both; }
 .logo-mark {
   transform-box: view-box;
   transform-origin: center;
@@ -192,6 +194,8 @@ body {
   .shell-out,
   .drawer-in,
   .drawer-out,
+  .refine-drawer-in,
+  .refine-drawer-out,
   .logo-mark,
   .logo-mark--enter,
   .logo-mark--loading,
