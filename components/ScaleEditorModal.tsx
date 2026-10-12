@@ -115,31 +115,31 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col md:flex-row max-h-[90vh] overflow-hidden">
+      <div className="bg-background border border-border rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col md:flex-row max-h-[90vh] overflow-hidden">
         
         {/* Left: Visualization (The "Wheel") */}
-        <div className="w-full md:w-1/2 bg-slate-900/50 p-6 md:p-8 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 min-h-[500px]">
+        <div className="w-full md:w-1/2 bg-muted p-6 md:p-8 flex flex-col border-b md:border-b-0 md:border-r border-border min-h-[500px]">
              
              {/* Header Section */}
              <div className="flex justify-between items-start shrink-0 mb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                    <h2 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
                         {color.name}
                         {!isPremium && usageCount !== undefined && limit !== undefined && (
-                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${usageCount >= limit ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-slate-700 text-slate-500'}`}>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${usageCount >= limit ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-border text-muted-foreground'}`}>
                                 {usageCount}/{limit}
                             </span>
                         )}
                     </h2>
-                    <p className="text-sm text-slate-500 font-mono mt-1">Hue & Saturation Path</p>
+                    <p className="text-sm text-muted-foreground font-mono mt-1">Hue & Saturation Path</p>
                 </div>
                 
                 <button 
                     onClick={() => setIsZoomed(!isZoomed)}
                     className={`text-[10px] px-3 py-1.5 rounded-lg border font-bold tracking-wider transition-all flex items-center gap-2 ${
                         isZoomed 
-                        ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20' 
-                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:border-slate-600'
+                        ? 'bg-accent text-foreground border-primary hover:opacity-90/20' 
+                        : 'bg-secondary text-muted-foreground border-border hover:text-foreground hover:border-border'
                     }`}
                 >
                     {isZoomed ? (
@@ -160,7 +160,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                         width={size} 
                         height={size} 
                         viewBox={viewBox} 
-                        className="overflow-hidden bg-slate-950/50 rounded-full shadow-inner ring-1 ring-white/5 transition-[viewBox] duration-500 ease-in-out cursor-pointer"
+                        className="overflow-hidden bg-muted rounded-full shadow-inner ring-1 ring-white/5 transition-[viewBox] duration-500 ease-in-out cursor-pointer"
                         onClick={() => setActiveShade(null)} 
                     >
                         <defs>
@@ -235,15 +235,15 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                     <div className="absolute -bottom-6 w-full text-center pointer-events-none h-6">
                         {activeShadeData ? (
                             <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-1 duration-200">
-                                <span className="text-[11px] font-bold text-white tracking-widest uppercase">
+                                <span className="text-[11px] font-bold text-foreground tracking-widest uppercase">
                                     SHADE {activeShadeData.level}
                                 </span>
-                                <span className="text-[9px] font-mono text-slate-400">
+                                <span className="text-[9px] font-mono text-muted-foreground">
                                     {activeShadeData.hex}
                                 </span>
                             </div>
                         ) : (
-                            <span className="text-[9px] text-slate-500 font-mono tracking-widest uppercase opacity-50">
+                            <span className="text-[9px] text-muted-foreground font-mono tracking-widest uppercase opacity-50">
                                 {isZoomed ? "Focused View (H/S)" : "Full Polar Projection"}
                             </span>
                         )}
@@ -253,12 +253,12 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
              
              {/* Strip Preview Footer */}
              <div className="shrink-0 w-full pt-8">
-                <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold mb-2 px-1">
+                <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold mb-2 px-1">
                     <span>Dark (950)</span>
                     <span>Base (500)</span>
                     <span>Light (50)</span>
                 </div>
-                <div className="h-4 w-full flex rounded-full overflow-hidden ring-1 ring-white/10 bg-slate-900">
+                <div className="h-4 w-full flex rounded-full overflow-hidden ring-1 ring-border bg-card">
                     {[...shades].reverse().map(s => {
                         const isActive = activeShade === s.level;
                         return (
@@ -276,20 +276,20 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
         </div>
 
         {/* Right: Controls */}
-        <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col h-full bg-slate-950 overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col h-full bg-background overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center mb-8 shrink-0">
                 
                 {/* Engine Toggle Switch */}
-                <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
+                <div className="flex bg-card p-1 rounded-lg border border-border">
                     <button 
                         onClick={() => setConfig({ ...config, mode: 'curves' })}
-                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${!config.mode || config.mode === 'curves' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-white'}`}
+                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${!config.mode || config.mode === 'curves' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         Curve Engine
                     </button>
                     <button 
                         onClick={() => setConfig({ ...config, mode: 'linear' })}
-                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${config.mode === 'linear' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-white'}`}
+                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${config.mode === 'linear' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         Linear Blend
                     </button>
@@ -297,10 +297,10 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
 
                 <button 
                     onClick={onClose} 
-                    className="group flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-white transition-colors"
+                    className="group flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                     Close
-                    <div className="p-1 rounded-full bg-slate-900 group-hover:bg-slate-800 border border-slate-800 group-hover:border-slate-700 transition-colors">
+                    <div className="p-1 rounded-full bg-card group-hover:bg-secondary border border-border group-hover:border-border transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </div>
                 </button>
@@ -311,18 +311,18 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                  {/* MODE: LINEAR BLEND */}
                  {config.mode === 'linear' && config.linearConfig && (
                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                         <div className="p-4 rounded-xl bg-slate-900 border border-indigo-500/20 shadow-inner">
-                             <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                         <div className="p-4 rounded-xl bg-card border border-primary/20 shadow-inner">
+                             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                                  <b>Linear Mode:</b> Generates a perfectly straight mathematical path between two points in perceptual color space. Ideal for fixing sparse palettes (e.g. 100-900 ranges) or creating strict 2-point ramps.
                              </p>
                              
                              <div className="grid grid-cols-2 gap-4">
                                  {/* Start Color Inputs */}
                                  <div className="space-y-2">
-                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Start Color (Light)</label>
+                                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Start Color (Light)</label>
                                      <div className="space-y-1">
-                                         <div className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5">
-                                             <span className="text-[10px] font-mono text-slate-500 w-4">L</span>
+                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
+                                             <span className="text-[10px] font-mono text-muted-foreground w-4">L</span>
                                              <input 
                                                 type="number" step="1" min="0" max="100"
                                                 value={Math.round(config.linearConfig.start.l * 100)}
@@ -330,11 +330,11 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                                     ...config, 
                                                     linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, l: Number(e.target.value) / 100 } }
                                                 })}
-                                                className="bg-transparent w-full text-xs font-mono text-white focus:outline-none"
+                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
                                              />
                                          </div>
-                                         <div className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5">
-                                             <span className="text-[10px] font-mono text-slate-500 w-4">C</span>
+                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
+                                             <span className="text-[10px] font-mono text-muted-foreground w-4">C</span>
                                              <input 
                                                 type="number" step="0.01" min="0" max="0.4"
                                                 value={config.linearConfig.start.c}
@@ -342,11 +342,11 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                                     ...config, 
                                                     linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, c: Number(e.target.value) } }
                                                 })}
-                                                className="bg-transparent w-full text-xs font-mono text-white focus:outline-none"
+                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
                                              />
                                          </div>
-                                         <div className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5">
-                                             <span className="text-[10px] font-mono text-slate-500 w-4">H</span>
+                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
+                                             <span className="text-[10px] font-mono text-muted-foreground w-4">H</span>
                                              <input 
                                                 type="number" step="1" min="0" max="360"
                                                 value={Math.round(config.linearConfig.start.h)}
@@ -354,7 +354,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                                     ...config, 
                                                     linearConfig: { ...config.linearConfig!, start: { ...config.linearConfig!.start, h: Number(e.target.value) } }
                                                 })}
-                                                className="bg-transparent w-full text-xs font-mono text-white focus:outline-none"
+                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
                                              />
                                          </div>
                                      </div>
@@ -362,10 +362,10 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
 
                                  {/* End Color Inputs */}
                                  <div className="space-y-2">
-                                     <label className="text-[10px] font-bold text-slate-500 uppercase">End Color (Dark)</label>
+                                     <label className="text-[10px] font-bold text-muted-foreground uppercase">End Color (Dark)</label>
                                      <div className="space-y-1">
-                                         <div className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5">
-                                             <span className="text-[10px] font-mono text-slate-500 w-4">L</span>
+                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
+                                             <span className="text-[10px] font-mono text-muted-foreground w-4">L</span>
                                              <input 
                                                 type="number" step="1" min="0" max="100"
                                                 value={Math.round(config.linearConfig.end.l * 100)}
@@ -373,11 +373,11 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                                     ...config, 
                                                     linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, l: Number(e.target.value) / 100 } }
                                                 })}
-                                                className="bg-transparent w-full text-xs font-mono text-white focus:outline-none"
+                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
                                              />
                                          </div>
-                                         <div className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5">
-                                             <span className="text-[10px] font-mono text-slate-500 w-4">C</span>
+                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
+                                             <span className="text-[10px] font-mono text-muted-foreground w-4">C</span>
                                              <input 
                                                 type="number" step="0.01" min="0" max="0.4"
                                                 value={config.linearConfig.end.c}
@@ -385,11 +385,11 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                                     ...config, 
                                                     linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, c: Number(e.target.value) } }
                                                 })}
-                                                className="bg-transparent w-full text-xs font-mono text-white focus:outline-none"
+                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
                                              />
                                          </div>
-                                         <div className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5">
-                                             <span className="text-[10px] font-mono text-slate-500 w-4">H</span>
+                                         <div className="flex items-center gap-2 bg-background p-2 rounded border border-border">
+                                             <span className="text-[10px] font-mono text-muted-foreground w-4">H</span>
                                              <input 
                                                 type="number" step="1" min="0" max="360"
                                                 value={Math.round(config.linearConfig.end.h)}
@@ -397,7 +397,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                                     ...config, 
                                                     linearConfig: { ...config.linearConfig!, end: { ...config.linearConfig!.end, h: Number(e.target.value) } }
                                                 })}
-                                                className="bg-transparent w-full text-xs font-mono text-white focus:outline-none"
+                                                className="bg-transparent w-full text-xs font-mono text-foreground focus:outline-none"
                                              />
                                          </div>
                                      </div>
@@ -411,32 +411,32 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                  {(!config.mode || config.mode === 'curves') && (
                     <div className="space-y-10 animate-in slide-in-from-left-4 duration-300">
                         {/* OKLCH Toggle */}
-                        <div className="flex items-center justify-between p-3 bg-slate-900 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-all">
+                        <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-border hover:border-primary transition-all">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-white uppercase">Use OKLCH Engine</span>
+                                    <span className="text-xs font-bold text-foreground uppercase">Use OKLCH Engine</span>
                                 </div>
-                                <p className="text-[10px] text-slate-500 mt-1">Perceptually uniform brightness distribution. Highly recommended.</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">Perceptually uniform brightness distribution. Highly recommended.</p>
                             </div>
                             <button 
                                 onClick={() => setConfig({ ...config, useOkLCH: !config.useOkLCH })}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config.useOkLCH ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config.useOkLCH ? 'bg-primary' : 'bg-accent'}`}
                             >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${config.useOkLCH ? 'translate-x-6' : 'translate-x-1'}`} />
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-primary-foreground transition duration-200 ease-in-out ${config.useOkLCH ? 'translate-x-6' : 'translate-x-1'}`} />
                             </button>
                         </div>
 
                         {/* Hue Shift Control */}
                         <div className="relative">
                             <div className="flex justify-between mb-4 items-end">
-                                <label className="text-base font-medium text-white">Hue Rotation</label>
-                                <span className={`text-sm font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800 ${config.hueShift !== 0 ? 'text-indigo-400 border-indigo-500/30' : 'text-slate-500'}`}>
+                                <label className="text-base font-medium text-foreground">Hue Rotation</label>
+                                <span className={`text-sm font-mono px-2 py-1 rounded bg-card border border-border ${config.hueShift !== 0 ? 'text-foreground border-primary' : 'text-muted-foreground'}`}>
                                     {config.hueShift > 0 ? '+' : ''}{config.hueShift}°
                                 </span>
                             </div>
                             
                             <div className="relative h-12 flex items-center">
-                                <div className="absolute w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="absolute w-full h-2 bg-secondary rounded-full overflow-hidden">
                                     <div className="absolute w-full h-full bg-gradient-to-r from-cyan-500 via-slate-700 to-orange-500 opacity-20"></div>
                                 </div>
                                 <input 
@@ -452,14 +452,14 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                     className="absolute h-5 w-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none transition-all duration-75"
                                     style={{ left: `calc(${((config.hueShift + 60) / 120) * 100}% - 10px)` }}
                                 >
-                                    <div className="absolute inset-0 rounded-full bg-indigo-500 opacity-20 animate-ping"></div>
+                                    <div className="absolute inset-0 rounded-full bg-primary opacity-20 animate-ping"></div>
                                 </div>
                             </div>
-                            <div className="flex justify-between text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-1">
+                            <div className="flex justify-between text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1">
                                 <span>Cooler</span>
                                 <span>Warmer</span>
                             </div>
-                            <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
                                 Shifts the hue as the color gets darker/lighter to create natural, vibrant gradients.
                             </p>
                         </div>
@@ -467,14 +467,14 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                         {/* Saturation Boost Control */}
                         <div>
                             <div className="flex justify-between mb-4 items-end">
-                                <label className="text-base font-medium text-white">Saturation Curve</label>
-                                <span className={`text-sm font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800 ${config.saturationBoost !== 0 ? 'text-pink-400 border-pink-500/30' : 'text-slate-500'}`}>
+                                <label className="text-base font-medium text-foreground">Saturation Curve</label>
+                                <span className={`text-sm font-mono px-2 py-1 rounded bg-card border border-border ${config.saturationBoost !== 0 ? 'text-pink-400 border-pink-500/30' : 'text-muted-foreground'}`}>
                                     {config.saturationBoost > 0 ? '+' : ''}{config.saturationBoost}%
                                 </span>
                             </div>
                             
                             <div className="relative h-12 flex items-center">
-                                <div className="absolute w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="absolute w-full h-2 bg-secondary rounded-full overflow-hidden">
                                     <div className="absolute left-1/2 top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent to-pink-500 opacity-20"></div>
                                     <div className="absolute right-1/2 top-0 bottom-0 w-1/2 bg-gradient-to-l from-transparent to-slate-500 opacity-20"></div>
                                 </div>
@@ -492,11 +492,11 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                     style={{ left: `calc(${((config.saturationBoost + 100) / 200) * 100}% - 10px)` }}
                                 />
                             </div>
-                            <div className="flex justify-between text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-1">
+                            <div className="flex justify-between text-[11px] text-muted-foreground font-medium uppercase tracking-wider mt-1">
                                 <span>Flatten</span>
                                 <span>Boost Mids</span>
                             </div>
-                            <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
                                 Adjusts saturation/chroma in the mid-tones. Boosting prevents colors from looking "washed out".
                             </p>
                         </div>
@@ -504,8 +504,8 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                         {/* Lightness Easing */}
                         <div className={`transition-opacity duration-300 ${config.useOkLCH ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
                             <div className="flex justify-between items-center mb-4">
-                                <label className="text-base font-medium text-white block">Lightness Distribution</label>
-                                {config.useOkLCH && <span className="text-[10px] text-indigo-400">Handled by OKLCH</span>}
+                                <label className="text-base font-medium text-foreground block">Lightness Distribution</label>
+                                {config.useOkLCH && <span className="text-[10px] text-foreground">Handled by OKLCH</span>}
                             </div>
                             <div className="grid grid-cols-4 gap-3">
                                 {(['linear', 'ease-in', 'ease-out', 'ease-in-out'] as const).map((mode) => (
@@ -515,7 +515,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                                         className={`py-3 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wide transition-all border ${
                                             config.lightnessEase === mode 
                                             ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' 
-                                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200'
+                                            : 'bg-card text-muted-foreground border-border hover:border-border hover:text-foreground'
                                         }`}
                                     >
                                         {mode.replace('-', ' ')}
@@ -528,16 +528,16 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
             </div>
 
             {/* Actions */}
-            <div className="pt-8 mt-auto border-t border-slate-800 flex gap-4 shrink-0">
+            <div className="pt-8 mt-auto border-t border-border flex gap-4 shrink-0">
                 <button 
                     onClick={onClose}
-                    className="flex-1 py-4 text-sm font-medium text-slate-400 hover:text-white transition rounded-xl hover:bg-slate-900 border border-transparent hover:border-slate-800"
+                    className="flex-1 py-4 text-sm font-medium text-muted-foreground hover:text-foreground transition rounded-xl hover:bg-card border border-transparent hover:border-border"
                 >
                     Discard
                 </button>
                 <button 
                     onClick={handleSave}
-                    className="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 transform active:scale-[0.98]"
+                    className="flex-[2] py-4 bg-primary hover:opacity-90 text-primary-foreground text-sm font-bold rounded-xl shadow-lg shadow-none transition-all flex items-center justify-center gap-2 transform active:scale-[0.98]"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     Apply Changes

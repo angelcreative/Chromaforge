@@ -21,8 +21,10 @@ export const resolveTheme = (pref: ThemePreference): 'light' | 'dark' => {
 export const applyThemePreference = (pref: ThemePreference) => {
   if (typeof document === 'undefined') return;
   const resolved = resolveTheme(pref);
-  document.documentElement.dataset.theme = resolved;
-  document.documentElement.style.colorScheme = resolved;
+  const root = document.documentElement;
+  root.dataset.theme = resolved;
+  root.style.colorScheme = resolved;
+  root.classList.toggle('dark', resolved === 'dark');
 };
 
 export const writeThemePreference = (pref: ThemePreference) => {

@@ -119,23 +119,23 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
         
-        <div className="p-6 border-b border-white/5 flex justify-between items-center">
+        <div className="p-6 border-b border-border flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                 Export palette
             </h2>
-            <p className="text-xs text-slate-500 font-mono mt-1">{displayName}</p>
+            <p className="text-xs text-muted-foreground font-mono mt-1">{displayName}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
             <HiX className="w-6 h-6" />
           </button>
         </div>
 
         <div className="p-6 flex-1 overflow-hidden flex flex-col">
           {/* Tabs */}
-          <div className="flex flex-wrap gap-2 mb-4 bg-slate-950/50 p-1 rounded-lg w-full border border-white/5">
+          <div className="flex flex-wrap gap-2 mb-4 bg-muted p-1 rounded-lg w-full border border-border">
             {(['skill', 'css', 'scss', 'tailwind', 'json', 'figma', 'ase', 'procreate'] as ExportFormat[]).map(f => {
                 if (groups && f === 'procreate') return null;
                 
@@ -145,8 +145,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                     onClick={() => setFormat(f)}
                     className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all ${f === 'skill' ? 'normal-case' : 'uppercase'} ${
                       format === f 
-                      ? 'bg-indigo-600 text-white shadow-md' 
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      ? 'bg-primary text-primary-foreground shadow-md' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                     }`}
                   >
                     {FORMAT_LABELS[f] || f}
@@ -156,20 +156,20 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
           </div>
 
           {/* Content Area */}
-          <div className="relative flex-1 bg-slate-950 rounded-lg border border-slate-800 overflow-hidden group flex flex-col min-h-[300px]">
+          <div className="relative flex-1 bg-background rounded-lg border border-border overflow-hidden group flex flex-col min-h-[300px]">
             
             {isBinaryFormat ? (
                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-300">
-                     <div className="w-20 h-20 bg-slate-900/50 rounded-3xl flex items-center justify-center mb-6 border border-slate-800 shadow-2xl ring-1 ring-white/5 group-hover:scale-110 transition-transform duration-500">
-                        <HiDownload className="w-10 h-10 text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+                     <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mb-6 border border-border shadow-2xl ring-1 ring-white/5 group-hover:scale-110 transition-transform duration-500">
+                        <HiDownload className="w-10 h-10 text-foreground drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
                      </div>
-                     <h3 className="text-white font-bold text-xl mb-2 tracking-tight">Adobe Swatch Exchange (.ASE)</h3>
-                     <p className="text-slate-500 text-sm mb-8 max-w-[280px] leading-relaxed">
+                     <h3 className="text-foreground font-bold text-xl mb-2 tracking-tight">Adobe Swatch Exchange (.ASE)</h3>
+                     <p className="text-muted-foreground text-sm mb-8 max-w-[280px] leading-relaxed">
                         Binary format compatible with Adobe Photoshop, Illustrator, and InDesign.
                      </p>
                      <button 
                         onClick={handleDownload}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-indigo-500/20 transition-all flex items-center gap-3 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 border border-indigo-400/20"
+                        className="bg-primary hover:opacity-90 text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-none transition-all flex items-center gap-3 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 "
                      >
                         <HiDownload className="w-5 h-5" />
                         Download .ASE File
@@ -177,14 +177,14 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                  </div>
             ) : (
                 <>
-                    <pre className="p-4 text-xs md:text-sm font-mono text-slate-300 overflow-auto h-full scrollbar-thin scrollbar-thumb-slate-700 custom-scrollbar">
+                    <pre className="p-4 text-xs md:text-sm font-mono text-muted-foreground overflow-auto h-full scrollbar-thin scrollbar-thumb-slate-700 custom-scrollbar">
                     {code}
                     </pre>
 
                     <div className="absolute top-3 right-3 flex gap-2">
                         <button 
                         onClick={handleDownload}
-                        className="bg-slate-800/90 backdrop-blur-sm hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 shadow-lg transition-all flex items-center gap-2"
+                        className="bg-secondary backdrop-blur-sm hover:bg-accent text-foreground px-3 py-1.5 rounded-lg text-xs font-medium border border-border shadow-lg transition-all flex items-center gap-2"
                         title="Download File"
                         >
                         <HiDownload className="w-4 h-4" />
@@ -192,7 +192,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                         </button>
                         <button 
                         onClick={handleCopy}
-                        className="bg-slate-800/90 backdrop-blur-sm hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 shadow-lg transition-all flex items-center gap-2"
+                        className="bg-secondary backdrop-blur-sm hover:bg-accent text-foreground px-3 py-1.5 rounded-lg text-xs font-medium border border-border shadow-lg transition-all flex items-center gap-2"
                         >
                         {copied ? (
                             <>

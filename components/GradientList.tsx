@@ -11,8 +11,8 @@ interface GradientListProps {
 const GradientList: React.FC<GradientListProps> = ({ colors, onCopy }) => {
   if (colors.length < 2) {
     return (
-      <div className="flex flex-col items-center justify-center h-[50vh] text-slate-500 gap-4 opacity-50 animate-in fade-in">
-        <div className="w-20 h-20 rounded-full border-4 border-slate-800 border-t-slate-600 border-r-slate-600 animate-spin-slow"></div>
+      <div className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground gap-4 opacity-50 animate-in fade-in">
+        <div className="w-20 h-20 rounded-full border-4 border-border border-t-slate-600 border-r-slate-600 animate-spin-slow"></div>
         <p>Add at least 2 colors to generate gradients.</p>
       </div>
     );
@@ -90,7 +90,7 @@ const GradientCard: React.FC<{
     };
 
     return (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-slate-700 group flex flex-col">
+        <div className="bg-card rounded-2xl ring-1 ring-border overflow-hidden shadow-panel flex flex-col">
             
             {/* Gradient Preview Area */}
             <div 
@@ -99,7 +99,7 @@ const GradientCard: React.FC<{
                 onClick={() => onCopy(gradientCSS)}
             >
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity bg-black/20 backdrop-blur-[1px]">
-                    <span className="bg-white/90 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg transform scale-95 group-hover/preview:scale-100 transition-transform flex items-center gap-2">
+                    <span className="bg-white/90 text-[#171717] px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg transform scale-95 group-hover/preview:scale-100 transition-transform flex items-center gap-2">
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         Copy CSS
                     </span>
@@ -116,15 +116,15 @@ const GradientCard: React.FC<{
                 {/* Header with Direction Controls */}
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="text-white font-bold text-base">Gradient {index + 1}</h3>
-                        <p className="text-slate-500 text-xs mt-0.5">Custom Blend</p>
+                        <h3 className="text-foreground font-bold text-base">Gradient {index + 1}</h3>
+                        <p className="text-muted-foreground text-xs mt-0.5">Custom Blend</p>
                     </div>
-                    <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 items-center">
+                    <div className="flex bg-background p-0.5 rounded-lg border border-border items-center">
                         {directions.map(d => (
                             <button
                                 key={d.deg}
                                 onClick={() => setAngle(d.deg)}
-                                className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold transition-all ${angle === d.deg ? 'bg-slate-700 text-white shadow' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                                className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold transition-all ${angle === d.deg ? 'bg-accent text-foreground shadow' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
                                 title={`${d.deg}deg`}
                             >
                                 {d.label}
@@ -135,13 +135,13 @@ const GradientCard: React.FC<{
 
                 {/* Stops Visualization (Fully Configurable) */}
                 <div className="space-y-3">
-                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         <span>Stops Configuration</span>
                         <span>%</span>
                     </div>
                     
                     {/* Stop 1 Config Row */}
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/50 border border-slate-800/50 hover:bg-slate-950 transition-colors group/stop">
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-muted border border-border/50 hover:bg-background transition-colors group/stop">
                         {/* Position Input */}
                         <div className="relative w-10 shrink-0">
                             <input 
@@ -150,21 +150,21 @@ const GradientCard: React.FC<{
                                 max="100" 
                                 value={stop1}
                                 onChange={(e) => setStop1(Number(e.target.value))}
-                                className="w-full px-1 py-1 bg-slate-800 rounded text-[10px] font-mono text-slate-300 text-center focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-transparent focus:border-indigo-500/50 appearance-none"
+                                className="w-full px-1 py-1 bg-secondary rounded text-[10px] font-mono text-muted-foreground text-center focus:outline-none focus:ring-1 focus:ring-primary border border-transparent focus:border-primary appearance-none"
                             />
                         </div>
                         
                         {/* Swatch Preview */}
-                        <div className="w-6 h-6 rounded border border-white/10 shadow-sm shrink-0" style={{ backgroundColor: hex1 }} />
+                        <div className="w-6 h-6 rounded border border-border shadow-sm shrink-0" style={{ backgroundColor: hex1 }} />
                         
                         {/* Color Select */}
                         <select 
                             value={color1Base.hex} 
                             onChange={(e) => handleColorChange(true, e.target.value)}
-                            className="flex-1 bg-transparent text-[10px] font-bold text-slate-300 focus:outline-none cursor-pointer hover:text-white truncate"
+                            className="flex-1 bg-transparent text-[10px] font-bold text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground truncate"
                         >
                             {allColors.map(c => (
-                                <option key={c.hex} value={c.hex} className="bg-slate-900">{c.name}</option>
+                                <option key={c.hex} value={c.hex} className="bg-card">{c.name}</option>
                             ))}
                         </select>
 
@@ -172,21 +172,21 @@ const GradientCard: React.FC<{
                         <select 
                             value={shade1Level}
                             onChange={(e) => setShade1Level(Number(e.target.value))}
-                            className="w-14 bg-slate-800 text-[10px] font-mono text-slate-300 px-1 py-1 rounded focus:outline-none cursor-pointer hover:bg-slate-700 text-right"
+                            className="w-14 bg-secondary text-[10px] font-mono text-muted-foreground px-1 py-1 rounded focus:outline-none cursor-pointer hover:bg-accent text-right"
                         >
                             {shadeOptions.map(s => (
-                                <option key={s} value={s} className="bg-slate-900">{s}</option>
+                                <option key={s} value={s} className="bg-card">{s}</option>
                             ))}
                         </select>
                     </div>
 
                     {/* Connector Line */}
                     <div className="pl-5 -my-2">
-                        <div className="w-0.5 h-3 bg-slate-800 mx-auto"></div>
+                        <div className="w-0.5 h-3 bg-secondary mx-auto"></div>
                     </div>
 
                     {/* Stop 2 Config Row */}
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/50 border border-slate-800/50 hover:bg-slate-950 transition-colors group/stop">
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-muted border border-border/50 hover:bg-background transition-colors group/stop">
                         {/* Position Input */}
                         <div className="relative w-10 shrink-0">
                             <input 
@@ -195,21 +195,21 @@ const GradientCard: React.FC<{
                                 max="100" 
                                 value={stop2}
                                 onChange={(e) => setStop2(Number(e.target.value))}
-                                className="w-full px-1 py-1 bg-slate-800 rounded text-[10px] font-mono text-slate-300 text-center focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-transparent focus:border-indigo-500/50 appearance-none"
+                                className="w-full px-1 py-1 bg-secondary rounded text-[10px] font-mono text-muted-foreground text-center focus:outline-none focus:ring-1 focus:ring-primary border border-transparent focus:border-primary appearance-none"
                             />
                         </div>
                         
                         {/* Swatch Preview */}
-                        <div className="w-6 h-6 rounded border border-white/10 shadow-sm shrink-0" style={{ backgroundColor: hex2 }} />
+                        <div className="w-6 h-6 rounded border border-border shadow-sm shrink-0" style={{ backgroundColor: hex2 }} />
                         
                         {/* Color Select */}
                         <select 
                             value={color2Base.hex} 
                             onChange={(e) => handleColorChange(false, e.target.value)}
-                            className="flex-1 bg-transparent text-[10px] font-bold text-slate-300 focus:outline-none cursor-pointer hover:text-white truncate"
+                            className="flex-1 bg-transparent text-[10px] font-bold text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground truncate"
                         >
                             {allColors.map(c => (
-                                <option key={c.hex} value={c.hex} className="bg-slate-900">{c.name}</option>
+                                <option key={c.hex} value={c.hex} className="bg-card">{c.name}</option>
                             ))}
                         </select>
 
@@ -217,10 +217,10 @@ const GradientCard: React.FC<{
                         <select 
                             value={shade2Level}
                             onChange={(e) => setShade2Level(Number(e.target.value))}
-                            className="w-14 bg-slate-800 text-[10px] font-mono text-slate-300 px-1 py-1 rounded focus:outline-none cursor-pointer hover:bg-slate-700 text-right"
+                            className="w-14 bg-secondary text-[10px] font-mono text-muted-foreground px-1 py-1 rounded focus:outline-none cursor-pointer hover:bg-accent text-right"
                         >
                             {shadeOptions.map(s => (
-                                <option key={s} value={s} className="bg-slate-900">{s}</option>
+                                <option key={s} value={s} className="bg-card">{s}</option>
                             ))}
                         </select>
                     </div>
