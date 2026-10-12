@@ -314,10 +314,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
           {curveMode && (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background p-3">
-                <div>
-                  <p className="text-[13px] text-foreground">Perceptual brightness</p>
-                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">Spreads lightness evenly in OKLCH.</p>
-                </div>
+                <p className="text-[13px] text-foreground">Perceptual brightness</p>
                 <button
                   type="button"
                   onClick={() => setConfig({ ...config, useOkLCH: !config.useOkLCH })}
@@ -348,9 +345,6 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                   <span>Cooler</span>
                   <span>Warmer</span>
                 </div>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                  Shifts hue as the step gets lighter or darker.
-                </p>
               </div>
 
               <div>
@@ -374,17 +368,14 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                 </div>
               </div>
 
-              <div className={config.useOkLCH ? 'opacity-50' : ''}>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-[15px] text-foreground">Lightness easing</p>
-                  {config.useOkLCH && <span className="text-[13px] text-muted-foreground">Handled by OKLCH</span>}
-                </div>
+              {!config.useOkLCH && (
+              <div>
+                <p className="mb-2 text-[15px] text-foreground">Lightness easing</p>
                 <div className="grid grid-cols-2 gap-2">
                   {(['linear', 'ease-in', 'ease-out', 'ease-in-out'] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
-                      disabled={!!config.useOkLCH}
                       onClick={() => setConfig({ ...config, lightnessEase: mode })}
                       className={`h-10 rounded-lg border text-[13px] ${
                         config.lightnessEase === mode
@@ -397,6 +388,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, onClose, onS
                   ))}
                 </div>
               </div>
+              )}
             </div>
           )}
         </section>

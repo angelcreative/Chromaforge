@@ -84,13 +84,3 @@ export interface PlaygroundConfig {
     isDarkMode: boolean;
 }
 
-// Experimental EyeDropper API type definition
-export interface EyeDropper {
-  open: () => Promise<{ sRGBHex: string }>;
-}
-
-declare global {
-  interface Window {
-    EyeDropper?: new () => EyeDropper;
-  }
-}
