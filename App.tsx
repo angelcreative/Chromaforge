@@ -536,6 +536,7 @@ const App: React.FC = () => {
   const activeColors = activeTab === 'neutrals' ? neutralPalette : activeTab === 'system' ? semanticPalette : palette;
   const workingColors = creationMode === 'manual' ? customColors : palette;
   const hasPalette = workingColors.length > 0;
+  const pendingRequest = [...messages].reverse().find((message) => message.role === 'user')?.text ?? '';
   const HarmonyButton = ({ type, label }: { type: HarmonyType, label: string }) => (<button onClick={() => setHarmony(type)} className={`flex h-9 items-center justify-center rounded-lg border transition-colors ${harmony === type ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground hover:bg-accent border-border'}`}><span className="text-[13px]">{label}</span></button>);
 
   const openColors = () => {
@@ -855,8 +856,23 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div className={`mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 ${isChatLoading ? 'min-h-full flex-1' : ''}`}>
+              {isChatLoading ? (
+                <div
+                  className="flex flex-1 flex-col items-center justify-center px-2 py-10 text-center"
+                  role="status"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  {pendingRequest && (
+                    <p className="max-w-md text-2xl font-medium tracking-tight text-foreground">{pendingRequest}</p>
+                  )}
+                  <Loader2 className="mt-8 size-8 animate-spin text-foreground" strokeWidth={1.5} aria-hidden />
+                  <p className="mt-3 text-[15px] text-muted-foreground">Making a palette</p>
+                </div>
+              ) : (
+              <>
               {messages.length === 0 && (
                 <div className="pt-4">
                   <h2 className="text-2xl font-medium tracking-tight text-foreground">Describe a palette</h2>
@@ -886,12 +902,6 @@ const App: React.FC = () => {
                     )}
                   </div>
                 ))}
-                {isChatLoading && (
-                  <div className="flex items-center gap-2 self-start rounded-2xl bg-card px-4 py-3 text-[13px] text-muted-foreground ring-1 ring-border">
-                    <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
-                    Making a palette
-                  </div>
-                )}
               </div>
 
               {hasPalette && (
@@ -994,6 +1004,8 @@ const App: React.FC = () => {
                     </div>
                   )}
                 </section>
+              )}
+              </>
               )}
               <div ref={chatEndRef} />
             </div>
