@@ -2,7 +2,7 @@
 import { Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
-import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex } from './utils/colorUtils';
+import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex, collectPaletteColors, colorsFromPaletteText } from './utils/colorUtils';
 import RefineDrawer from './components/RefineDrawer';
 import { generatePaletteFromPrompt } from './services/geminiService';
 import ContrastGrid from './components/ContrastGrid';
@@ -12,6 +12,7 @@ import PaletteTunerModal from './components/PaletteTunerModal';
 import ScaleEditorModal from './components/ScaleEditorModal';
 import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
+import ComposerAttach from './components/ComposerAttach';
 import DescribeHeading from './components/DescribeHeading';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
@@ -112,6 +113,7 @@ const App: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isTunerOpen, setIsTunerOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importImage, setImportImage] = useState<File | null>(null);
   
   // Playground Config State
   const [playgroundConfig, setPlaygroundConfig] = useState<PlaygroundConfig>({
@@ -336,12 +338,45 @@ const App: React.FC = () => {
       setCustomColors(colors);
       setCreationMode('manual');
       setIsImportOpen(false);
+      setImportImage(null);
       setShowWork(true);
       setShellOpen(true);
       setActiveSavedId(null);
       setSelectedColorForGrid(null);
       setStudioPane('composer');
       showToast(`Imported ${colors.length} colors`);
+  };
+
+  const startFromPicture = (file: File) => {
+      setImportImage(file);
+      setIsImportOpen(true);
+  };
+
+  const startFromColorFile = (text: string) => {
+      const colors = collectPaletteColors(text);
+      if (colors.length === 0) {
+          showToast('No colors found in that file.');
+          return;
+      }
+      handleImport(colors);
+  };
+
+  const submitHomeComposer = () => {
+      const colors = colorsFromPaletteText(chatInput);
+      if (colors.length > 0) {
+          setChatInput('');
+          handleImport(colors);
+          return;
+      }
+      void handleChatSubmit();
+  };
+
+  const pasteHomeComposer = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const colors = colorsFromPaletteText(event.clipboardData.getData('text'));
+      if (colors.length === 0) return;
+      event.preventDefault();
+      setChatInput('');
+      handleImport(colors);
   };
 
   const handleApplyPalette = (colors: ColorData[]) => {
@@ -827,7 +862,7 @@ const App: React.FC = () => {
             <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-muted-foreground">
               The limit is your imagination.
             </p>
-            <form className="mt-8" onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}>
+            <form className="mt-8" onSubmit={(e) => { e.preventDefault(); submitHomeComposer(); }}>
               <div className="rounded-2xl border border-border bg-card p-3 shadow-panel">
                 <textarea
                   rows={4}
@@ -835,16 +870,24 @@ const App: React.FC = () => {
                   placeholder="A calm brand for a coastal studio"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onPaste={pasteHomeComposer}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleChatSubmit();
+                      submitHomeComposer();
                     }
                   }}
                   aria-label="Palette prompt"
                 />
-                <div className="flex items-center justify-between">
-                  {renderCreditMeter()}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ComposerAttach
+                      onPicture={startFromPicture}
+                      onColorFile={startFromColorFile}
+                      onColorFileError={() => showToast('Could not read that file.')}
+                    />
+                    {renderCreditMeter()}
+                  </div>
                   <button
                     type="submit"
                     disabled={!chatInput.trim()}
@@ -995,7 +1038,16 @@ const App: React.FC = () => {
       )}
       {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} globalConfig={globalCurveConfig} onClose={() => setIsExportOpen(false)} />}
       {isTunerOpen && <PaletteTunerModal onClose={() => setIsTunerOpen(false)} isPremium initialCode={getTunerCode()} />}
-      {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={200} isPremium />}
+      {isImportOpen && (
+        <ImportModal
+          key={importImage ? `${importImage.name}:${importImage.size}:${importImage.lastModified}` : 'browse'}
+          onClose={() => { setIsImportOpen(false); setImportImage(null); }}
+          onImport={handleImport}
+          limit={200}
+          isPremium
+          imageFile={importImage}
+        />
+      )}
       {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} isPremium />}
       {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} limitType="ai" />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}

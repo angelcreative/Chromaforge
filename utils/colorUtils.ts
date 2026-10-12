@@ -924,6 +924,76 @@ export const parseInputToGroups = (input: string): ColorGroup[] => {
   }
 };
 
+const PALETTE_COLOR_LIMIT = 30;
+const HEX_TOKEN = /#(?:[0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{4}|[0-9A-Fa-f]{3})\b/;
+
+const stripCodeFence = (input: string): string => {
+  const trimmed = input.trim();
+  const fenced = trimmed.match(/^```[a-zA-Z0-9_-]*[ \t]*\r?\n([\s\S]*?)\r?\n?```[ \t]*$/);
+  return fenced ? fenced[1].trim() : trimmed;
+};
+
+const looksLikeJsonPalette = (text: string): boolean => {
+  const hasColor = HEX_TOKEN.test(text) || /:\s*"#?[0-9A-Fa-f]{3,8}"/.test(text);
+  if (!hasColor) return false;
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return true;
+  return /^["'][\w$.\-\s]+["']\s*:/.test(trimmed);
+};
+
+const looksLikeCssPalette = (text: string): boolean => {
+  if (!HEX_TOKEN.test(text)) return false;
+  if (/--[\w-]+\s*:/.test(text)) return true;
+  if (/\$[\w-]+\s*:\s*#/.test(text)) return true;
+  if (/@(theme|media|layer)\b/.test(text)) return true;
+  if (/:root\b/.test(text)) return true;
+  const declarations = text.match(/(^|[{;\n])\s*[a-zA-Z][\w-]*\s*:\s*[^;{}\n]*#[0-9A-Fa-f]{3,8}/g);
+  if (!declarations) return false;
+  return declarations.length >= 2 || /[{}]/.test(text);
+};
+
+const looksLikeTailwindPalette = (text: string): boolean => {
+  if (!HEX_TOKEN.test(text)) return false;
+  if (/@theme\b/.test(text)) return true;
+  const hasColors = /\bcolors?\s*[:=]/.test(text);
+  if (!hasColors) return false;
+  return /\btheme\s*[:=]/.test(text) || /module\.exports\b/.test(text) || /\bexport\s+default\b/.test(text);
+};
+
+/** Colors from text the existing parser already understands. Caps at the code-import limit. */
+export const collectPaletteColors = (input: string, limit = PALETTE_COLOR_LIMIT): ColorData[] => {
+  const text = input.trim();
+  if (!text) return [];
+  let allColors: ColorData[] = [];
+  parseInputToGroups(text).forEach((group) => {
+    allColors = allColors.concat(group.colors);
+  });
+  if (allColors.length === 0) {
+    const rawGroups = parseInputToGroups(`{ "colors": ${text} }`);
+    if (rawGroups.length > 0 && rawGroups[0].colors.length > 0) {
+      allColors = rawGroups[0].colors;
+    }
+  }
+  const seen = new Set<string>();
+  const unique: ColorData[] = [];
+  for (const color of allColors) {
+    const key = color.hex.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(color);
+    if (unique.length >= limit) break;
+  }
+  return unique;
+};
+
+/** Pasted JSON, CSS, or Tailwind. A written description stays text. */
+export const colorsFromPaletteText = (input: string, limit = PALETTE_COLOR_LIMIT): ColorData[] => {
+  const text = stripCodeFence(input);
+  if (!text) return [];
+  if (!looksLikeJsonPalette(text) && !looksLikeCssPalette(text) && !looksLikeTailwindPalette(text)) return [];
+  return collectPaletteColors(text, limit);
+};
+
 const extractGroupsFromJSON = (json: any): ColorGroup[] => {
     const groups: Record<string, ColorData[]> = {};
     const traverse = (obj: any, prefix: string) => {
