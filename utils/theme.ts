@@ -18,10 +18,14 @@ export const resolveTheme = (pref: ThemePreference): 'light' | 'dark' => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
+const FAVICON_VERSION = '6';
+
 const syncFavicon = (resolved: 'light' | 'dark') => {
+  const href = `${resolved === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg'}?v=${FAVICON_VERSION}`;
   const icon = document.querySelector<HTMLLinkElement>('link#favicon');
-  if (!icon) return;
-  icon.href = resolved === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg';
+  const apple = document.querySelector<HTMLLinkElement>('link#apple-touch-icon');
+  if (icon) icon.href = href;
+  if (apple) apple.href = href;
 };
 
 export const applyThemePreference = (pref: ThemePreference) => {

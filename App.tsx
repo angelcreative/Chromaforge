@@ -732,10 +732,15 @@ const App: React.FC = () => {
       {renderGlobalOverlays()}
       <Toast message={toastMessage} isVisible={isToastVisible} />
 
-      <button type="button" onClick={goHome} className="absolute left-4 top-4 z-50 inline-flex h-10 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] text-foreground shadow-panel ring-1 ring-border" aria-label="Home">
-          <Home className="size-4" strokeWidth={1.5} />
-          Home
-      </button>
+      <div className="absolute left-4 top-4 z-50 flex items-center gap-1.5">
+          <button type="button" onClick={goHome} className="grid size-10 place-items-center text-foreground" aria-label="Chromaforge">
+              <LogoMark className="size-6" />
+          </button>
+          <button type="button" onClick={goHome} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] text-foreground shadow-panel ring-1 ring-border" aria-label="Home">
+              <Home className="size-4" strokeWidth={1.5} />
+              Home
+          </button>
+      </div>
 
       <StudioSidebar
           open={shellOpen}
