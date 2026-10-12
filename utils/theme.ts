@@ -18,6 +18,12 @@ export const resolveTheme = (pref: ThemePreference): 'light' | 'dark' => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
+const syncFavicon = (resolved: 'light' | 'dark') => {
+  const icon = document.querySelector<HTMLLinkElement>('link#favicon');
+  if (!icon) return;
+  icon.href = resolved === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg';
+};
+
 export const applyThemePreference = (pref: ThemePreference) => {
   if (typeof document === 'undefined') return;
   const resolved = resolveTheme(pref);
@@ -25,6 +31,7 @@ export const applyThemePreference = (pref: ThemePreference) => {
   root.dataset.theme = resolved;
   root.style.colorScheme = resolved;
   root.classList.toggle('dark', resolved === 'dark');
+  syncFavicon(resolved);
 };
 
 export const writeThemePreference = (pref: ThemePreference) => {

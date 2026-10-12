@@ -1,0 +1,16 @@
+import React from 'react';
+
+const MARK =
+  'M -2.00 -52.00 L 2.00 -52.00 L 16.00 -35.50 L 7.00 -16.00 L -7.00 -16.00 L -16.00 -35.50 Z M 44.03 -27.73 L 46.03 -24.27 L 38.74 -3.89 L 17.36 -1.94 L 10.36 -14.06 L 22.74 -31.61 Z M 46.03 24.27 L 44.03 27.73 L 22.74 31.61 L 10.36 14.06 L 17.36 1.94 L 38.74 3.89 Z M 2.00 52.00 L -2.00 52.00 L -16.00 35.50 L -7.00 16.00 L 7.00 16.00 L 16.00 35.50 Z M -44.03 27.73 L -46.03 24.27 L -38.74 3.89 L -17.36 1.94 L -10.36 14.06 L -22.74 31.61 Z M -46.03 -24.27 L -44.03 -27.73 L -22.74 -31.61 L -10.36 -14.06 L -17.36 -1.94 L -38.74 -3.89 Z';
+
+const LogoMark: React.FC<{ className?: string; animated?: boolean }> = ({ className = '', animated = false }) => (
+  <svg
+    viewBox="-58 -58 116 116"
+    className={`${animated ? 'logo-mark' : ''} ${className}`.trim()}
+    aria-hidden
+  >
+    <path fill="currentColor" d={MARK} />
+  </svg>
+);
+
+export default LogoMark;

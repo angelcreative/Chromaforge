@@ -1,5 +1,5 @@
 
-import { ArrowRight, BookOpen, Check, ChevronLeft, ChevronRight, Heart, LayoutGrid, Loader2, Menu, Palette, Pencil, Pipette, Plus, Send, SlidersHorizontal, Sparkles, Upload } from 'lucide-react';
+import { Check, Home, Pipette, Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex } from './utils/colorUtils';
@@ -13,7 +13,8 @@ import PaletteTunerModal from './components/PaletteTunerModal';
 import ScaleEditorModal from './components/ScaleEditorModal';
 import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
-import UIPlayground from './components/UIPlayground';
+import LogoMark from './components/LogoMark';
+import PaletteCatalog from './components/PaletteCatalog';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
@@ -24,6 +25,7 @@ import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, Sa
 import { captureOwnerAccessFromUrl, clearOwnerAccess, confirmOwnerAccess, hasOwnerFlag, markOwnerUnlocked } from './services/ownerAccess';
 import { buildStudioColorSkill } from './utils/colorSkill';
 import ThemeToggle from './components/ThemeToggle';
+import StudioSidebar from './components/StudioSidebar';
 
 // Subscription Imports
 import { checkSubscriptionStatus, createCheckoutSession } from './services/subscriptionService';
@@ -40,8 +42,8 @@ import LegalModal, { LegalPageType } from './components/LegalModal';
 const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isVisible }) => {
   if (!isVisible) return null;
   return (
-    <div className="fixed top-16 left-1/2 z-[150] -translate-x-1/2 animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none">
-      <div className="bg-card text-card-foreground border border-border px-4 py-3 rounded-2xl shadow-panel flex items-center gap-3">
+    <div className="pointer-events-none fixed top-16 left-1/2 z-[170] -translate-x-1/2">
+      <div className="studio-in flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-card-foreground shadow-panel">
          <div className="bg-accent p-1.5 rounded-full">
             <Check className="w-4 h-4 text-foreground" strokeWidth={1.5}/>
          </div>
@@ -54,6 +56,19 @@ const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isV
 type MobileTab = 'canvas' | 'editor';
 type ViewMode = 'grid' | 'playground' | 'gradients';
 type CreationMode = 'generator' | 'manual';
+
+const PROMPT_CHIPS = [
+  { label: 'Brand', text: 'A calm brand palette' },
+  { label: 'Mood', text: 'A warm evening mood' },
+  { label: 'Product', text: 'A skincare product' },
+];
+
+const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
+  { name: 'Harbor', colors: [['#0E3A46', 'Deep water'], ['#1F7A8C', 'Tide'], ['#BFDBF7', 'Foam'], ['#E36414', 'Buoy']] },
+  { name: 'Orchard', colors: [['#1B4332', 'Pine'], ['#40916C', 'Leaf'], ['#D8F3DC', 'Blossom'], ['#F4A261', 'Apricot']] },
+  { name: 'Ink', colors: [['#14213D', 'Ink'], ['#415A77', 'Slate'], ['#E0E1DD', 'Paper'], ['#FCA311', 'Signal']] },
+  { name: 'Clay', colors: [['#6D2E46', 'Wine'], ['#C05746', 'Clay'], ['#F2E8CF', 'Sand'], ['#2A9D8F', 'Glaze']] },
+];
 
 const App: React.FC = () => {
   // Auth State
@@ -100,6 +115,8 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<PaletteTab>('brand');
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor'); // Default to editor on mobile
   const [studioPane, setStudioPane] = useState<'composer' | 'refine' | 'colors'>('composer');
+  const [shellOpen, setShellOpen] = useState(false);
+  const [showWork, setShowWork] = useState(false);
   const [refineIndex, setRefineIndex] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('grid'); 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -231,6 +248,16 @@ const App: React.FC = () => {
 
   const showToast = (msg: string) => { setToastMessage(msg); setIsToastVisible(true); setTimeout(() => setIsToastVisible(false), 2500); };
 
+  const goHome = () => {
+    setStudioPane('composer');
+    setViewMode('grid');
+    setShowWork(false);
+    setMessages([]);
+    setChatInput('');
+    setShellOpen(false);
+    setSelectedColorForEdit(null);
+  };
+
   const handleGlobalReset = () => {
     setBaseColor({ h: 215, s: 25, l: 47 }); setBrightness(47); setHarmony('monochromatic'); setPaletteName('Design Tokens');
     setMessages([]); setChatInput(''); setIsPrintMode(false); setActiveTab('brand');
@@ -240,6 +267,8 @@ const App: React.FC = () => {
     setGlobalCurveConfig({ vibrancy: 0, contrast: 0, hueTorsion: 0, steps: 11 }); // Reset global controls
     setIsSaved(false);
     setStudioPane('composer');
+    setShowWork(false);
+    setShellOpen(false);
     showToast("Workspace reset successfully");
   };
 
@@ -286,6 +315,8 @@ const App: React.FC = () => {
       setCustomColors(colors);
       setCreationMode('manual');
       setIsImportOpen(false);
+      setShowWork(true);
+      setStudioPane('composer');
       showToast(`Imported ${colors.length} colors`);
   };
 
@@ -313,18 +344,20 @@ const App: React.FC = () => {
       }
       setActiveTab('brand'); showToast("Palette applied");
       setIsSaved(false);
+      setShowWork(true);
   };
 
-  const handleChatSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); 
-    if (!chatInput.trim() || isChatLoading) return;
+  const handleChatSubmit = async (e?: React.FormEvent, preset?: string) => {
+    if (e) e.preventDefault();
+    const text = (preset ?? chatInput).trim();
+    if (!text || isChatLoading) return;
 
     if (!canUseAssistant) {
         setIsPricingOpen(true);
         return;
     }
 
-    const userMsg: ChatMessage = { role: 'user', text: chatInput };
+    const userMsg: ChatMessage = { role: 'user', text };
     setMessages(prev => [...prev, userMsg]); setChatInput(''); setIsChatLoading(true); setIsChatOpen(true);
     
     // Determine context based on mode
@@ -397,31 +430,28 @@ const App: React.FC = () => {
       setSelectedColorForEdit(color);
   };
 
-  const handleScaleSave = async (colorHex: string, newConfig: ScaleConfiguration) => {
-      if (!selectedColorForEdit) return;
-      
-      // Create updated color with new config
-      const updatedColor: ColorData = { ...selectedColorForEdit, scaleConfig: newConfig };
-      
-      // Update the color in the correct list based on activeTab
+  const writeScaleConfig = (colorHex: string, newConfig: ScaleConfiguration | undefined) => {
+      const merge = (list: ColorData[]) => list.map(c => c.hex === colorHex ? { ...c, scaleConfig: newConfig } : c);
       if (activeTab === 'neutrals') {
-          setNeutralPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
+          setNeutralPalette(merge);
       } else if (activeTab === 'system') {
-          setSemanticPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
+          setSemanticPalette(merge);
+      } else if (creationMode === 'manual') {
+          setCustomColors(merge);
+          setPalette(merge);
       } else {
-          // For 'brand' tab, update based on creation mode
-          if (creationMode === 'manual') {
-              // Update customColors (source of truth for manual mode)
-              setCustomColors(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
-              // Also update palette directly to reflect changes immediately
-              setPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
-          } else {
-              setPalette(prev => prev.map(c => c.hex === colorHex ? updatedColor : c));
-          }
+          setPalette(merge);
       }
-      
-      showToast("Color scale updated");
       setIsSaved(false);
+  };
+
+  const handleScalePreview = (colorHex: string, newConfig: ScaleConfiguration | undefined) => {
+      writeScaleConfig(colorHex, newConfig);
+  };
+
+  const handleScaleSave = async (colorHex: string, newConfig: ScaleConfiguration) => {
+      writeScaleConfig(colorHex, newConfig);
+      showToast("Color scale updated");
   };
 
   const currentSkill = () => buildStudioColorSkill({
@@ -536,6 +566,14 @@ const App: React.FC = () => {
   const activeColors = activeTab === 'neutrals' ? neutralPalette : activeTab === 'system' ? semanticPalette : palette;
   const workingColors = creationMode === 'manual' ? customColors : palette;
   const hasPalette = workingColors.length > 0;
+  const showHome = !isChatLoading && messages.length === 0 && !showWork;
+
+  const loadDemo = (demo: typeof DEMO_PALETTES[number]) => {
+    handleApplyPalette(demo.colors.map(([hex, name]) => createColorData(hex, undefined, name)));
+    setPaletteName(demo.name);
+    setViewMode('grid');
+    setStudioPane('composer');
+  };
   const pendingRequest = [...messages].reverse().find((message) => message.role === 'user')?.text ?? '';
   const HarmonyButton = ({ type, label }: { type: HarmonyType, label: string }) => (<button onClick={() => setHarmony(type)} className={`flex h-9 items-center justify-center rounded-lg border transition-colors ${harmony === type ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground hover:bg-accent border-border'}`}><span className="text-[13px]">{label}</span></button>);
 
@@ -547,6 +585,7 @@ const App: React.FC = () => {
     } else if (customColors.length === 0) {
       setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
     }
+    setShowWork(true);
     setStudioPane('colors');
   };
 
@@ -556,6 +595,7 @@ const App: React.FC = () => {
     const safe = Math.min(Math.max(index, 0), list.length - 1);
     setRefineIndex(safe);
     setLocalHexInput(list[safe].hex.toUpperCase());
+    setShowWork(true);
     setStudioPane('refine');
   };
 
@@ -632,124 +672,108 @@ const App: React.FC = () => {
       </div>
   );
 
-  // --- FULL SCREEN PLAYGROUND MODE ---
-  if (viewMode === 'playground') {
-      return (
-          <div className="h-screen bg-background text-foreground font-sans flex flex-col overflow-hidden">
-              {renderGlobalOverlays()}
-              <Toast message={toastMessage} isVisible={isToastVisible} />
-              
-              <header className="h-14 bg-sidebar border-b border-border flex items-center justify-between px-4 shrink-0 z-40">
-                   <div className="flex items-center gap-3">
-                        <button onClick={() => setViewMode('grid')} className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" aria-label="Back to studio">
-                            <ArrowRight className="w-4 h-4 rotate-180" strokeWidth={1.5}/>
-                        </button>
-                        <h1 className="text-[15px] font-medium text-foreground">Palette playground</h1>
-                   </div>
-                   <div className="flex items-center gap-2">
-                       <ThemeToggle />
-                       {renderSkillActions()}
-                       <button onClick={handleExportClick} className="h-8 rounded-lg bg-primary px-3 text-[13px] text-primary-foreground hover:opacity-90">Export</button>
-                   </div>
-              </header>
-              <div className="flex-1 overflow-hidden">
-                  <UIPlayground 
-                      brandPalette={creationMode === 'manual' ? customColors : palette}
-                      neutralPalette={neutralPalette}
-                      semanticPalette={semanticPalette}
-                      config={playgroundConfig}
-                      onConfigChange={setPlaygroundConfig}
-                      globalConfig={globalCurveConfig}
-                      isPremium={canUseAssistant}
-                      onOpenPricing={() => setIsPricingOpen(true)}
-                  />
-              </div>
-              
-              {/* Shared Modals accessible from Playground */}
-              {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} globalConfig={globalCurveConfig} onClose={() => setIsExportOpen(false)} />}
-              
-              {isPricingOpen && (
-                  <PricingModal 
-                      onClose={() => setIsPricingOpen(false)}
-                      onCheckout={handleUpgradeCheckout}
-                      isLoading={isCheckoutLoading}
-                      limitType="ai"
-                  />
-              )}
-              
-              {paletteToDelete && (
-                  <ConfirmModal 
-                      title="Delete Palette?" 
-                      message="This action cannot be undone. The palette will be permanently removed from your library."
-                      onConfirm={performDelete}
-                      onCancel={() => setPaletteToDelete(null)}
-                      confirmText="Delete"
-                      isDestructive={true}
-                  />
-              )}
+  const renderPromptForm = () => (
+      <form
+          className="shrink-0 border-t border-border bg-background px-4 py-3"
+          onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
+      >
+          <div className={`mx-auto flex w-full max-w-3xl items-end gap-2 ${shellOpen ? '' : 'pl-12 md:pl-0'}`}>
+              <textarea
+                  rows={2}
+                  className="max-h-40 min-h-[3.25rem] flex-1 resize-none rounded-2xl border border-border bg-card px-3 py-2 text-[15px] text-foreground shadow-panel placeholder:text-muted-foreground focus:outline-none"
+                  placeholder="Describe a brand or mood"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleChatSubmit();
+                      }
+                  }}
+                  aria-label="Palette prompt"
+              />
+              <button
+                  type="submit"
+                  disabled={isChatLoading || !chatInput.trim()}
+                  className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                  aria-label="Send"
+              >
+                  <Send className="size-4" strokeWidth={1.5} />
+              </button>
           </div>
-      );
-  }
+      </form>
+  );
+
+  const updateListedColor = (tab: PaletteTab, index: number, updatedColor: ColorData) => {
+    if (tab === 'neutrals') {
+      setNeutralPalette(prev => prev.map((color, i) => i === index ? updatedColor : color));
+    } else if (tab === 'system') {
+      setSemanticPalette(prev => prev.map((color, i) => i === index ? updatedColor : color));
+    } else if (creationMode === 'manual') {
+      setCustomColors(prev => prev.map((color, i) => i === index ? updatedColor : color));
+    } else {
+      setPalette(prev => prev.map((color, i) => i === index ? updatedColor : color));
+    }
+    setIsSaved(false);
+  };
+
+  const viewKey = studioPane !== 'composer'
+    ? studioPane
+    : isChatLoading
+      ? 'loading'
+      : showHome
+        ? 'home'
+        : viewMode === 'playground'
+          ? 'catalog'
+          : 'work';
 
   return (
-    <div className="h-[100dvh] bg-canvas text-foreground font-sans flex flex-col overflow-hidden">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-canvas font-sans text-foreground">
       {renderGlobalOverlays()}
       <Toast message={toastMessage} isVisible={isToastVisible} />
 
-      <header className="h-14 bg-sidebar border-b border-border flex items-center justify-between gap-3 px-4 shrink-0 z-40 overflow-x-auto">
-           <div className="flex min-w-0 items-center gap-3">
-                <button type="button" className="flex items-center gap-2" onClick={handleGlobalReset}>
-                    <img
-                        src="/logo.svg"
-                        alt="ChromaForge"
-                        className="w-6 h-6 rounded-full"
-                        style={{ objectFit: 'contain' }}
-                    />
-                    <h1 className="hidden text-[15px] font-medium tracking-tight text-foreground sm:block">ChromaForge</h1>
-                </button>
-                <div className="hidden md:flex items-center gap-2 pl-3 border-l border-border">
-                     <Pencil className="w-4 h-4 text-muted-foreground" strokeWidth={1.5}/>
-                     <input type="text" value={paletteName} onChange={(e) => setPaletteName(e.target.value)} className="bg-transparent border-none text-sm font-medium text-foreground focus:ring-0 placeholder:text-muted-foreground w-48" placeholder="Palette name" aria-label="Palette name"/>
-                </div>
-           </div>
+      <button type="button" onClick={goHome} className="absolute left-4 top-4 z-50 inline-flex h-10 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] text-foreground shadow-panel ring-1 ring-border" aria-label="Home">
+          <Home className="size-4" strokeWidth={1.5} />
+          Home
+      </button>
 
-           <div className="flex items-center gap-2">
-               <ThemeToggle />
-               <button
-                   type="button"
-                   onClick={handleOpenLibrary}
-                   className="grid size-9 place-items-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
-                   aria-label="Saved palettes"
-               >
-                   <BookOpen className="w-5 h-5" strokeWidth={1.5}/>
-               </button>
-               <button
-                   type="button"
-                   onClick={handleSavePalette}
-                   className={`grid size-9 place-items-center rounded-lg ${isSaved ? 'text-pink-500' : 'text-muted-foreground hover:text-pink-400 hover:bg-accent'}`}
-                   aria-label={isSaved ? 'Palette saved' : 'Save palette'}
-                   disabled={isSaving}
-               >
-                   <Heart className="w-5 h-5" strokeWidth={1.5}/>
-               </button>
-               <div className="hidden lg:contents">{renderSkillActions()}</div>
-               <button
-                   type="button"
-                   onClick={handleExportClick}
-                   className="h-8 rounded-lg bg-primary px-3 text-[13px] text-primary-foreground hover:opacity-90"
-               >
-                   Export
-               </button>
-           </div>
-      </header>
+      <StudioSidebar
+          open={shellOpen}
+          onOpenChange={setShellOpen}
+          paletteName={paletteName}
+          onPaletteName={setPaletteName}
+          activeTab={activeTab}
+          onTab={(tab) => { setActiveTab(tab); setShowWork(true); }}
+          onLibrary={handleOpenLibrary}
+          onSave={handleSavePalette}
+          saved={isSaved}
+          saving={isSaving}
+          onRefine={() => openRefine(0)}
+          onEditColors={openColors}
+          onFix={handleTunerClick}
+          onExport={handleExportClick}
+          onCopySkill={handleCopySkill}
+          onDownloadSkill={handleDownloadSkill}
+          onPlayground={() => { setShowWork(true); setStudioPane('composer'); setViewMode(viewMode === 'playground' ? 'grid' : 'playground'); }}
+          playgroundActive={viewMode === 'playground'}
+          gradients={viewMode === 'gradients'}
+          onToggleGradients={() => { setShowWork(true); setViewMode(viewMode === 'gradients' ? 'grid' : 'gradients'); }}
+          isPrint={isPrintMode}
+          onTogglePrint={() => setIsPrintMode((value) => !value)}
+          isCompact={isCompactView}
+          onToggleCompact={() => setIsCompactView((value) => !value)}
+          canRefine={hasPalette}
+          curveOpen={isCurveControlsOpen}
+          onToggleCurve={() => setIsCurveControlsOpen((value) => !value)}
+          curve={globalCurveConfig}
+          onCurve={setGlobalCurveConfig}
+      />
 
+      <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${selectedColorForEdit ? 'lg:pr-[380px]' : ''}`}>
+      <div key={viewKey} className="studio-in flex min-h-0 flex-1 flex-col">
       {studioPane === 'refine' ? (
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-6">
-            <button type="button" onClick={() => setStudioPane('composer')} className="inline-flex h-10 items-center gap-1.5 self-start rounded-lg px-1 text-[13px] text-foreground hover:bg-accent">
-              <ChevronLeft className="size-4" strokeWidth={1.5} />
-              Back to composer
-            </button>
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-16">
             <div>
               <h2 className="text-2xl font-medium tracking-tight">Refine color</h2>
               <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">Adjust this color, then return to the composer and the ramp.</p>
@@ -821,11 +845,7 @@ const App: React.FC = () => {
         </div>
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-6">
-            <button type="button" onClick={() => setStudioPane('composer')} className="inline-flex h-10 items-center gap-1.5 self-start rounded-lg px-1 text-[13px] text-foreground hover:bg-accent">
-              <ChevronLeft className="size-4" strokeWidth={1.5} />
-              Back to composer
-            </button>
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">
             <div>
               <h2 className="text-2xl font-medium tracking-tight">Edit colors</h2>
               <p className="mt-2 text-[15px] text-muted-foreground">Add or change colors without the assistant. The ramp updates when you go back.</p>
@@ -854,34 +874,98 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+      ) : isChatLoading ? (
+        <>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div
+              className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-16 text-center"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              {pendingRequest && (
+                <p className="max-w-md text-2xl font-medium tracking-tight text-foreground">{pendingRequest}</p>
+              )}
+              <LogoMark animated className="mt-8 size-16 text-foreground" />
+              <p className="mt-3 text-[15px] text-muted-foreground">Making a palette</p>
+            </div>
+          </div>
+          {renderPromptForm()}
+        </>
+      ) : showHome ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-24 pt-16">
+          <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-8">
+            <h2 className="text-center text-3xl font-medium tracking-tight text-foreground sm:text-4xl">Describe a palette</h2>
+            <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-muted-foreground">
+              Ask for a brand, a mood, or a product.
+            </p>
+            <form className="mt-8" onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}>
+              <div className="rounded-2xl border border-border bg-card p-3 shadow-panel">
+                <textarea
+                  rows={4}
+                  className="max-h-48 min-h-[7rem] w-full resize-none bg-transparent px-2 py-2 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  placeholder="A calm brand for a coastal studio"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSubmit();
+                    }
+                  }}
+                  aria-label="Palette prompt"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                    aria-label="Send"
+                  >
+                    <Send className="size-4" strokeWidth={1.5} />
+                  </button>
+                </div>
+              </div>
+            </form>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {PROMPT_CHIPS.map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => handleChatSubmit(undefined, chip.text)}
+                  className="h-8 rounded-full border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-10">
+              <p className="mb-3 text-[13px] text-muted-foreground">Try a demo</p>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {DEMO_PALETTES.map((demo, index) => (
+                  <button
+                    key={demo.name}
+                    type="button"
+                    onClick={() => loadDemo(demo)}
+                    className="studio-card w-36 shrink-0 rounded-xl bg-card p-2.5 text-left shadow-panel ring-1 ring-border hover:bg-accent"
+                    style={{ animationDelay: `${index * 40}ms` }}
+                  >
+                    <span className="flex h-14 overflow-hidden rounded-lg">
+                      {demo.colors.map(([hex]) => (
+                        <span key={hex} className="h-full flex-1" style={{ backgroundColor: hex }} />
+                      ))}
+                    </span>
+                    <span className="mt-2 block text-[13px] text-foreground">{demo.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className={`mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 ${isChatLoading ? 'min-h-full flex-1' : ''}`}>
-              {isChatLoading ? (
-                <div
-                  className="flex flex-1 flex-col items-center justify-center px-2 py-10 text-center"
-                  role="status"
-                  aria-live="polite"
-                  aria-busy="true"
-                >
-                  {pendingRequest && (
-                    <p className="max-w-md text-2xl font-medium tracking-tight text-foreground">{pendingRequest}</p>
-                  )}
-                  <Loader2 className="mt-8 size-8 animate-spin text-foreground" strokeWidth={1.5} aria-hidden />
-                  <p className="mt-3 text-[15px] text-muted-foreground">Making a palette</p>
-                </div>
-              ) : (
-              <>
-              {messages.length === 0 && (
-                <div className="pt-4">
-                  <h2 className="text-2xl font-medium tracking-tight text-foreground">Describe a palette</h2>
-                  <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-                    Ask for a brand, a mood, or a product. A reply with colors becomes the palette. The assistant is the only paid part of the studio.
-                  </p>
-                </div>
-              )}
-
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8 pt-16">
               <div className="flex flex-col gap-3">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -904,74 +988,28 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              {hasPalette && (
-                <section className="rounded-2xl bg-card p-4 ring-1 ring-border shadow-panel">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <input
-                      type="text"
-                      value={paletteName}
-                      onChange={(e) => setPaletteName(e.target.value)}
-                      className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-foreground focus:outline-none md:hidden"
-                      aria-label="Palette name"
-                    />
-                    <div className="flex gap-1">
-                      {(['brand', 'neutrals', 'system'] as PaletteTab[]).map(tab => (
-                        <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`h-8 rounded-lg px-2.5 text-[13px] capitalize ${activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}>{tab}</button>
-                      ))}
-                    </div>
-                    <div className="ml-auto flex flex-wrap items-center gap-2">
-                      <button type="button" onClick={() => setViewMode(viewMode === 'gradients' ? 'grid' : 'gradients')} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[13px] text-foreground hover:bg-accent">
-                        {viewMode === 'gradients' ? <LayoutGrid className="size-3.5" strokeWidth={1.5} /> : <Palette className="size-3.5" strokeWidth={1.5} />}
-                        {viewMode === 'gradients' ? 'Ramps' : 'Gradients'}
-                      </button>
-                      <button type="button" onClick={() => setViewMode('playground')} className="h-8 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">Playground</button>
-                    </div>
-                  </div>
+              {showWork && hasPalette && viewMode === 'playground' && (
+                <PaletteCatalog
+                  groups={[
+                    { id: 'brand', label: 'Brand', colors: palette },
+                    { id: 'neutrals', label: 'Neutrals', colors: neutralPalette },
+                    { id: 'system', label: 'System', colors: semanticPalette },
+                  ]}
+                  onOpenInfo={setSelectedColorForInfo}
+                  onOpenGrid={setSelectedColorForGrid}
+                  onEditScale={handleEditClick}
+                  onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
+                  onColorUpdate={updateListedColor}
+                  isPrintMode={isPrintMode}
+                  globalConfig={globalCurveConfig}
+                />
+              )}
 
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <button type="button" onClick={() => setIsCurveControlsOpen(!isCurveControlsOpen)} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground">
-                      <ChevronRight className={`size-4 transition-transform ${isCurveControlsOpen ? 'rotate-90' : ''}`} strokeWidth={1.5} />
-                      Ramp settings
-                    </button>
-                    <button type="button" className="ml-auto flex items-center gap-2" onClick={() => setIsPrintMode(!isPrintMode)} aria-pressed={isPrintMode}>
-                      <span className={`relative h-5 w-9 rounded-full ${isPrintMode ? 'bg-primary' : 'bg-[var(--switch)]'}`}>
-                        <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform ${isPrintMode ? 'translate-x-3.5' : ''}`} />
-                      </span>
-                      <span className="text-[13px] text-foreground">Print (CMYK)</span>
-                    </button>
-                    {viewMode === 'grid' && (
-                      <button type="button" onClick={() => setIsCompactView(!isCompactView)} className="hidden h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-muted-foreground hover:bg-accent md:inline-flex" aria-pressed={isCompactView}>
-                        <Menu className="size-4" strokeWidth={1.5} />
-                        {isCompactView ? 'Cards' : 'List'}
-                      </button>
-                    )}
-                  </div>
-
-                  {isCurveControlsOpen && (
-                    <div className="mb-4 grid gap-4 sm:grid-cols-2">
-                      <label className="block text-[13px] text-muted-foreground">
-                        Scale steps
-                        <span className="float-right font-mono text-foreground">{globalCurveConfig.steps}</span>
-                        <input type="range" min={3} max={21} step={1} value={globalCurveConfig.steps} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, steps: Number(e.target.value) })} className="mt-2 w-full" />
-                      </label>
-                      <label className="block text-[13px] text-muted-foreground">
-                        Vibrancy
-                        <span className="float-right font-mono text-foreground">{globalCurveConfig.vibrancy}%</span>
-                        <input type="range" min={-100} max={100} step={5} value={globalCurveConfig.vibrancy} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, vibrancy: Number(e.target.value) })} className="mt-2 w-full" />
-                      </label>
-                      <label className="block text-[13px] text-muted-foreground">
-                        Contrast
-                        <span className="float-right font-mono text-foreground">{globalCurveConfig.contrast}%</span>
-                        <input type="range" min={-100} max={100} step={5} value={globalCurveConfig.contrast} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, contrast: Number(e.target.value) })} className="mt-2 w-full" />
-                      </label>
-                      <label className="block text-[13px] text-muted-foreground">
-                        Hue blend
-                        <span className="float-right font-mono text-foreground">{globalCurveConfig.hueTorsion}°</span>
-                        <input type="range" min={-60} max={60} step={5} value={globalCurveConfig.hueTorsion} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, hueTorsion: Number(e.target.value) })} className="mt-2 w-full" />
-                      </label>
-                    </div>
-                  )}
-
+              {showWork && hasPalette && viewMode !== 'playground' && (
+                <section>
+                  <p className="mb-3 text-[13px] text-muted-foreground">
+                    {activeTab === 'neutrals' ? 'Neutrals' : activeTab === 'system' ? 'System' : 'Brand'}
+                  </p>
                   {viewMode === 'gradients' ? (
                     <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
                   ) : (
@@ -984,18 +1022,7 @@ const App: React.FC = () => {
                           onOpenGrid={setSelectedColorForGrid}
                           onEditScale={handleEditClick}
                           onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
-                          onColorUpdate={(updatedColor) => {
-                            if (activeTab === 'neutrals') {
-                              setNeutralPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                            } else if (activeTab === 'system') {
-                              setSemanticPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                            } else if (creationMode === 'manual') {
-                              setCustomColors(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                            } else {
-                              setPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                            }
-                            setIsSaved(false);
-                          }}
+                          onColorUpdate={(updatedColor) => updateListedColor(activeTab, idx, updatedColor)}
                           isPrintMode={isPrintMode}
                           isCompact={isCompactView}
                           globalConfig={globalCurveConfig}
@@ -1005,78 +1032,25 @@ const App: React.FC = () => {
                   )}
                 </section>
               )}
-              </>
-              )}
               <div ref={chatEndRef} />
             </div>
           </div>
-
-          <form
-            className="shrink-0 border-t border-border bg-sidebar px-4 py-3"
-            onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
-          >
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
-              <div className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-panel">
-                <textarea
-                  rows={2}
-                  className="max-h-40 min-h-[3.25rem] flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
-                  placeholder="Describe a brand or mood"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleChatSubmit();
-                    }
-                  }}
-                  aria-label="Palette prompt"
-                />
-                <button
-                  type="submit"
-                  disabled={isChatLoading || !chatInput.trim()}
-                  className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
-                  aria-label="Send"
-                >
-                  <Send className="size-4" strokeWidth={1.5} />
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openRefine(0)}
-                  disabled={!hasPalette}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[13px] text-foreground hover:bg-accent disabled:opacity-40"
-                >
-                  <Pipette className="size-3.5" strokeWidth={1.5} />
-                  Refine color
-                </button>
-                <button type="button" onClick={openColors} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">
-                  <Pencil className="size-3.5" strokeWidth={1.5} />
-                  Edit colors
-                </button>
-                <button type="button" onClick={handleTunerClick} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">
-                  <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
-                  Fix palette
-                </button>
-                <div className="lg:hidden">{renderSkillActions()}</div>
-                {!canUseAssistant && (
-                  <button type="button" onClick={() => setIsPricingOpen(true)} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">
-                    <Sparkles className="size-3.5" strokeWidth={1.5} />
-                    Assistant
-                  </button>
-                )}
-              </div>
-            </div>
-          </form>
+          {renderPromptForm()}
         </>
       )}
+      </div>
+      </div>
 
       {/* Modals */}
-      {selectedColorForEdit && (() => {
-          // Get the updated color from the active list to ensure scaleConfig is current
-          const currentColor = activeColors.find(c => c.hex === selectedColorForEdit.hex) || selectedColorForEdit;
-          return <ScaleEditorModal color={currentColor} onClose={() => setSelectedColorForEdit(null)} onSave={handleScaleSave} isPremium />;
-      })()}
+      {selectedColorForEdit && (
+          <ScaleEditorModal
+              color={selectedColorForEdit}
+              onClose={() => setSelectedColorForEdit(null)}
+              onSave={handleScaleSave}
+              onPreview={handleScalePreview}
+              isPremium
+          />
+      )}
       {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} globalConfig={globalCurveConfig} onClose={() => setIsExportOpen(false)} />}
       {isTunerOpen && <PaletteTunerModal onClose={() => setIsTunerOpen(false)} isPremium initialCode={getTunerCode()} />}
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={200} isPremium />}

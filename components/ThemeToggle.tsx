@@ -8,7 +8,7 @@ const OPTIONS: { id: ThemePreference; label: string; icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', icon: Moon },
 ];
 
-const ThemeToggle: React.FC = () => {
+const ThemeToggle: React.FC<{ showLabels?: boolean }> = ({ showLabels = false }) => {
   const [pref, setPref] = useState<ThemePreference>(() => readThemePreference());
 
   useEffect(() => {
@@ -53,7 +53,7 @@ const ThemeToggle: React.FC = () => {
             }`}
           >
             <Icon className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-            <span className="hidden sm:inline">{option.label}</span>
+            <span className={showLabels ? 'inline' : 'hidden sm:inline'}>{option.label}</span>
           </button>
         );
       })}
