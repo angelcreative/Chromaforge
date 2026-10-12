@@ -25,8 +25,9 @@ import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, SavedPalette } from './services/storageService';
 import { captureOwnerAccessFromUrl, clearOwnerAccess, confirmOwnerAccess, hasOwnerFlag, markOwnerUnlocked } from './services/ownerAccess';
 import { buildStudioColorSkill } from './utils/colorSkill';
-import ThemeToggle from './components/ThemeToggle';
 import StudioSidebar from './components/StudioSidebar';
+import StudioTopBar from './components/StudioTopBar';
+import CopilotPanel from './components/CopilotPanel';
 
 // Subscription Imports
 import { checkSubscriptionStatus, createCheckoutSession } from './services/subscriptionService';
@@ -55,7 +56,7 @@ const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isV
 };
 
 type MobileTab = 'canvas' | 'editor';
-type ViewMode = 'grid' | 'playground' | 'gradients';
+type ViewMode = 'cards' | 'list' | 'ramp' | 'gradients';
 type CreationMode = 'generator' | 'manual';
 
 const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
@@ -93,8 +94,6 @@ const App: React.FC = () => {
   const [isCurveControlsOpen, setIsCurveControlsOpen] = useState(false);
   
   // NEW: View Toggle
-  const [isCompactView, setIsCompactView] = useState(false);
-
   // NEW: Sidebar Expand/Collapse
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
@@ -113,7 +112,8 @@ const App: React.FC = () => {
   const [shellOpen, setShellOpen] = useState(false);
   const [showWork, setShowWork] = useState(false);
   const [refineIndex, setRefineIndex] = useState(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid'); 
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [copilotOpen, setCopilotOpen] = useState(false); 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -245,18 +245,19 @@ const App: React.FC = () => {
 
   const goHome = () => {
     setStudioPane('composer');
-    setViewMode('grid');
+    setViewMode('cards');
     setShowWork(false);
     setMessages([]);
     setChatInput('');
     setShellOpen(false);
+    setCopilotOpen(false);
     setSelectedColorForEdit(null);
   };
 
   const handleGlobalReset = () => {
     setBaseColor({ h: 215, s: 25, l: 47 }); setBrightness(47); setHarmony('monochromatic'); setPaletteName('Design Tokens');
-    setMessages([]); setChatInput(''); setIsPrintMode(false); setActiveTab('brand');
-    setViewMode('grid');
+    setMessages([]); setChatInput('');     setIsPrintMode(false); setActiveTab('brand');
+    setViewMode('cards');
     setCreationMode('generator');
     setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
     setGlobalCurveConfig({ vibrancy: 0, contrast: 0, hueTorsion: 0, steps: 11 }); // Reset global controls
@@ -311,6 +312,7 @@ const App: React.FC = () => {
       setCreationMode('manual');
       setIsImportOpen(false);
       setShowWork(true);
+      setShellOpen(true);
       setStudioPane('composer');
       showToast(`Imported ${colors.length} colors`);
   };
@@ -339,7 +341,9 @@ const App: React.FC = () => {
       }
       setActiveTab('brand'); showToast("Palette applied");
       setIsSaved(false);
+      if (!showWork) setViewMode('cards');
       setShowWork(true);
+      setShellOpen(true);
   };
 
   const handleChatSubmit = async (e?: React.FormEvent, preset?: string) => {
@@ -566,7 +570,7 @@ const App: React.FC = () => {
   const loadDemo = (demo: typeof DEMO_PALETTES[number]) => {
     handleApplyPalette(demo.colors.map(([hex, name]) => createColorData(hex, undefined, name)));
     setPaletteName(demo.name);
-    setViewMode('grid');
+    setViewMode('cards');
     setStudioPane('composer');
   };
   const pendingRequest = [...messages].reverse().find((message) => message.role === 'user')?.text ?? '';
@@ -712,55 +716,41 @@ const App: React.FC = () => {
     setIsSaved(false);
   };
 
+  const showLoader = isChatLoading && !showWork;
+  const paletteOpen = showWork && hasPalette && !showHome;
+
   const viewKey = studioPane !== 'composer'
     ? studioPane
-    : isChatLoading
+    : showLoader
       ? 'loading'
       : showHome
         ? 'home'
-        : viewMode === 'playground'
-          ? 'catalog'
-          : 'work';
+        : 'work';
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-canvas font-sans text-foreground">
       {renderGlobalOverlays()}
       <Toast message={toastMessage} isVisible={isToastVisible} />
 
-      <button type="button" onClick={goHome} className="absolute left-4 top-4 z-50 grid size-10 place-items-center text-foreground" aria-label="Chromaforge">
-          <LogoMark className="size-6" />
-      </button>
+      <StudioTopBar
+          onHome={goHome}
+          onNewPalette={goHome}
+          paletteOpen={paletteOpen}
+          onSave={handleSavePalette}
+          saved={isSaved}
+          saving={isSaving}
+          refineOpen={studioPane === 'refine'}
+          onRefine={() => { if (studioPane === 'refine') setStudioPane('composer'); else openRefine(0); }}
+          onCopySkill={handleCopySkill}
+          onDownloadSkill={handleDownloadSkill}
+          printOn={isPrintMode}
+          onTogglePrint={() => setIsPrintMode((value) => !value)}
+      />
 
       <StudioSidebar
           open={shellOpen}
           onOpenChange={setShellOpen}
-          paletteName={paletteName}
-          onPaletteName={setPaletteName}
-          activeTab={activeTab}
-          onTab={(tab) => { setActiveTab(tab); setShowWork(true); }}
-          onLibrary={handleOpenLibrary}
-          onSave={handleSavePalette}
-          saved={isSaved}
-          saving={isSaving}
-          onRefine={() => openRefine(0)}
-          onEditColors={openColors}
-          onFix={handleTunerClick}
-          onExport={handleExportClick}
-          onCopySkill={handleCopySkill}
-          onDownloadSkill={handleDownloadSkill}
-          onPlayground={() => { setShowWork(true); setStudioPane('composer'); setViewMode(viewMode === 'playground' ? 'grid' : 'playground'); }}
-          playgroundActive={viewMode === 'playground'}
-          gradients={viewMode === 'gradients'}
-          onToggleGradients={() => { setShowWork(true); setViewMode(viewMode === 'gradients' ? 'grid' : 'gradients'); }}
-          isPrint={isPrintMode}
-          onTogglePrint={() => setIsPrintMode((value) => !value)}
-          isCompact={isCompactView}
-          onToggleCompact={() => setIsCompactView((value) => !value)}
-          canRefine={hasPalette}
-          curveOpen={isCurveControlsOpen}
-          onToggleCurve={() => setIsCurveControlsOpen((value) => !value)}
-          curve={globalCurveConfig}
-          onCurve={setGlobalCurveConfig}
+          onSavedPalettes={handleOpenLibrary}
       />
 
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${selectedColorForEdit ? 'lg:pr-[380px]' : ''}`}>
@@ -868,7 +858,7 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-      ) : isChatLoading ? (
+      ) : showLoader ? (
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div
@@ -887,7 +877,7 @@ const App: React.FC = () => {
           {renderPromptForm()}
         </>
       ) : showHome ? (
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-24 pt-16">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-24 pt-8">
           <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-8">
             <DescribeHeading />
             <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-muted-foreground">
@@ -947,30 +937,50 @@ const App: React.FC = () => {
       ) : (
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8 pt-16">
-              <div className="flex flex-col gap-3">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground ring-1 ring-border'}`}>
-                      {msg.text}
-                    </div>
-                    {msg.palettePreview && (
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-24 pt-6">
+              {showWork && hasPalette && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette view">
+                    {([
+                      ['cards', 'Cards'],
+                      ['list', 'List'],
+                      ['ramp', 'Ramp'],
+                      ['gradients', 'Gradients'],
+                    ] as const).map(([id, label]) => (
                       <button
+                        key={id}
                         type="button"
-                        className="mt-2 flex items-center gap-1 rounded-lg border border-border bg-card p-1.5 hover:bg-accent"
-                        onClick={() => handleApplyPalette(msg.palettePreview!)}
+                        aria-pressed={viewMode === id}
+                        onClick={() => { setStudioPane('composer'); setViewMode(id); }}
+                        className={`h-8 rounded-md px-3 text-[13px] ${viewMode === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                       >
-                        {msg.palettePreview.map((c, idx) => (
-                          <span key={idx} className="size-4 rounded-full ring-1 ring-border" style={{ backgroundColor: c.hex }} />
-                        ))}
-                        <span className="px-1 text-[13px] text-foreground">Apply</span>
+                        {label}
                       </button>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
+                  {viewMode !== 'cards' && (
+                    <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette group">
+                      {([
+                        ['brand', 'Brand'],
+                        ['neutrals', 'Neutrals'],
+                        ['system', 'Semantic'],
+                      ] as const).map(([id, label]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-pressed={activeTab === id}
+                          onClick={() => setActiveTab(id)}
+                          className={`h-8 rounded-md px-3 text-[13px] ${activeTab === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {showWork && hasPalette && viewMode === 'playground' && (
+              {showWork && hasPalette && viewMode === 'cards' && (
                 <PaletteCatalog
                   groups={[
                     { id: 'brand', label: 'Brand', colors: palette },
@@ -987,41 +997,48 @@ const App: React.FC = () => {
                 />
               )}
 
-              {showWork && hasPalette && viewMode !== 'playground' && (
-                <section>
-                  <p className="mb-3 text-[13px] text-muted-foreground">
-                    {activeTab === 'neutrals' ? 'Neutrals' : activeTab === 'system' ? 'Semantic' : 'Brand'}
-                  </p>
-                  {viewMode === 'gradients' ? (
-                    <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
-                  ) : (
-                    <div className={`grid gap-4 ${isCompactView ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
-                      {activeColors.map((color, idx) => (
-                        <PaletteCard
-                          key={`${color.hex}-${idx}`}
-                          color={color}
-                          onOpenInfo={setSelectedColorForInfo}
-                          onOpenGrid={setSelectedColorForGrid}
-                          onEditScale={handleEditClick}
-                          onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
-                          onColorUpdate={(updatedColor) => updateListedColor(activeTab, idx, updatedColor)}
-                          isPrintMode={isPrintMode}
-                          isCompact={isCompactView}
-                          globalConfig={globalCurveConfig}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
+              {showWork && hasPalette && (viewMode === 'list' || viewMode === 'ramp') && (
+                <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
+                  {activeColors.map((color, idx) => (
+                    <PaletteCard
+                      key={`${color.hex}-${idx}`}
+                      color={color}
+                      onOpenInfo={setSelectedColorForInfo}
+                      onOpenGrid={setSelectedColorForGrid}
+                      onEditScale={handleEditClick}
+                      onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
+                      onColorUpdate={(updatedColor) => updateListedColor(activeTab, idx, updatedColor)}
+                      isPrintMode={isPrintMode}
+                      isCompact={viewMode === 'list'}
+                      globalConfig={globalCurveConfig}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {showWork && hasPalette && viewMode === 'gradients' && (
+                <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
               )}
               <div ref={chatEndRef} />
             </div>
           </div>
-          {renderPromptForm()}
         </>
       )}
       </div>
       </div>
+
+      {paletteOpen && (
+        <CopilotPanel
+          open={copilotOpen}
+          onToggle={() => setCopilotOpen((value) => !value)}
+          onClose={() => setCopilotOpen(false)}
+          messages={messages}
+          input={chatInput}
+          onInput={setChatInput}
+          onSubmit={(text) => { void handleChatSubmit(undefined, text); }}
+          loading={isChatLoading}
+        />
+      )}
 
       {/* Modals */}
       {selectedColorForEdit && (
