@@ -24,7 +24,7 @@ export default function WeatherCard({ theme }: { theme: ThemeColors }) {
             <span>MIN: 15</span>
           </div>
         </div>
-        <Cloud size={48} style={{ color: theme.action.primary }} />
+        <Cloud size={48} style={{ color: theme.action.primary }} strokeWidth={1.5}/>
       </div>
 
       <div className="mb-6">
@@ -36,7 +36,7 @@ export default function WeatherCard({ theme }: { theme: ThemeColors }) {
         {forecast.map(({ day, icon: Icon, temp, min }, idx) => (
           <div key={idx} className="text-center">
             <div className="text-xs mb-2" style={{ color: theme.text.tertiary }}>{day}</div>
-            <Icon size={24} className="mx-auto mb-2" style={{ color: theme.text.secondary }} />
+            <Icon size={24} strokeWidth={1.5} className="mx-auto mb-2" style={{ color: theme.text.secondary }} />
             <div className="text-sm font-semibold mb-1" style={{ color: theme.text.main }}>{temp}</div>
             <div className="text-xs" style={{ color: theme.text.tertiary }}>{min}</div>
           </div>

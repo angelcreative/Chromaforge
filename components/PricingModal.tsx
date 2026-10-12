@@ -1,7 +1,6 @@
 
+import { ArrowRight, Check, X, Zap } from 'lucide-react';
 import React from 'react';
-import { HiX, HiCheck, HiArrowRight } from 'react-icons/hi';
-import { FaBolt } from 'react-icons/fa';
 
 export type LimitType = 'save' | 'ai' | 'export' | 'tuner' | 'edit' | 'general';
 
@@ -17,7 +16,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
   const content = {
       title: "Assistant is a paid feature",
       icon: (
-        <FaBolt className="w-8 h-8 text-foreground" />
+        <Zap className="w-8 h-8 text-foreground" strokeWidth={1.5}/>
       ),
       intro: "The studio is free.",
       desc: "The wheel, ramps, manual edits, and export stay unlimited. The paid part is the assistant that generates palettes from a prompt."
@@ -32,7 +31,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
             onClick={onClose}
             className="absolute top-4 right-4 z-20 p-2 bg-black/20 hover:bg-black/40 text-muted-foreground hover:text-foreground rounded-full transition-colors"
         >
-            <HiX className="w-6 h-6" />
+            <X className="w-6 h-6" strokeWidth={1.5}/>
         </button>
 
         {/* Left Side: The "Limit Reached" Message */}
@@ -56,15 +55,15 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
                 <div className="text-xs font-bold text-muted-foreground tracking-widest mb-3">Free studio</div>
                 <ul className="space-y-2 mb-8">
                     <li className="flex items-center gap-3 text-muted-foreground text-sm">
-                        <HiCheck className="w-4 h-4 text-foreground" />
+                        <Check className="w-4 h-4 text-foreground" strokeWidth={1.5}/>
                         Wheel, ramps, and manual edits
                     </li>
                     <li className="flex items-center gap-3 text-muted-foreground text-sm">
-                        <HiCheck className="w-4 h-4 text-foreground" />
+                        <Check className="w-4 h-4 text-foreground" strokeWidth={1.5}/>
                         Export, including color.md
                     </li>
                     <li className="flex items-center gap-3 text-muted-foreground text-sm">
-                        <HiCheck className="w-4 h-4 text-foreground" />
+                        <Check className="w-4 h-4 text-foreground" strokeWidth={1.5}/>
                         Local palette library
                     </li>
                 </ul>
@@ -93,7 +92,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
                 ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
                          <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
-                            <HiCheck className="w-3 h-3 text-foreground" />
+                            <Check className="w-3 h-3 text-foreground" strokeWidth={1.5}/>
                          </div>
                          <span className="text-sm text-muted-foreground font-medium">{item}</span>
                     </div>
@@ -111,7 +110,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
                 ) : (
                     <>
                         <span>Subscribe</span>
-                        <HiArrowRight className="w-5 h-5" />
+                        <ArrowRight className="w-5 h-5" strokeWidth={1.5}/>
                     </>
                 )}
              </button>

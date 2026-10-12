@@ -1,4 +1,5 @@
 
+import { ArrowRight, BookOpen, Check, ChevronLeft, ChevronRight, Heart, LayoutGrid, Loader2, Menu, Palette, Pencil, Pipette, Plus, Send, SlidersHorizontal, Sparkles, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex } from './utils/colorUtils';
@@ -15,8 +16,6 @@ import ImportModal from './components/ImportModal';
 import UIPlayground from './components/UIPlayground';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
-import { HiCheck, HiPencil, HiAdjustments, HiBookOpen, HiHeart, HiArrowRight, HiChevronRight, HiPlus, HiUpload, HiViewGrid, HiMenu, HiSparkles } from 'react-icons/hi';
-import { FaPalette, FaPaperPlane, FaEyeDropper } from 'react-icons/fa';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
 import { subscribeToAuth, ensureBillingUser } from './services/authService';
@@ -41,10 +40,10 @@ import LegalModal, { LegalPageType } from './components/LegalModal';
 const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isVisible }) => {
   if (!isVisible) return null;
   return (
-    <div className="fixed bottom-24 md:bottom-6 left-1/2 transform -translate-x-1/2 z-[150] animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-none">
+    <div className="fixed top-16 left-1/2 z-[150] -translate-x-1/2 animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none">
       <div className="bg-card text-card-foreground border border-border px-4 py-3 rounded-2xl shadow-panel flex items-center gap-3">
          <div className="bg-accent p-1.5 rounded-full">
-            <HiCheck className="w-4 h-4 text-foreground" />
+            <Check className="w-4 h-4 text-foreground" strokeWidth={1.5}/>
          </div>
          <span className="font-medium text-[13px]">{message}</span>
       </div>
@@ -100,6 +99,8 @@ const App: React.FC = () => {
   // UI State
   const [activeTab, setActiveTab] = useState<PaletteTab>('brand');
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor'); // Default to editor on mobile
+  const [studioPane, setStudioPane] = useState<'composer' | 'refine' | 'colors'>('composer');
+  const [refineIndex, setRefineIndex] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('grid'); 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -226,7 +227,7 @@ const App: React.FC = () => {
       }
   }, [palette[0]?.hex, creationMode]);
 
-  useEffect(() => { if (isChatOpen) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isChatOpen, isChatLoading]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isChatLoading, studioPane]);
 
   const showToast = (msg: string) => { setToastMessage(msg); setIsToastVisible(true); setTimeout(() => setIsToastVisible(false), 2500); };
 
@@ -238,6 +239,7 @@ const App: React.FC = () => {
     setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
     setGlobalCurveConfig({ vibrancy: 0, contrast: 0, hueTorsion: 0, steps: 11 }); // Reset global controls
     setIsSaved(false);
+    setStudioPane('composer');
     showToast("Workspace reset successfully");
   };
 
@@ -532,8 +534,74 @@ const App: React.FC = () => {
   };
 
   const activeColors = activeTab === 'neutrals' ? neutralPalette : activeTab === 'system' ? semanticPalette : palette;
-  const ModeButton = ({ mode, current, onClick, label }: { mode: InputMode, current: InputMode, onClick: (m: InputMode) => void, label: string }) => (<button onClick={() => onClick(mode)} className={`h-8 px-2.5 text-[13px] rounded-md transition-colors ${current === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{label}</button>);
+  const workingColors = creationMode === 'manual' ? customColors : palette;
+  const hasPalette = workingColors.length > 0;
   const HarmonyButton = ({ type, label }: { type: HarmonyType, label: string }) => (<button onClick={() => setHarmony(type)} className={`flex h-9 items-center justify-center rounded-lg border transition-colors ${harmony === type ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground hover:bg-accent border-border'}`}><span className="text-[13px]">{label}</span></button>);
+
+  const openColors = () => {
+    if (creationMode === 'generator') {
+      const seed = palette.length > 0 ? palette.map((color) => ({ ...color })) : [createColorData('#5A7396', undefined, 'Primary')];
+      setCustomColors(seed);
+      setCreationMode('manual');
+    } else if (customColors.length === 0) {
+      setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
+    }
+    setStudioPane('colors');
+  };
+
+  const openRefine = (index = 0) => {
+    const list = creationMode === 'manual' ? customColors : palette;
+    if (list.length === 0) return;
+    const safe = Math.min(Math.max(index, 0), list.length - 1);
+    setRefineIndex(safe);
+    setLocalHexInput(list[safe].hex.toUpperCase());
+    setStudioPane('refine');
+  };
+
+  const refineLightness = creationMode === 'generator'
+    ? brightness
+    : (customColors[refineIndex]?.hsl.l ?? brightness);
+
+  const handleRefineWheel = (hsl: ColorHSL) => {
+    if (creationMode === 'generator') {
+      setBaseColor(hsl);
+      if (harmony === 'custom') setHarmony('monochromatic');
+      return;
+    }
+    setCustomColors(prev => prev.map((color, index) => {
+      if (index !== refineIndex) return color;
+      const next = createColorDataFromHSL(hsl.h, hsl.s, hsl.l, color.name);
+      return { ...next, scaleConfig: color.scaleConfig };
+    }));
+    setLocalHexInput(createColorDataFromHSL(hsl.h, hsl.s, hsl.l).hex.toUpperCase());
+  };
+
+  const setRefineLightness = (value: number) => {
+    if (creationMode === 'generator') {
+      setBrightness(value);
+      return;
+    }
+    const current = customColors[refineIndex];
+    if (!current) return;
+    handleRefineWheel({ ...current.hsl, l: value });
+  };
+
+  const refineBase: ColorHSL = creationMode === 'generator'
+    ? baseColor
+    : (customColors[refineIndex]?.hsl ?? baseColor);
+
+  const pickRefineFromScreen = async () => {
+    if (!window.EyeDropper) return;
+    try {
+      const eyeDropper = new window.EyeDropper();
+      const result = await eyeDropper.open();
+      const hsl = hexToHsl(result.sRGBHex);
+      handleRefineWheel({ ...hsl, l: refineLightness });
+      setLocalHexInput(result.sRGBHex.toUpperCase());
+    } catch {
+      /* cancelled */
+    }
+  };
 
   // --- RENDER LOGIC ---
 
@@ -573,7 +641,7 @@ const App: React.FC = () => {
               <header className="h-14 bg-sidebar border-b border-border flex items-center justify-between px-4 shrink-0 z-40">
                    <div className="flex items-center gap-3">
                         <button onClick={() => setViewMode('grid')} className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" aria-label="Back to studio">
-                            <HiArrowRight className="w-4 h-4 rotate-180" />
+                            <ArrowRight className="w-4 h-4 rotate-180" strokeWidth={1.5}/>
                         </button>
                         <h1 className="text-[15px] font-medium text-foreground">Palette playground</h1>
                    </div>
@@ -626,557 +694,370 @@ const App: React.FC = () => {
     <div className="h-[100dvh] bg-canvas text-foreground font-sans flex flex-col overflow-hidden">
       {renderGlobalOverlays()}
       <Toast message={toastMessage} isVisible={isToastVisible} />
-      
-      {/* HEADER */}
+
       <header className="h-14 bg-sidebar border-b border-border flex items-center justify-between gap-3 px-4 shrink-0 z-40 overflow-x-auto">
-           {/* ... (Existing Header content same as before) ... */}
-           <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 cursor-pointer" onClick={handleGlobalReset}>
-                    <img 
-                        src="/logo.svg" 
-                        alt="ChromaForge Logo" 
+           <div className="flex min-w-0 items-center gap-3">
+                <button type="button" className="flex items-center gap-2" onClick={handleGlobalReset}>
+                    <img
+                        src="/logo.svg"
+                        alt="ChromaForge"
                         className="w-6 h-6 rounded-full"
                         style={{ objectFit: 'contain' }}
                     />
-                    <h1 className="text-[15px] font-medium tracking-tight text-foreground">ChromaForge</h1>
-                </div>
-                {/* ... (Existing code) ... */}
-                <div className="hidden md:flex items-center gap-2 pl-6 border-l border-border">
-                     <HiPencil className="w-4 h-4 text-muted-foreground" />
-                     <input type="text" value={paletteName} onChange={(e) => setPaletteName(e.target.value)} className="bg-transparent border-none text-sm font-medium text-foreground focus:ring-0 placeholder:text-muted-foreground w-48 hover:text-foreground transition-colors" placeholder="Palette Name"/>
+                    <h1 className="hidden text-[15px] font-medium tracking-tight text-foreground sm:block">ChromaForge</h1>
+                </button>
+                <div className="hidden md:flex items-center gap-2 pl-3 border-l border-border">
+                     <Pencil className="w-4 h-4 text-muted-foreground" strokeWidth={1.5}/>
+                     <input type="text" value={paletteName} onChange={(e) => setPaletteName(e.target.value)} className="bg-transparent border-none text-sm font-medium text-foreground focus:ring-0 placeholder:text-muted-foreground w-48" placeholder="Palette name" aria-label="Palette name"/>
                 </div>
            </div>
 
-           <div className="flex items-center gap-2 sm:gap-3">
+           <div className="flex items-center gap-2">
                <ThemeToggle />
-               <button 
-                   onClick={handleTunerClick}
-                   className="hidden md:flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[13px] text-foreground hover:bg-accent"
-                   title="Fix and tune scales"
-               >
-                   <HiAdjustments className="w-3.5 h-3.5" />
-                   Fix palette
-               </button>
-
-               <div className="h-4 w-px bg-border hidden md:block"></div>
-
-               {/* Library Button */}
-               <button 
+               <button
+                   type="button"
                    onClick={handleOpenLibrary}
-                   className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                   title="My Palettes"
+                   className="grid size-9 place-items-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
+                   aria-label="Saved palettes"
                >
-                   <HiBookOpen className="w-5 h-5" />
+                   <BookOpen className="w-5 h-5" strokeWidth={1.5}/>
                </button>
-
-               {/* Save Button */}
-               <button 
+               <button
+                   type="button"
                    onClick={handleSavePalette}
-                   className={`p-2 rounded-lg transition-colors ${isSaved ? 'text-pink-500 hover:text-pink-400' : 'text-muted-foreground hover:text-pink-400 hover:bg-accent'}`}
-                   title="Save Palette"
+                   className={`grid size-9 place-items-center rounded-lg ${isSaved ? 'text-pink-500' : 'text-muted-foreground hover:text-pink-400 hover:bg-accent'}`}
+                   aria-label={isSaved ? 'Palette saved' : 'Save palette'}
                    disabled={isSaving}
                >
-                   <HiHeart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
+                   <Heart className="w-5 h-5" strokeWidth={1.5}/>
                </button>
-
                <div className="hidden lg:contents">{renderSkillActions()}</div>
-
-               {/* Export Button */}
-               <button 
+               <button
+                   type="button"
                    onClick={handleExportClick}
                    className="h-8 rounded-lg bg-primary px-3 text-[13px] text-primary-foreground hover:opacity-90"
                >
                    Export
                </button>
-
-               {isPremium && (
-                   <span className="hidden sm:inline text-[11px] text-muted-foreground">AI Pro</span>
-               )}
            </div>
       </header>
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        {/* SIDEBAR - Added pb-20 for mobile nav spacing */}
-        <aside className={`w-full h-full md:h-auto flex-shrink-0 bg-sidebar border-r border-border flex flex-col z-30 relative pb-20 md:pb-0 transition-all duration-300 ${isSidebarExpanded ? 'md:w-[360px]' : 'md:w-3'} ${mobileTab === 'editor' ? 'flex' : 'hidden md:flex'}`}>
-            {/* Toggle Button */}
-            <button
-                onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                className={`absolute z-40 w-6 h-6 bg-secondary border border-border rounded-full flex items-center justify-center text-foreground hover:bg-accent transition-all shadow-lg hover:scale-110 ${isSidebarExpanded ? '-right-3 top-6' : 'right-1 top-6'}`}
-                title={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            >
-                {isSidebarExpanded ? (
-                    <HiChevronRight className="w-4 h-4" />
-                ) : (
-                    <HiChevronRight className="w-4 h-4 rotate-180" />
-                )}
+      {studioPane === 'refine' ? (
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-6">
+            <button type="button" onClick={() => setStudioPane('composer')} className="inline-flex h-10 items-center gap-1.5 self-start rounded-lg px-1 text-[13px] text-foreground hover:bg-accent">
+              <ChevronLeft className="size-4" strokeWidth={1.5} />
+              Back to composer
             </button>
-            {isSidebarExpanded && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                
-                {/* Creation Mode Toggle */}
-                <div className="p-3 border-b border-border bg-sidebar sticky top-0 z-20">
-                    <div className="relative grid grid-cols-2 rounded-lg border border-border bg-background p-0.5" role="group" aria-label="Creation mode">
-                        <span
-                            aria-hidden
-                            className={`absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-primary transition-transform duration-200 ease-out ${creationMode === 'manual' ? 'translate-x-full' : 'translate-x-0'}`}
-                        />
-                        <button 
-                            onClick={() => setCreationMode('generator')} 
-                            className={`relative z-10 h-8 rounded-md text-[13px] transition-colors ${creationMode === 'generator' ? 'text-primary-foreground' : 'text-foreground'}`}
-                            aria-pressed={creationMode === 'generator'}
-                        >
-                            Generator
-                        </button>
-                        <button 
-                            onClick={() => setCreationMode('manual')} 
-                            className={`relative z-10 h-8 rounded-md text-[13px] transition-colors ${creationMode === 'manual' ? 'text-primary-foreground' : 'text-foreground'}`}
-                            aria-pressed={creationMode === 'manual'}
-                        >
-                            Manual
-                        </button>
-                    </div>
-                </div>
-
-                {/* --- GLOBAL CURVE CONTROLS --- */}
-                <div className="p-4 border-b border-border">
-                    <h3 
-                        onClick={() => setIsCurveControlsOpen(!isCurveControlsOpen)}
-                        className="text-[13px] text-muted-foreground flex items-center justify-center cursor-pointer hover:text-foreground transition-colors select-none group w-full mb-2"
-                    >
-                        <div className="flex items-center gap-2">
-                            <HiChevronRight className={`w-4 h-4 transition-transform duration-200 text-muted-foreground group-hover:text-muted-foreground ${isCurveControlsOpen ? 'rotate-90' : ''}`} />
-                            Curve controls
-                        </div>
-                    </h3>
-                    
-                    {isCurveControlsOpen && (
-                        <div className="space-y-6 mt-4 animate-in slide-in-from-top-2 duration-200 fade-in-0">
-                            
-                            {/* Global Steps Slider */}
-                            <div className="group/slider relative">
-                                <div className="flex justify-between mb-1.5 items-end">
-                                    <label className="text-[13px] text-muted-foreground">Scale steps</label>
-                                    <span className="text-[10px] font-mono text-foreground">{globalCurveConfig.steps}</span>
-                                </div>
-                                <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                    <div className="absolute inset-0 bg-accent"></div>
-                                    <input 
-                                        type="range" min="3" max="21" step="1"
-                                        value={globalCurveConfig.steps} 
-                                        onChange={(e) => setGlobalCurveConfig({...globalCurveConfig, steps: Number(e.target.value)})} 
-                                        className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                    />
-                                    <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75" style={{ left: `${((globalCurveConfig.steps - 3) / 18) * 100}%`, transform: 'translate(-50%, -50%)' }} />
-                                </div>
-                                <div className="flex justify-between text-[12px] text-muted-foreground mt-1"><span>3</span><span>21</span></div>
-                            </div>
-
-                            {/* Vibrancy */}
-                            <div className="group/slider relative">
-                                <div className="flex justify-between mb-1.5 items-end">
-                                    <label className="text-[13px] text-muted-foreground">Vibrancy</label>
-                                    <span className={`text-[10px] font-mono ${globalCurveConfig.vibrancy !== 0 ? 'text-foreground' : 'text-muted-foreground'}`}>{globalCurveConfig.vibrancy}%</span>
-                                </div>
-                                <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-slate-500 to-indigo-500 opacity-20"></div>
-                                    <input 
-                                        type="range" min="-100" max="100" step="5"
-                                        value={globalCurveConfig.vibrancy} 
-                                        onChange={(e) => setGlobalCurveConfig({...globalCurveConfig, vibrancy: Number(e.target.value)})} 
-                                        className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                    />
-                                    {/* Midpoint Marker */}
-                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-slate-600 rounded-full pointer-events-none"></div>
-                                    <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75" style={{ left: `${((globalCurveConfig.vibrancy + 100)/200)*100}%`, transform: 'translate(-50%, -50%)' }} />
-                                </div>
-                                <div className="flex justify-between text-[12px] text-muted-foreground mt-1"><span>Muted</span><span>Vibrant</span></div>
-                            </div>
-
-                            {/* Contrast */}
-                            <div className="group/slider relative">
-                                <div className="flex justify-between mb-1.5 items-end">
-                                    <label className="text-[13px] text-muted-foreground">Contrast</label>
-                                    <span className={`text-[10px] font-mono ${globalCurveConfig.contrast !== 0 ? 'text-foreground' : 'text-muted-foreground'}`}>{globalCurveConfig.contrast}%</span>
-                                </div>
-                                <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-slate-500 to-white opacity-20"></div>
-                                    <input 
-                                        type="range" min="-100" max="100" step="5"
-                                        value={globalCurveConfig.contrast} 
-                                        onChange={(e) => setGlobalCurveConfig({...globalCurveConfig, contrast: Number(e.target.value)})} 
-                                        className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                    />
-                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-slate-600 rounded-full pointer-events-none"></div>
-                                    <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75" style={{ left: `${((globalCurveConfig.contrast + 100)/200)*100}%`, transform: 'translate(-50%, -50%)' }} />
-                                </div>
-                                <div className="flex justify-between text-[12px] text-muted-foreground mt-1"><span>Compressed</span><span>Expanded</span></div>
-                            </div>
-
-                            {/* Hue Torsion */}
-                            <div className="group/slider relative">
-                                <div className="flex justify-between mb-1.5 items-end">
-                                    <label className="text-[13px] text-muted-foreground">Hue blend</label>
-                                    <span className={`text-[10px] font-mono ${globalCurveConfig.hueTorsion !== 0 ? 'text-foreground' : 'text-muted-foreground'}`}>{globalCurveConfig.hueTorsion > 0 ? '+' : ''}{globalCurveConfig.hueTorsion}°</span>
-                                </div>
-                                <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-slate-700 to-orange-500 opacity-20"></div>
-                                    <input 
-                                        type="range" min="-60" max="60" step="5"
-                                        value={globalCurveConfig.hueTorsion} 
-                                        onChange={(e) => setGlobalCurveConfig({...globalCurveConfig, hueTorsion: Number(e.target.value)})} 
-                                        className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                    />
-                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-slate-600 rounded-full pointer-events-none"></div>
-                                    <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75" style={{ left: `${((globalCurveConfig.hueTorsion + 60)/120)*100}%`, transform: 'translate(-50%, -50%)' }} />
-                                </div>
-                                <div className="flex justify-between text-[12px] text-muted-foreground mt-1"><span>Cooler</span><span>Warmer</span></div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* --- REST OF SIDEBAR (Generator/Manual inputs) --- */}
-                {creationMode === 'generator' && (
-                    <div className="p-6 space-y-6">
-                        {/* Base Color Input */}
-                        <div>
-                            <label className="text-[13px] text-muted-foreground block mb-2">Base color</label>
-                            <div className="flex items-center gap-3 bg-background p-2 rounded-xl border border-border focus-within:border-primary/50 transition-colors">
-                                <div className="w-10 h-10 rounded-lg shadow-inner ring-1 ring-border" style={{ backgroundColor: palette[0]?.hex || '#5A7396' }}></div>
-                                <div className="flex-1">
-                                    <input 
-                                        type="text" 
-                                        value={localHexInput}
-                                        onChange={handleManualHexInput}
-                                        className="bg-transparent border-none p-0 text-sm font-mono font-bold text-foreground w-full focus:ring-0 uppercase placeholder:text-muted-foreground"
-                                        placeholder="#5A7396"
-                                    />
-                                </div>
-                                <button onClick={handleEyeDropper} className="p-2 text-muted-foreground hover:text-foreground bg-card rounded-lg border border-border hover:bg-secondary transition-colors">
-                                    <FaEyeDropper className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Luminance Slider */}
-                        <div className="group/slider relative">
-                             <div className="flex justify-between mb-1.5 items-end">
-                                 <label className="text-[13px] text-muted-foreground">Luminance</label>
-                                 <span className="text-[10px] font-mono text-muted-foreground">{brightness}%</span>
-                             </div>
-                             <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                <div className="absolute inset-0 bg-gradient-to-r from-black to-white opacity-20"></div>
-                                <input 
-                                    type="range" min="0" max="100" 
-                                    value={brightness} 
-                                    onChange={(e) => setBrightness(Number(e.target.value))} 
-                                    className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                />
-                                <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75" style={{ left: `${brightness}%`, transform: 'translate(-50%, -50%)' }} />
-                            </div>
-                        </div>
-
-                        {/* Hue Slider (for 3D mode) */}
-                        {inputMode === '3d' && (
-                            <>
-                                <div className="group/slider relative">
-                                    <div className="flex justify-between mb-1.5 items-end">
-                                        <label className="text-[13px] text-muted-foreground">Hue</label>
-                                        <span className="text-[10px] font-mono text-muted-foreground">{baseColor.h}°</span>
-                                    </div>
-                                    <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-cyan-500 via-blue-500 via-purple-500 to-red-500 opacity-60 rounded-full"></div>
-                                        <input 
-                                            type="range" min="0" max="360" 
-                                            value={baseColor.h} 
-                                            onChange={(e) => handleWheelChange({ ...baseColor, h: Number(e.target.value) })} 
-                                            className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                        />
-                                        <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75 border border-slate-900" style={{ left: `${(baseColor.h / 360) * 100}%`, transform: 'translate(-50%, -50%)' }} />
-                                    </div>
-                                </div>
-
-                                {/* Saturation Slider (for 3D mode) */}
-                                <div className="group/slider relative">
-                                    <div className="flex justify-between mb-1.5 items-end">
-                                        <label className="text-[13px] text-muted-foreground">Saturation</label>
-                                        <span className="text-[10px] font-mono text-muted-foreground">{baseColor.s}%</span>
-                                    </div>
-                                    <div className="h-2 bg-secondary rounded-full relative w-full overflow-hidden group-hover/slider:bg-accent transition-colors">
-                                        <div className="absolute inset-0 bg-gradient-to-r opacity-60 rounded-full" style={{ 
-                                            background: `linear-gradient(to right, hsl(${baseColor.h}, 0%, ${brightness}%), hsl(${baseColor.h}, 100%, ${brightness}%))` 
-                                        }}></div>
-                                        <input 
-                                            type="range" min="0" max="100" 
-                                            value={baseColor.s} 
-                                            onChange={(e) => handleWheelChange({ ...baseColor, s: Number(e.target.value) })} 
-                                            className="w-full h-full opacity-0 cursor-pointer absolute inset-0 z-10"
-                                        />
-                                        <div className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-sm pointer-events-none transition-all duration-75 border border-slate-900" style={{ left: `${baseColor.s}%`, transform: 'translate(-50%, -50%)' }} />
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Color Wheel & Harmonies - Keeping existing layout */}
-                        <div className="flex justify-center pt-12 pb-4 relative">
-                             <div className="absolute top-0 right-0 flex bg-background backdrop-blur-sm rounded-lg p-0.5 border border-border z-10">
-                                <ModeButton mode="wheel" current={inputMode} onClick={setInputMode} label="Wheel" />
-                                <ModeButton mode="curves" current={inputMode} onClick={setInputMode} label="Curves" />
-                                <ModeButton mode="3d" current={inputMode} onClick={setInputMode} label="3D" />
-                             </div>
-                             <ColorWheel 
-                                mode={inputMode} 
-                                baseColor={baseColor} 
-                                onChange={handleWheelChange} 
-                                brightness={brightness} 
-                                isPrintMode={isPrintMode} 
-                                isMixing={false}
-                                harmonyColors={palette.slice(1)} 
-                             />
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                            <HarmonyButton type="monochromatic" label="Mono" />
-                            <HarmonyButton type="analogous" label="Analog" />
-                            <HarmonyButton type="complementary" label="Comp" />
-                            <HarmonyButton type="split-complementary" label="Split" />
-                            <HarmonyButton type="triadic" label="Triad" />
-                            <HarmonyButton type="square" label="Square" />
-                        </div>
-                    </div>
-                )}
-
-                {/* Manual Mode */}
-                {creationMode === 'manual' && (
-                    <div className="p-6 space-y-6">
-                        <div className="flex justify-between items-center mb-2">
-                            <label className="text-[13px] text-muted-foreground">Custom colors</label>
-                            <span className="text-[10px] text-muted-foreground">{customColors.length}</span>
-                        </div>
-                        <div className="space-y-3">
-                            {customColors.map((color, idx) => (
-                                <ColorRowInput 
-                                    key={idx} 
-                                    color={color} 
-                                    index={idx}
-                                    onChange={(newColor) => handleUpdateCustomColor(idx, newColor)}
-                                    onDelete={() => handleDeleteCustomColor(idx)}
-                                    canDelete={customColors.length > 1}
-                                />
-                            ))}
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                            <button onClick={handleAddCustomColor} className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-background text-[13px] text-foreground hover:bg-accent">
-                                <HiPlus className="w-4 h-4" />
-                                Add color
-                            </button>
-                            <button onClick={() => setIsImportOpen(true)} className="px-4 py-3 bg-card hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold border border-border transition-all">
-                                <HiUpload className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* AI Generator Footer */}
-                {isSidebarExpanded && (
-                <div className="mt-auto border-t border-border bg-background relative">
-                    <div className="p-4 border-b border-border flex justify-between items-center bg-muted">
-                        <h3 className="text-[13px] text-foreground flex items-center gap-2">
-                            <HiSparkles className="w-4 h-4" />
-                            AI designer
-                        </h3>
-                        {!canUseAssistant && (
-                            <button
-                                type="button"
-                                onClick={() => setIsPricingOpen(true)}
-                                className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground"
-                            >
-                                Subscribe
-                            </button>
-                        )}
-                    </div>
-                    <div className={`transition-all duration-300 ease-in-out ${isChatOpen ? 'h-64' : 'h-0'} overflow-hidden bg-card`}>
-                        <div className="h-full overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                            {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-4">Describe a brand or mood. A reply with colors replaces the brand list. An empty reply is not billed.</p>}
-                            {messages.map((msg, i) => (
-                                <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                    <div className={`px-3 py-2 rounded-lg text-xs max-w-[90%] leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground border border-border'}`}>
-                                        {msg.text}
-                                    </div>
-                                    {msg.palettePreview && (
-                                        <div className="flex gap-1 mt-1.5 p-1 bg-secondary rounded-md border border-border cursor-pointer hover:border-primary transition-colors" onClick={() => handleApplyPalette(msg.palettePreview!)}>
-                                            {msg.palettePreview.map((c, idx) => (
-                                                <div key={idx} className="w-3 h-3 rounded-full" style={{ backgroundColor: c.hex }} title={c.name}></div>
-                                            ))}
-                                            <span className="text-[9px] text-muted-foreground ml-1">Apply</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                            {isChatLoading && (
-                                <div className="flex flex-col items-start">
-                                    <div className="px-3 py-2 rounded-lg text-xs bg-secondary text-muted-foreground border border-border">
-                                        <div className="flex items-center gap-2">
-                                            <div className="relative w-4 h-4">
-                                                <svg className="w-4 h-4 animate-spin" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <defs>
-                                                        <linearGradient id="mac-spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                            <stop offset="0%" stopColor="#ff6b6b" />
-                                                            <stop offset="14.28%" stopColor="#ffa500" />
-                                                            <stop offset="28.57%" stopColor="#ffd700" />
-                                                            <stop offset="42.85%" stopColor="#90ee90" />
-                                                            <stop offset="57.14%" stopColor="#4ecdc4" />
-                                                            <stop offset="71.42%" stopColor="#45b7d1" />
-                                                            <stop offset="85.71%" stopColor="#96ceb4" />
-                                                            <stop offset="100%" stopColor="#ff6b6b" />
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <circle cx="8" cy="8" r="6" stroke="url(#mac-spinner-gradient)" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 20" fill="none" opacity="0.8">
-                                                        <animateTransform
-                                                            attributeName="transform"
-                                                            type="rotate"
-                                                            from="0 8 8"
-                                                            to="360 8 8"
-                                                            dur="0.8s"
-                                                            repeatCount="indefinite"
-                                                        />
-                                                    </circle>
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={chatEndRef} />
-                        </div>
-                    </div>
-                    <div className="p-3 bg-background">
-                        <div className="relative">
-                            <input 
-                                type="text" 
-                                className="w-full bg-card border border-border rounded-lg pl-3 pr-10 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground transition-colors"
-                                placeholder="Ask AI..."
-                                value={chatInput}
-                                onChange={e => setChatInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        handleChatSubmit();
-                                    }
-                                }}
-                                onFocus={() => setIsChatOpen(true)}
-                            />
-                            <button 
-                                type="button"
-                                onClick={handleChatSubmit}
-                                disabled={isChatLoading || !chatInput.trim()} 
-                                className="absolute right-1.5 top-1.5 p-1.5 bg-primary rounded-md text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-colors"
-                            >
-                                <FaPaperPlane className="w-3 h-3" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                )}
+            <div>
+              <h2 className="text-2xl font-medium tracking-tight">Refine color</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">Adjust this color, then return to the composer and the ramp.</p>
             </div>
-            )}
-        </aside>
-
-        {/* ... (Main Content, Modals - Existing logic) ... */}
-        <main className={`flex-1 flex flex-col min-w-0 bg-background relative pb-20 md:pb-0 overflow-hidden ${mobileTab === 'canvas' ? 'flex' : 'hidden md:flex'}`}>
-            {/* Same as previous main logic, just ensuring props are passed to components */}
-            <div className="h-12 border-b border-border flex items-center px-4 gap-4 bg-canvas sticky top-0 z-20 shrink-0">
-                {(['brand', 'neutrals', 'system'] as PaletteTab[]).map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`h-full text-[13px] border-b-2 transition-colors px-1 capitalize ${activeTab === tab ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>{tab}</button>
+            {creationMode === 'manual' && customColors.length > 1 && (
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Color to refine">
+                {customColors.map((color, index) => (
+                  <button
+                    key={`${color.hex}-${index}`}
+                    type="button"
+                    onClick={() => { setRefineIndex(index); setLocalHexInput(color.hex.toUpperCase()); }}
+                    className={`h-10 w-10 rounded-lg ring-2 ring-offset-2 ring-offset-background ${refineIndex === index ? 'ring-foreground' : 'ring-transparent'}`}
+                    style={{ backgroundColor: color.hex }}
+                    aria-label={color.name}
+                    aria-pressed={refineIndex === index}
+                  />
                 ))}
-                
-                <div className="flex items-center gap-0.5 rounded-lg border border-border bg-background p-0.5">
-                    <button onClick={() => setViewMode('grid')} className={`grid size-8 place-items-center rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`} title="Grid view" aria-pressed={viewMode === 'grid'}>
-                        <HiViewGrid className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setViewMode('gradients')} className={`grid size-8 place-items-center rounded-md transition-colors ${viewMode === 'gradients' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`} title="Gradient view" aria-pressed={viewMode === 'gradients'}>
-                        <FaPalette className="w-4 h-4" />
-                    </button>
-                </div>
-
-                <button onClick={() => setViewMode('playground')} className="h-8 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">Palette playground</button>
-                <div className="ml-auto flex items-center gap-3">
-                    {viewMode === 'grid' && (
-                        <button 
-                            onClick={() => setIsCompactView(!isCompactView)}
-                            className={`hidden md:grid size-8 place-items-center rounded-lg transition-colors ${isCompactView ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
-                            title={isCompactView ? "Switch to expanded cards" : "Switch to compact list"}
-                            aria-pressed={isCompactView}
-                        >
-                            {isCompactView ? (
-                                <HiViewGrid className="w-4 h-4" />
-                            ) : (
-                                <HiMenu className="w-4 h-4" />
-                            )}
-                        </button>
-                    )}
-
-                    <button type="button" className="flex items-center gap-2" onClick={() => setIsPrintMode(!isPrintMode)} aria-pressed={isPrintMode}>
-                        <span className={`relative h-5 w-9 rounded-full transition-colors ${isPrintMode ? 'bg-primary' : 'bg-[var(--switch)]'}`}>
-                            <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform ${isPrintMode ? 'translate-x-3.5' : 'translate-x-0'}`}></span>
-                        </span>
-                        <span className={`text-[13px] ${isPrintMode ? 'text-foreground' : 'text-muted-foreground'}`}>Print (CMYK)</span>
-                    </button>
-                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
+              <div className="size-10 rounded-lg ring-1 ring-border" style={{ backgroundColor: creationMode === 'manual' ? customColors[refineIndex]?.hex : palette[0]?.hex }} />
+              <input
+                type="text"
+                value={localHexInput}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setLocalHexInput(val);
+                  if (/^#[0-9A-F]{6}$/i.test(val)) handleRefineWheel(hexToHsl(val));
+                }}
+                className="min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground focus:outline-none"
+                aria-label="Hex"
+              />
+              <button type="button" onClick={pickRefineFromScreen} className="grid size-9 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground" aria-label="Pick color from screen">
+                <Pipette className="size-4" strokeWidth={1.5} />
+              </button>
             </div>
+            <div>
+              <div className="mb-1.5 flex justify-between text-[13px] text-muted-foreground">
+                <label htmlFor="refine-lightness">Luminance</label>
+                <span className="font-mono text-foreground">{Math.round(refineLightness)}%</span>
+              </div>
+              <input id="refine-lightness" type="range" min={0} max={100} value={refineLightness} onChange={(e) => setRefineLightness(Number(e.target.value))} className="w-full" />
+            </div>
+            <div className="flex justify-center">
+              <ColorWheel
+                mode="wheel"
+                baseColor={refineBase}
+                onChange={handleRefineWheel}
+                brightness={refineLightness}
+                isPrintMode={isPrintMode}
+                isMixing={false}
+                harmonyColors={creationMode === 'generator' ? palette.slice(1) : []}
+              />
+            </div>
+            {creationMode === 'generator' && (
+              <div className="grid grid-cols-3 gap-2">
+                <HarmonyButton type="monochromatic" label="Mono" />
+                <HarmonyButton type="analogous" label="Analog" />
+                <HarmonyButton type="complementary" label="Complement" />
+                <HarmonyButton type="split-complementary" label="Split" />
+                <HarmonyButton type="triadic" label="Triad" />
+                <HarmonyButton type="square" label="Square" />
+              </div>
+            )}
+            <button type="button" onClick={() => setStudioPane('composer')} className="h-11 rounded-xl bg-primary text-[13px] text-primary-foreground hover:opacity-90">
+              Done
+            </button>
+          </div>
+        </div>
+      ) : studioPane === 'colors' ? (
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-6">
+            <button type="button" onClick={() => setStudioPane('composer')} className="inline-flex h-10 items-center gap-1.5 self-start rounded-lg px-1 text-[13px] text-foreground hover:bg-accent">
+              <ChevronLeft className="size-4" strokeWidth={1.5} />
+              Back to composer
+            </button>
+            <div>
+              <h2 className="text-2xl font-medium tracking-tight">Edit colors</h2>
+              <p className="mt-2 text-[15px] text-muted-foreground">Add or change colors without the assistant. The ramp updates when you go back.</p>
+            </div>
+            <div className="space-y-3">
+              {customColors.map((color, idx) => (
+                <ColorRowInput
+                  key={`${color.hex}-${idx}`}
+                  color={color}
+                  index={idx}
+                  onChange={(newColor) => handleUpdateCustomColor(idx, newColor)}
+                  onDelete={() => handleDeleteCustomColor(idx)}
+                  canDelete={customColors.length > 1}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={handleAddCustomColor} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card text-[13px] text-foreground hover:bg-accent">
+                <Plus className="size-4" strokeWidth={1.5} />
+                Add color
+              </button>
+              <button type="button" onClick={() => setIsImportOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
+                <Upload className="size-4" strokeWidth={1.5} />
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
+              {messages.length === 0 && (
+                <div className="pt-4">
+                  <h2 className="text-2xl font-medium tracking-tight text-foreground">Describe a palette</h2>
+                  <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+                    Ask for a brand, a mood, or a product. A reply with colors becomes the palette. The assistant is the only paid part of the studio.
+                  </p>
+                </div>
+              )}
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-canvas">
-                {viewMode === 'gradients' ? (
-                    <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast("CSS Copied!"); }} />
-                ) : (
-                    <div className={`grid gap-4 ${isCompactView ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3'}`}>
-                        {activeColors.map((color, idx) => (
-                            <PaletteCard 
-                                key={idx}
-                                color={color} 
-                                onOpenInfo={setSelectedColorForInfo} 
-                                onOpenGrid={setSelectedColorForGrid}
-                                onEditScale={handleEditClick}
-                                onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
-                                onColorUpdate={(updatedColor) => {
-                                    if (activeTab === 'neutrals') {
-                                        setNeutralPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                                    } else if (activeTab === 'system') {
-                                        setSemanticPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                                    } else {
-                                        setPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
-                                    }
-                                    setIsSaved(false);
-                                }}
-                                isPrintMode={isPrintMode}
-                                isCompact={isCompactView}
-                                globalConfig={globalCurveConfig}
-                            />
-                        ))}
+              <div className="flex flex-col gap-3">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground ring-1 ring-border'}`}>
+                      {msg.text}
                     </div>
+                    {msg.palettePreview && (
+                      <button
+                        type="button"
+                        className="mt-2 flex items-center gap-1 rounded-lg border border-border bg-card p-1.5 hover:bg-accent"
+                        onClick={() => handleApplyPalette(msg.palettePreview!)}
+                      >
+                        {msg.palettePreview.map((c, idx) => (
+                          <span key={idx} className="size-4 rounded-full ring-1 ring-border" style={{ backgroundColor: c.hex }} />
+                        ))}
+                        <span className="px-1 text-[13px] text-foreground">Apply</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {isChatLoading && (
+                  <div className="flex items-center gap-2 self-start rounded-2xl bg-card px-4 py-3 text-[13px] text-muted-foreground ring-1 ring-border">
+                    <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
+                    Making a palette
+                  </div>
                 )}
-            </div>
-        </main>
-      </div>
+              </div>
 
-      {/* --- MOBILE NAVIGATION BAR --- */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border z-50 flex justify-around items-center px-6">
-          <button 
-              onClick={() => setMobileTab('editor')}
-              className={`flex flex-col items-center gap-1 transition-colors ${mobileTab === 'editor' ? 'text-foreground' : 'text-muted-foreground'}`}
+              {hasPalette && (
+                <section className="rounded-2xl bg-card p-4 ring-1 ring-border shadow-panel">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={paletteName}
+                      onChange={(e) => setPaletteName(e.target.value)}
+                      className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-foreground focus:outline-none md:hidden"
+                      aria-label="Palette name"
+                    />
+                    <div className="flex gap-1">
+                      {(['brand', 'neutrals', 'system'] as PaletteTab[]).map(tab => (
+                        <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`h-8 rounded-lg px-2.5 text-[13px] capitalize ${activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}>{tab}</button>
+                      ))}
+                    </div>
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                      <button type="button" onClick={() => setViewMode(viewMode === 'gradients' ? 'grid' : 'gradients')} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[13px] text-foreground hover:bg-accent">
+                        {viewMode === 'gradients' ? <LayoutGrid className="size-3.5" strokeWidth={1.5} /> : <Palette className="size-3.5" strokeWidth={1.5} />}
+                        {viewMode === 'gradients' ? 'Ramps' : 'Gradients'}
+                      </button>
+                      <button type="button" onClick={() => setViewMode('playground')} className="h-8 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">Playground</button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <button type="button" onClick={() => setIsCurveControlsOpen(!isCurveControlsOpen)} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground">
+                      <ChevronRight className={`size-4 transition-transform ${isCurveControlsOpen ? 'rotate-90' : ''}`} strokeWidth={1.5} />
+                      Ramp settings
+                    </button>
+                    <button type="button" className="ml-auto flex items-center gap-2" onClick={() => setIsPrintMode(!isPrintMode)} aria-pressed={isPrintMode}>
+                      <span className={`relative h-5 w-9 rounded-full ${isPrintMode ? 'bg-primary' : 'bg-[var(--switch)]'}`}>
+                        <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform ${isPrintMode ? 'translate-x-3.5' : ''}`} />
+                      </span>
+                      <span className="text-[13px] text-foreground">Print (CMYK)</span>
+                    </button>
+                    {viewMode === 'grid' && (
+                      <button type="button" onClick={() => setIsCompactView(!isCompactView)} className="hidden h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-muted-foreground hover:bg-accent md:inline-flex" aria-pressed={isCompactView}>
+                        <Menu className="size-4" strokeWidth={1.5} />
+                        {isCompactView ? 'Cards' : 'List'}
+                      </button>
+                    )}
+                  </div>
+
+                  {isCurveControlsOpen && (
+                    <div className="mb-4 grid gap-4 sm:grid-cols-2">
+                      <label className="block text-[13px] text-muted-foreground">
+                        Scale steps
+                        <span className="float-right font-mono text-foreground">{globalCurveConfig.steps}</span>
+                        <input type="range" min={3} max={21} step={1} value={globalCurveConfig.steps} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, steps: Number(e.target.value) })} className="mt-2 w-full" />
+                      </label>
+                      <label className="block text-[13px] text-muted-foreground">
+                        Vibrancy
+                        <span className="float-right font-mono text-foreground">{globalCurveConfig.vibrancy}%</span>
+                        <input type="range" min={-100} max={100} step={5} value={globalCurveConfig.vibrancy} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, vibrancy: Number(e.target.value) })} className="mt-2 w-full" />
+                      </label>
+                      <label className="block text-[13px] text-muted-foreground">
+                        Contrast
+                        <span className="float-right font-mono text-foreground">{globalCurveConfig.contrast}%</span>
+                        <input type="range" min={-100} max={100} step={5} value={globalCurveConfig.contrast} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, contrast: Number(e.target.value) })} className="mt-2 w-full" />
+                      </label>
+                      <label className="block text-[13px] text-muted-foreground">
+                        Hue blend
+                        <span className="float-right font-mono text-foreground">{globalCurveConfig.hueTorsion}°</span>
+                        <input type="range" min={-60} max={60} step={5} value={globalCurveConfig.hueTorsion} onChange={(e) => setGlobalCurveConfig({ ...globalCurveConfig, hueTorsion: Number(e.target.value) })} className="mt-2 w-full" />
+                      </label>
+                    </div>
+                  )}
+
+                  {viewMode === 'gradients' ? (
+                    <GradientList colors={activeColors} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
+                  ) : (
+                    <div className={`grid gap-4 ${isCompactView ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
+                      {activeColors.map((color, idx) => (
+                        <PaletteCard
+                          key={`${color.hex}-${idx}`}
+                          color={color}
+                          onOpenInfo={setSelectedColorForInfo}
+                          onOpenGrid={setSelectedColorForGrid}
+                          onEditScale={handleEditClick}
+                          onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
+                          onColorUpdate={(updatedColor) => {
+                            if (activeTab === 'neutrals') {
+                              setNeutralPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                            } else if (activeTab === 'system') {
+                              setSemanticPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                            } else if (creationMode === 'manual') {
+                              setCustomColors(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                            } else {
+                              setPalette(prev => prev.map((c, i) => i === idx ? updatedColor : c));
+                            }
+                            setIsSaved(false);
+                          }}
+                          isPrintMode={isPrintMode}
+                          isCompact={isCompactView}
+                          globalConfig={globalCurveConfig}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          </div>
+
+          <form
+            className="shrink-0 border-t border-border bg-sidebar px-4 py-3"
+            onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
           >
-              <HiAdjustments className="w-5 h-5" />
-              <span className="text-[13px]">Generator</span>
-          </button>
-          
-          <button 
-              onClick={() => setMobileTab('canvas')}
-              className={`flex flex-col items-center gap-1 transition-colors ${mobileTab === 'canvas' ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-              <HiViewGrid className="w-5 h-5" />
-              <span className="text-[13px]">Palettes</span>
-          </button>
-      </div>
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+              <div className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-panel">
+                <textarea
+                  rows={2}
+                  className="max-h-40 min-h-[3.25rem] flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  placeholder="Describe a brand or mood"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSubmit();
+                    }
+                  }}
+                  aria-label="Palette prompt"
+                />
+                <button
+                  type="submit"
+                  disabled={isChatLoading || !chatInput.trim()}
+                  className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                  aria-label="Send"
+                >
+                  <Send className="size-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openRefine(0)}
+                  disabled={!hasPalette}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[13px] text-foreground hover:bg-accent disabled:opacity-40"
+                >
+                  <Pipette className="size-3.5" strokeWidth={1.5} />
+                  Refine color
+                </button>
+                <button type="button" onClick={openColors} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">
+                  <Pencil className="size-3.5" strokeWidth={1.5} />
+                  Edit colors
+                </button>
+                <button type="button" onClick={handleTunerClick} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">
+                  <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
+                  Fix palette
+                </button>
+                <div className="lg:hidden">{renderSkillActions()}</div>
+                {!canUseAssistant && (
+                  <button type="button" onClick={() => setIsPricingOpen(true)} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground">
+                    <Sparkles className="size-3.5" strokeWidth={1.5} />
+                    Assistant
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+        </>
+      )}
 
       {/* Modals */}
       {selectedColorForEdit && (() => {

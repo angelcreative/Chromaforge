@@ -119,10 +119,7 @@ export const CardsSidebar: React.FC<CardsSidebarProps> = ({
           {filteredCategories.length > 0 && (
             <div className="px-4 pt-4 pb-4 border-b border-border">
               <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                />
+                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" strokeWidth={1.5}/>
                 <input
                   type="text"
                   placeholder="Search cards..."

@@ -26,7 +26,7 @@ export default function MenubarCard({ theme }: { theme: ThemeColors }) {
               color: activeItem === id ? theme.action.primary : theme.text.secondary,
             }}
           >
-            <Icon size={24} />
+            <Icon size={24} strokeWidth={1.5} />
             <span className="text-xs">{label}</span>
           </button>
         ))}
@@ -47,7 +47,7 @@ export default function MenubarCard({ theme }: { theme: ThemeColors }) {
           e.currentTarget.style.transform = 'translate(-50%, -6px) scale(1)';
         }}
       >
-        <Plus size={24} />
+        <Plus size={24} strokeWidth={1.5}/>
       </button>
     </BaseCard>
   );

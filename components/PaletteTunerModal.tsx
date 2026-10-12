@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { ChevronLeft, Pencil, X } from 'lucide-react';
 import { ColorData, ColorGroup } from '../types';
 import { createColorData, parseInputToGroups, tunePaletteLinear, tunePaletteLuminanceFit, tunePaletteOKLCH, rgbToOklch, oklchToRgb, rgbToHex, getLuminance } from '../utils/colorUtils';
 import ExportModal from './ExportModal';
@@ -247,8 +248,8 @@ const PaletteTunerModal: React.FC<PaletteTunerModalProps> = ({ onClose, usageCou
               {/* Header */}
               <div className="h-16 border-b border-border flex items-center justify-between px-6 bg-card shrink-0">
                   <div className="flex items-center gap-4">
-                      <button onClick={() => setIsEditorOpen(false)} className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-xs font-bold uppercase">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      <button onClick={() => setIsEditorOpen(false)} className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-[13px]">
+                          <ChevronLeft className="size-4" strokeWidth={1.5} />
                           Back
                       </button>
                       <div className="h-6 w-px bg-white/10"></div>
@@ -316,7 +317,7 @@ const PaletteTunerModal: React.FC<PaletteTunerModalProps> = ({ onClose, usageCou
       </div>
       <div className="flex gap-4 items-center">
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full hover:bg-accent">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="size-5" strokeWidth={1.5} />
           </button>
       </div>
     </div>
@@ -458,7 +459,7 @@ const PaletteTunerModal: React.FC<PaletteTunerModalProps> = ({ onClose, usageCou
                                     onClick={() => setIsEditorOpen(true)}
                                     className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 bg-primary text-primary-foreground shadow-lg shadow-none hover:opacity-90`}
                                 >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                    <Pencil className="size-4" strokeWidth={1.5} />
                                     Edit Interpolation
                                 </button>
                             </div>

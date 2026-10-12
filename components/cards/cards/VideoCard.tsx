@@ -18,7 +18,7 @@ export default function VideoCard({ theme }: { theme: ThemeColors }) {
         </div>
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <Button theme={theme} style={{ borderRadius: '50%', width: '56px', height: '56px', padding: 0 }}>
-            <Play size={24} fill="currentColor" />
+            <Play size={24} strokeWidth={1.5}/>
           </Button>
         </div>
       </div>
@@ -40,7 +40,7 @@ export default function VideoCard({ theme }: { theme: ThemeColors }) {
             </div>
           </div>
           <IconButton theme={theme}>
-            <MoreVertical size={20} />
+            <MoreVertical size={20} strokeWidth={1.5}/>
           </IconButton>
         </div>
       </div>

@@ -43,7 +43,7 @@ print('Prediction: {}'.format(response.generations[0].text))`;
             ))}
           </Tabs.List>
           <IconButton theme={theme}>
-            <Copy size={16} />
+            <Copy size={16} strokeWidth={1.5}/>
           </IconButton>
         </div>
 

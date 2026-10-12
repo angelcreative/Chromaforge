@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { generateShades, getContrastRatio, getLuminance } from '../utils/colorUtils';
 import { ColorData } from '../types';
 
@@ -53,8 +54,9 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
           <h2 className="text-2xl font-bold text-foreground">Contrast Grid ({color.name})</h2>
           <p className="text-muted-foreground">APCA / WCAG approx. matrix</p>
         </div>
-        <button onClick={onClose} className="p-2 bg-secondary text-foreground rounded-lg hover:bg-accent transition">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <button onClick={onClose} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
+          <X className="size-4" strokeWidth={1.5} />
+          Close
         </button>
       </div>
 

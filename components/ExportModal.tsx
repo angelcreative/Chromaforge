@@ -1,4 +1,5 @@
 
+import { Check, Copy, Download, X } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import { ColorData, ExportFormat, ColorGroup, GlobalCurveConfig } from '../types';
 import { 
@@ -6,7 +7,6 @@ import {
     exportGroupsToCSS, exportGroupsToSCSS, exportGroupsToTailwind, exportGroupsToJSON, exportGroupsToFigma, createGroupsASE
 } from '../utils/exporters';
 import { buildGroupsColorSkill, buildStudioColorSkill } from '../utils/colorSkill';
-import { HiX, HiDownload, HiClipboardCopy, HiCheck } from 'react-icons/hi';
 
 interface ExportModalProps {
   paletteName?: string;
@@ -129,7 +129,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
             <p className="text-xs text-muted-foreground font-mono mt-1">{displayName}</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
-            <HiX className="w-6 h-6" />
+            <X className="w-6 h-6" strokeWidth={1.5}/>
           </button>
         </div>
 
@@ -161,7 +161,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
             {isBinaryFormat ? (
                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-300">
                      <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mb-6 border border-border shadow-2xl ring-1 ring-white/5 group-hover:scale-110 transition-transform duration-500">
-                        <HiDownload className="w-10 h-10 text-foreground drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+                        <Download className="w-10 h-10 text-foreground drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" strokeWidth={1.5}/>
                      </div>
                      <h3 className="text-foreground font-bold text-xl mb-2 tracking-tight">Adobe Swatch Exchange (.ASE)</h3>
                      <p className="text-muted-foreground text-sm mb-8 max-w-[280px] leading-relaxed">
@@ -171,7 +171,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                         onClick={handleDownload}
                         className="bg-primary hover:opacity-90 text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-none transition-all flex items-center gap-3 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 "
                      >
-                        <HiDownload className="w-5 h-5" />
+                        <Download className="w-5 h-5" strokeWidth={1.5}/>
                         Download .ASE File
                      </button>
                  </div>
@@ -187,7 +187,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                         className="bg-secondary backdrop-blur-sm hover:bg-accent text-foreground px-3 py-1.5 rounded-lg text-xs font-medium border border-border shadow-lg transition-all flex items-center gap-2"
                         title="Download File"
                         >
-                        <HiDownload className="w-4 h-4" />
+                        <Download className="w-4 h-4" strokeWidth={1.5}/>
                         Download
                         </button>
                         <button 
@@ -196,12 +196,12 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
                         >
                         {copied ? (
                             <>
-                            <HiCheck className="w-4 h-4 text-green-400" />
+                            <Check className="w-4 h-4 text-green-400" strokeWidth={1.5}/>
                             Copied!
                             </>
                         ) : (
                             <>
-                            <HiClipboardCopy className="w-4 h-4" />
+                            <Copy className="w-4 h-4" strokeWidth={1.5}/>
                             Copy
                             </>
                         )}

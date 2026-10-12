@@ -1,8 +1,7 @@
 
+import { Check, Star } from 'lucide-react';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { LegalPageType } from './LegalModal';
-import { FaStar } from 'react-icons/fa';
-import { HiCheck } from 'react-icons/hi';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -219,7 +218,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
   ];
 
   const StarIcon = () => (
-      <FaStar className="w-4 h-4 text-yellow-400 fill-current drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" />
+      <Star className="w-4 h-4 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" strokeWidth={1.5}/>
   );
 
   return (
@@ -541,7 +540,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                         }`}
                         style={{ transitionDelay: `${50 * idx}ms` }}
                       >
-                          <HiCheck className="w-4 h-4 text-green-400" />
+                          <Check className="w-4 h-4 text-green-400" strokeWidth={1.5}/>
                           {item}
                       </div>
                   ))}
@@ -642,7 +641,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onOpen
                                   <p className="text-slate-500 text-xs truncate">{t.role}</p>
                               </div>
                               <div className="flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20 shrink-0">
-                                  <HiCheck className="w-3 h-3" />
+                                  <Check className="w-3 h-3" strokeWidth={1.5}/>
                                   Verified
                               </div>
                           </div>

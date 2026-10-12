@@ -14,7 +14,7 @@ export default function ProductCard({ theme }: { theme: ThemeColors }) {
         />
         <div className="absolute top-4 right-4">
           <IconButton theme={theme}>
-            <Heart size={20} />
+            <Heart size={20} strokeWidth={1.5}/>
           </IconButton>
         </div>
       </div>
@@ -26,7 +26,7 @@ export default function ProductCard({ theme }: { theme: ThemeColors }) {
           <span className="text-xl font-bold" style={{ color: theme.text.main }}>$199.00</span>
           <span className="text-sm line-through" style={{ color: theme.text.tertiary }}>$249.00</span>
         </div>
-        <Button theme={theme} className="w-full" icon={<ShoppingCart size={16} />}>
+        <Button theme={theme} className="w-full" icon={<ShoppingCart size={16} strokeWidth={1.5}/>}>
           Add to Cart
         </Button>
       </div>

@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { Check, Image, X } from 'lucide-react';
 import { ColorData } from '../types';
 import { extractColorsFromImage, parseInputToGroups } from '../utils/colorUtils';
 
@@ -119,7 +120,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
               Import Colors
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="size-5" strokeWidth={1.5} />
           </button>
         </div>
 
@@ -158,7 +159,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
                             {isProcessing ? (
                                 <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mb-2"></div>
                             ) : (
-                                <svg className="w-10 h-10 mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <Image className="mb-3 size-10 opacity-50" strokeWidth={1.5} />
                             )}
                             <p className="text-sm font-medium">Click to upload screenshot</p>
                             <p className="text-[10px] mt-1 opacity-60">We'll extract the dominant colors</p>
@@ -209,7 +210,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
                             >
                                 {item.selected && (
                                     <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md">
-                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
+                                        <Check className="size-3" strokeWidth={1.5} />
                                     </div>
                                 )}
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

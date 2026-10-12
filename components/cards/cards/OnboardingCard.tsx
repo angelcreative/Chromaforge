@@ -10,7 +10,7 @@ export default function OnboardingCard({ theme }: { theme: ThemeColors }) {
         theme={theme}
         className="absolute top-4 right-4"
       >
-        <X size={16} />
+        <X size={16} strokeWidth={1.5}/>
       </IconButton>
       
       <img 

@@ -25,7 +25,7 @@ export default function CreditCard({ theme }: { theme: ThemeColors }) {
           <div className="text-xl font-bold mb-1 text-white">Sarah Williams</div>
           <div className="text-sm text-white/70">Premium Card</div>
         </div>
-        <CreditCardIcon size={32} className="text-white" />
+        <CreditCardIcon size={32} className="text-white" strokeWidth={1.5}/>
       </div>
 
       {/* Separator Line */}

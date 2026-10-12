@@ -20,7 +20,7 @@ export default function DroneMonitorCard({ theme }: { theme: ThemeColors }) {
         </video>
         <div className="absolute top-4 left-4 right-4 flex justify-between">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: 'white' }}>
-            <Radio size={12} className="text-red-500" />
+            <Radio size={12} className="text-red-500" strokeWidth={1.5}/>
             <span className="text-xs font-mono">05:13</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: 'white' }}>
@@ -29,7 +29,7 @@ export default function DroneMonitorCard({ theme }: { theme: ThemeColors }) {
           </div>
         </div>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Plus size={48} style={{ color: 'white' }} />
+          <Plus size={48} style={{ color: 'white' }} strokeWidth={1.5}/>
         </div>
       </div>
 
@@ -49,7 +49,7 @@ export default function DroneMonitorCard({ theme }: { theme: ThemeColors }) {
                 color: activeTab === id ? theme.text.onPrimary : theme.text.secondary,
               }}
             >
-              <Icon size={16} />
+              <Icon size={16} strokeWidth={1.5} />
               <span>{label}</span>
             </Tabs.Trigger>
           ))}
@@ -62,7 +62,7 @@ export default function DroneMonitorCard({ theme }: { theme: ThemeColors }) {
           ].map(({ icon: Icon, label, value }, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: theme.bg.input }}>
               <div className="flex items-center gap-3">
-                <Icon size={20} style={{ color: theme.text.tertiary }} />
+                <Icon size={20} strokeWidth={1.5} style={{ color: theme.text.tertiary }} />
                 <span className="text-sm" style={{ color: theme.text.main }}>{label}</span>
               </div>
               <span className="text-sm font-semibold" style={{ color: theme.text.main }}>{value}</span>
@@ -78,7 +78,7 @@ export default function DroneMonitorCard({ theme }: { theme: ThemeColors }) {
           ].map(({ icon: Icon, label, value }, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: theme.bg.input }}>
               <div className="flex items-center gap-3">
-                <Icon size={20} style={{ color: theme.text.tertiary }} />
+                <Icon size={20} strokeWidth={1.5} style={{ color: theme.text.tertiary }} />
                 <span className="text-sm" style={{ color: theme.text.main }}>{label}</span>
               </div>
               <span className="text-sm font-semibold" style={{ color: theme.text.main }}>{value}</span>
@@ -94,7 +94,7 @@ export default function DroneMonitorCard({ theme }: { theme: ThemeColors }) {
           ].map(({ icon: Icon, label, value }, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: theme.bg.input }}>
               <div className="flex items-center gap-3">
-                <Icon size={20} style={{ color: theme.text.tertiary }} />
+                <Icon size={20} strokeWidth={1.5} style={{ color: theme.text.tertiary }} />
                 <span className="text-sm" style={{ color: theme.text.main }}>{label}</span>
               </div>
               <span className="text-sm font-semibold" style={{ color: theme.text.main }}>{value}</span>

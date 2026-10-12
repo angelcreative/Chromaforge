@@ -30,7 +30,7 @@ export default function FeedbackCard({ theme }: { theme: ThemeColors }) {
                 backgroundColor: selectedRating === id ? `${theme.action.primary}10` : 'transparent',
               }}
             >
-              <Icon size={32} style={{ color: selectedRating === id ? theme.action.primary : theme.text.secondary }} />
+              <Icon size={32} strokeWidth={1.5} style={{ color: selectedRating === id ? theme.action.primary : theme.text.secondary }} />
               <span style={{ color: selectedRating === id ? theme.text.main : theme.text.secondary }}>{label}</span>
             </button>
           ))}

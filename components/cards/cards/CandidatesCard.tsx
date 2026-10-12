@@ -63,7 +63,7 @@ export default function CandidatesCard({ theme }: { theme: ThemeColors }) {
             e.currentTarget.style.color = theme.text.secondary;
           }}
         >
-          <Plus size={20} />
+          <Plus size={20} strokeWidth={1.5}/>
           <span>Add new candidate</span>
         </button>
       </div>

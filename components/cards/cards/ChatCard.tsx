@@ -17,7 +17,7 @@ export default function ChatCard({ theme }: { theme: ThemeColors }) {
           <span className="font-semibold" style={{ color: theme.text.main }}>Marine Yuen</span>
         </div>
         <IconButton theme={theme}>
-          <MoreHorizontal size={20} />
+          <MoreHorizontal size={20} strokeWidth={1.5}/>
         </IconButton>
       </div>
 
@@ -26,7 +26,7 @@ export default function ChatCard({ theme }: { theme: ThemeColors }) {
         <div className="flex justify-end">
           <div className="max-w-[70%] p-3 rounded-lg" style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}>
             <p className="text-sm mb-1">Hi Noel, the team need access to the latest project</p>
-            <CheckCheck size={14} className="inline ml-1" />
+            <CheckCheck size={14} className="inline ml-1" strokeWidth={1.5}/>
           </div>
         </div>
         <div className="text-xs text-center" style={{ color: theme.text.tertiary }}>5 mins ago</div>
@@ -39,7 +39,7 @@ export default function ChatCard({ theme }: { theme: ThemeColors }) {
         <div className="flex justify-end">
           <div className="max-w-[70%] p-3 rounded-lg" style={{ backgroundColor: theme.action.primary, color: theme.text.onPrimary }}>
             <p className="text-sm mb-1">Thanks!</p>
-            <CheckCheck size={14} className="inline ml-1" />
+            <CheckCheck size={14} className="inline ml-1" strokeWidth={1.5}/>
           </div>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function ChatCard({ theme }: { theme: ThemeColors }) {
       <div className="flex items-center gap-2 pt-4 border-t" style={{ borderColor: theme.border.subtle }}>
         <Input theme={theme} placeholder="Write your message here" className="flex-1" style={{ minWidth: '300px' }} />
         <IconButton theme={theme}>
-          <Send size={20} />
+          <Send size={20} strokeWidth={1.5}/>
         </IconButton>
       </div>
     </BaseCard>

@@ -38,7 +38,7 @@ export default function AlarmCard({ theme }: { theme: ThemeColors }) {
           className="w-10 h-10 rounded-full p-0"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}
         >
-          <Plus size={20} />
+          <Plus size={20} strokeWidth={1.5}/>
         </Button>
       </div>
 

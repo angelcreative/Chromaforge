@@ -11,29 +11,29 @@ export default function BoardingCard({ theme }: { theme: ThemeColors }) {
           <div className="text-sm font-semibold mb-1" style={{ color: theme.text.main }}>United Airlines</div>
           <div className="text-xs" style={{ color: theme.text.secondary }}>UA 1234</div>
         </div>
-        <Plane size={32} style={{ color: theme.action.primary }} />
+        <Plane size={32} style={{ color: theme.action.primary }} strokeWidth={1.5}/>
       </div>
 
       <div className="flex items-center justify-between mb-6">
         <div className="text-center">
           <div className="text-2xl font-bold mb-1" style={{ color: theme.text.main }}>SFO</div>
           <div className="flex items-center gap-1 text-xs mb-1" style={{ color: theme.text.secondary }}>
-            <MapPin size={12} />
+            <MapPin size={12} strokeWidth={1.5}/>
             <span>San Francisco</span>
           </div>
           <div className="text-sm font-semibold" style={{ color: theme.text.main }}>10:30 AM</div>
         </div>
         <div className="flex-1 px-4">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Plane size={16} style={{ color: theme.text.tertiary }} />
+            <Plane size={16} style={{ color: theme.text.tertiary }} strokeWidth={1.5}/>
             <div className="flex-1 h-0.5" style={{ backgroundColor: theme.border.subtle }} />
-            <Plane size={16} style={{ color: theme.text.tertiary }} />
+            <Plane size={16} style={{ color: theme.text.tertiary }} strokeWidth={1.5}/>
           </div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold mb-1" style={{ color: theme.text.main }}>NYC</div>
           <div className="flex items-center gap-1 text-xs mb-1" style={{ color: theme.text.secondary }}>
-            <MapPin size={12} />
+            <MapPin size={12} strokeWidth={1.5}/>
             <span>New York</span>
           </div>
           <div className="text-sm font-semibold" style={{ color: theme.text.main }}>6:30 PM</div>
@@ -48,11 +48,11 @@ export default function BoardingCard({ theme }: { theme: ThemeColors }) {
           </Avatar.Root>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm">
-              <User size={14} style={{ color: theme.text.secondary }} />
+              <User size={14} style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
               <span style={{ color: theme.text.main }}>Man Bo Park</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Briefcase size={14} style={{ color: theme.text.secondary }} />
+              <Briefcase size={14} style={{ color: theme.text.secondary }} strokeWidth={1.5}/>
               <span style={{ color: theme.text.main }}>Seat 12A</span>
             </div>
           </div>

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { X } from 'lucide-react';
 import { legalContent } from '../utils/legalData';
 
 export type LegalPageType = 'terms' | 'privacy' | 'cookies' | 'refunds';
@@ -38,7 +39,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
             <p className="text-xs text-muted-foreground font-mono mt-1">{data.date}</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full hover:bg-accent">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="size-5" strokeWidth={1.5} />
           </button>
         </div>
 

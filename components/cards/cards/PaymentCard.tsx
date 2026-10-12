@@ -92,7 +92,7 @@ export default function PaymentCard({ theme }: { theme: ThemeColors }) {
           e.currentTarget.style.color = theme.text.secondary;
         }}
       >
-        <Plus size={20} />
+        <Plus size={20} strokeWidth={1.5}/>
         <span>Add New Card</span>
       </button>
 

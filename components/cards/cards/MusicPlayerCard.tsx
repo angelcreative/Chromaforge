@@ -100,34 +100,34 @@ export default function MusicPlayerCard({ theme }: { theme: ThemeColors }) {
           <button
             className="p-2 rounded-lg transition-all text-white hover:bg-white/20"
           >
-            <Shuffle size={20} />
+            <Shuffle size={20} strokeWidth={1.5}/>
           </button>
           <button
             className="p-2 rounded-lg transition-all text-white hover:bg-white/20"
           >
-            <SkipBack size={24} />
+            <SkipBack size={24} strokeWidth={1.5}/>
           </button>
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             className="p-3 rounded-full transition-all bg-white text-black hover:bg-white/90"
           >
-            {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+            {isPlaying ? <Pause size={24} strokeWidth={1.5}/> : <Play size={24} strokeWidth={1.5}/>}
           </button>
           <button
             className="p-2 rounded-lg transition-all text-white hover:bg-white/20"
           >
-            <SkipForward size={24} />
+            <SkipForward size={24} strokeWidth={1.5}/>
           </button>
           <button
             className="p-2 rounded-lg transition-all text-white hover:bg-white/20"
           >
-            <Repeat size={20} />
+            <Repeat size={20} strokeWidth={1.5}/>
           </button>
         </div>
 
         {/* Volume - Slider funcional */}
         <div className="flex items-center gap-3">
-          <Volume2 size={16} className="text-white" />
+          <Volume2 size={16} className="text-white" strokeWidth={1.5}/>
           <Slider.Root
             className="relative flex items-center select-none touch-none flex-1"
             value={volume}

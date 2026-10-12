@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Cookie } from 'lucide-react';
 import { setAnalyticsConsent } from '../firebaseConfig';
 
 const CookieConsent: React.FC = () => {
@@ -47,7 +48,10 @@ const CookieConsent: React.FC = () => {
             /* SIMPLE BANNER MODE */
             <>
                 <div className="flex-1 mb-4 md:mb-0 relative z-10">
-                    <h3 className="text-foreground font-bold text-lg mb-2">We value your privacy 🍪</h3>
+                    <h3 className="text-foreground font-bold text-lg mb-2 flex items-center gap-2">
+                        <Cookie className="size-5 shrink-0" strokeWidth={1.5} aria-hidden />
+                        We value your privacy
+                    </h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                         We use essential cookies and optional analytics to improve your experience. 
                         You can accept or manage your preferences at any time.

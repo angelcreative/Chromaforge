@@ -17,16 +17,16 @@ export default function VideoCallCard({ theme }: { theme: ThemeColors }) {
         </video>
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
           <button className="w-10 h-10 rounded-lg flex items-center justify-center transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}>
-            <Mic size={20} />
+            <Mic size={20} strokeWidth={1.5}/>
           </button>
           <button className="w-10 h-10 rounded-lg flex items-center justify-center transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}>
-            <Video size={20} />
+            <Video size={20} strokeWidth={1.5}/>
           </button>
           <button className="w-10 h-10 rounded-lg flex items-center justify-center transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}>
-            <Monitor size={20} />
+            <Monitor size={20} strokeWidth={1.5}/>
           </button>
           <button className="w-10 h-10 rounded-lg flex items-center justify-center transition-all" style={{ backgroundColor: theme.semantic.error.main, color: 'white' }}>
-            <PhoneOff size={20} />
+            <PhoneOff size={20} strokeWidth={1.5}/>
           </button>
         </div>
       </div>
@@ -48,7 +48,7 @@ export default function VideoCallCard({ theme }: { theme: ThemeColors }) {
         </div>
         <div className="relative rounded-lg overflow-hidden aspect-video flex items-center justify-center cursor-pointer border-2 border-dashed" style={{ borderColor: theme.border.subtle }}>
           <div className="text-center">
-            <UserPlus size={24} style={{ color: theme.text.tertiary }} className="mx-auto mb-1" />
+            <UserPlus size={24} style={{ color: theme.text.tertiary }} className="mx-auto mb-1" strokeWidth={1.5}/>
             <div className="text-xs" style={{ color: theme.text.secondary }}>Add People</div>
           </div>
         </div>
