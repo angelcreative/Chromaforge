@@ -181,6 +181,32 @@ body {
   transform: scale(1);
 }
 
+@keyframes dialog-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dialog-pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes dialog-pop-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}
+@keyframes swatch-in {
+  from { opacity: 0; transform: scale(0.88); }
+  to { opacity: 1; transform: none; }
+}
+.dialog-fade-in { animation: dialog-fade-in 180ms ease-out both; }
+.dialog-fade-out { animation: dialog-fade-out 140ms ease-in both; }
+.dialog-in { animation: dialog-pop-in 180ms ease-out both; }
+.dialog-out { animation: dialog-pop-out 140ms ease-in both; }
+.swatch-in { animation: swatch-in 240ms ease-out both; }
+
 @media (max-width: 1023px) {
   .drawer-in,
   .drawer-out { animation-name: studio-in; }
@@ -200,7 +226,12 @@ body {
   .logo-mark--enter,
   .logo-mark--loading,
   .describe-word-in,
-  .describe-word-out {
+  .describe-word-out,
+  .dialog-fade-in,
+  .dialog-fade-out,
+  .dialog-in,
+  .dialog-out,
+  .swatch-in {
     animation: none;
   }
   .oklch-dot,

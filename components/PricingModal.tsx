@@ -24,15 +24,17 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-4xl bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:h-auto">
+      <div className="relative flex max-h-[90vh] min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
         
         {/* Close Button */}
         <button 
             onClick={onClose}
+            aria-label="Close"
             className="absolute top-4 right-4 z-20 p-2 bg-black/20 hover:bg-black/40 text-muted-foreground hover:text-foreground rounded-full transition-colors"
         >
             <X className="w-6 h-6" strokeWidth={1.5}/>
         </button>
+        <div className="flex min-h-0 flex-auto flex-col overflow-y-auto md:flex-row">
 
         {/* Left Side: The "Limit Reached" Message */}
         <div className="w-full md:w-2/5 bg-gradient-to-br from-background to-card p-8 md:p-10 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border relative overflow-hidden">
@@ -118,6 +120,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
              <p className="text-center text-xs text-muted-foreground mt-4">
                  Secure payment via Stripe. Cancel anytime.
              </p>
+        </div>
         </div>
 
       </div>

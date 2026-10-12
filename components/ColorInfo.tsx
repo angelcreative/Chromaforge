@@ -23,13 +23,13 @@ const ColorInfo: React.FC<ColorInfoProps> = ({ color, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="flex max-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-card shadow-2xl sm:max-h-[90vh] sm:rounded-2xl sm:border sm:border-border"
+        className="flex max-h-[100dvh] min-h-0 w-full max-w-md flex-col overflow-hidden bg-card shadow-2xl sm:max-h-[90vh] sm:rounded-2xl sm:border sm:border-border"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="color-detail-title"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
           <h2 id="color-detail-title" className="text-[15px] font-medium text-foreground">Color</h2>
           <button
             type="button"
@@ -41,7 +41,7 @@ const ColorInfo: React.FC<ColorInfoProps> = ({ color, onClose }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto px-4 py-4">
+        <div className="min-h-0 flex-auto overflow-y-auto px-4 py-4">
           <div className="h-28 w-full rounded-xl ring-1 ring-border" style={{ backgroundColor: color.hex }} />
 
           <p className="mt-4 font-mono text-2xl text-foreground">{color.hex}</p>
