@@ -276,6 +276,7 @@ const App: React.FC = () => {
     setShellOpen(false);
     setCopilotOpen(false);
     setSelectedColorForEdit(null);
+    setSelectedColorForGrid(null);
     setRefineOpen(false);
   };
 
@@ -291,6 +292,7 @@ const App: React.FC = () => {
     setShowWork(false);
     setShellOpen(false);
     setRefineOpen(false);
+    setSelectedColorForGrid(null);
     showToast("Workspace reset successfully");
   };
 
@@ -731,13 +733,15 @@ const App: React.FC = () => {
   const showLoader = isChatLoading && !showWork;
   const paletteOpen = showWork && hasPalette && !showHome;
 
-  const viewKey = studioPane !== 'composer'
-    ? studioPane
-    : showLoader
-      ? 'loading'
-      : showHome
-        ? 'home'
-        : 'work';
+  const viewKey = selectedColorForGrid
+    ? 'contrast'
+    : studioPane !== 'composer'
+      ? studioPane
+      : showLoader
+        ? 'loading'
+        : showHome
+          ? 'home'
+          : 'work';
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-canvas font-sans text-foreground">
@@ -768,7 +772,9 @@ const App: React.FC = () => {
 
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>
       <div key={viewKey} className="studio-in flex min-h-0 flex-1 flex-col">
-      {studioPane === 'colors' ? (
+      {selectedColorForGrid ? (
+        <ContrastGrid color={selectedColorForGrid} onClose={() => setSelectedColorForGrid(null)} />
+      ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">
             <div>
@@ -1008,7 +1014,6 @@ const App: React.FC = () => {
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={200} isPremium />}
       {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} isPremium />}
       {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} limitType="ai" />}
-      {selectedColorForGrid && <ContrastGrid color={selectedColorForGrid} onClose={() => setSelectedColorForGrid(null)} />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}
     </div>
   );
