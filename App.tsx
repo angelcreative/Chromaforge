@@ -1,5 +1,5 @@
 
-import { Check, Pipette, Plus, Send, Upload } from 'lucide-react';
+import { Pipette, Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex } from './utils/colorUtils';
@@ -39,21 +39,7 @@ import PaletteLibraryModal from './components/PaletteLibraryModal';
 // Legal & Cookies
 import CookieConsent from './components/CookieConsent';
 import LegalModal, { LegalPageType } from './components/LegalModal';
-
-// --- Toast Component ---
-const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isVisible }) => {
-  if (!isVisible) return null;
-  return (
-    <div className="pointer-events-none fixed top-16 left-1/2 z-[170] -translate-x-1/2">
-      <div className="studio-in flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-card-foreground shadow-panel">
-         <div className="bg-accent p-1.5 rounded-full">
-            <Check className="w-4 h-4 text-foreground" strokeWidth={1.5}/>
-         </div>
-         <span className="font-medium text-[13px]">{message}</span>
-      </div>
-    </div>
-  );
-};
+import { showToast, ToastHost } from './components/Toast';
 
 type MobileTab = 'canvas' | 'editor';
 type ViewMode = 'cards' | 'list' | 'ramp' | 'gradients';
@@ -119,8 +105,6 @@ const App: React.FC = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false); 
-  const [toastMessage, setToastMessage] = useState('');
-  const [isToastVisible, setIsToastVisible] = useState(false);
   const [selectedColorForInfo, setSelectedColorForInfo] = useState<ColorData | null>(null);
   const [selectedColorForGrid, setSelectedColorForGrid] = useState<ColorData | null>(null);
   const [selectedColorForEdit, setSelectedColorForEdit] = useState<ColorData | null>(null);
@@ -240,8 +224,6 @@ const App: React.FC = () => {
   }, [palette[0]?.hex, creationMode]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isChatLoading, studioPane]);
-
-  const showToast = (msg: string) => { setToastMessage(msg); setIsToastVisible(true); setTimeout(() => setIsToastVisible(false), 2500); };
 
   const goHome = () => {
     setStudioPane('composer');
@@ -751,7 +733,7 @@ const App: React.FC = () => {
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-canvas font-sans text-foreground">
       {renderGlobalOverlays()}
-      <Toast message={toastMessage} isVisible={isToastVisible} />
+      <ToastHost />
 
       <StudioTopBar
           onHome={goHome}
