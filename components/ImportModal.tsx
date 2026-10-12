@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, X } from 'lucide-react';
+import { Image } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
 import { SelectionMark, enterMotion, popMotion, uiTransition, useReduced } from './uiMotion';
 import { ColorData } from '../types';
 import { collectPaletteColors, extractColorsFromImage } from '../utils/colorUtils';
@@ -186,14 +187,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport, limit = 5,
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <h2 id="import-colors-title" className="text-xl font-medium text-foreground">Import colors</h2>
-          <button
-            type="button"
-            onClick={requestClose}
-            aria-label="Close"
-            className="rounded-full bg-secondary p-2 text-muted-foreground transition hover:text-foreground"
-          >
-            <X className="size-5" strokeWidth={1.5} />
-          </button>
+          <CloseButton onClick={requestClose} />
         </div>
 
         <div className="mx-6 mt-4 flex shrink-0 rounded-lg border border-border bg-background p-1" role="tablist" aria-label="Import source">

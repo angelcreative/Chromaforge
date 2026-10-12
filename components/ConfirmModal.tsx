@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { CloseButton } from './FloatingDrawer';
 import { ModalFrame, MotionButton, useExit } from './uiMotion';
 
 interface ConfirmModalProps {
@@ -30,7 +31,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         {/* Glow effect */}
         {isDestructive && <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>}
         
-        <h3 className="text-xl font-bold text-foreground mb-2">{title}</h3>
+        <CloseButton onClick={() => request()} className="absolute top-3 right-3" />
+        <h3 className="mb-2 pr-8 text-xl font-bold text-foreground">{title}</h3>
         <p className="text-sm text-muted-foreground mb-8 leading-relaxed">{message}</p>
         
         <div className="flex gap-3 justify-end">

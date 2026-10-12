@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronLeft, Pencil, X } from 'lucide-react';
+import { ChevronLeft, Pencil } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
 import { ColorData, ColorGroup } from '../types';
 import { createColorData, parseInputToGroups, tunePaletteLinear, tunePaletteLuminanceFit, tunePaletteOKLCH, rgbToOklch, oklchToRgb, rgbToHex, getLuminance } from '../utils/colorUtils';
 import ExportModal from './ExportModal';
@@ -321,9 +322,7 @@ const PaletteTunerModal: React.FC<PaletteTunerModalProps> = ({ onClose, usageCou
         <p className="text-xs text-muted-foreground mt-0.5">Refine your scales using perceptual interpolation.</p>
       </div>
       <div className="flex gap-4 items-center">
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition p-2 bg-secondary rounded-full hover:bg-accent">
-            <X className="size-5" strokeWidth={1.5} />
-          </button>
+          <CloseButton onClick={onClose} />
       </div>
     </div>
   );
