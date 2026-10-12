@@ -971,7 +971,9 @@ const App: React.FC = () => {
 
               {showWork && hasPalette && (viewMode === 'list' || viewMode === 'ramp') && (
                 <>
-                <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
+                <motion.div {...enterMotion(reduce)}>
+                  <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
+                </motion.div>
                 <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
                   {activeColors.map((color, idx) => (
                     <motion.div key={`${color.hex}-${idx}`} {...enterMotion(reduce, idx)} whileTap={reduce ? undefined : { scale: 0.99 }}>

@@ -1,5 +1,7 @@
+import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
 import { FileCode, Image, Plus } from 'lucide-react';
+import { MotionButton, presencePop, useReduced } from './uiMotion';
 
 export interface ComposerAttachProps {
   onPicture: (file: File) => void;
@@ -12,6 +14,8 @@ const menuItem = 'flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left t
 const ComposerAttach: React.FC<ComposerAttachProps> = ({ onPicture, onColorFile, onColorFileError }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const reduce = useReduced();
+  const menu = presencePop(reduce, 'bottom left');
   const pictureRef = useRef<HTMLInputElement>(null);
   const colorFileRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +47,7 @@ const ComposerAttach: React.FC<ComposerAttachProps> = ({ onPicture, onColorFile,
 
   return (
     <div className="relative" ref={rootRef}>
-      <button
+      <MotionButton
         type="button"
         aria-label="Start from a file"
         aria-haspopup="menu"
@@ -52,9 +56,10 @@ const ComposerAttach: React.FC<ComposerAttachProps> = ({ onPicture, onColorFile,
         className={`grid size-10 place-items-center rounded-xl text-foreground hover:bg-accent ${open ? 'bg-accent' : ''}`}
       >
         <Plus className="size-4" strokeWidth={1.5} aria-hidden />
-      </button>
+      </MotionButton>
+      <AnimatePresence>
       {open && (
-        <div role="menu" className="absolute bottom-full left-0 z-30 mb-1 w-64 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border">
+        <motion.div role="menu" className="absolute bottom-full left-0 z-30 mb-1 w-64 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border" {...menu}>
           <button
             type="button"
             role="menuitem"
@@ -79,8 +84,9 @@ const ComposerAttach: React.FC<ComposerAttachProps> = ({ onPicture, onColorFile,
             <FileCode className="size-4" strokeWidth={1.5} aria-hidden />
             Upload JSON, CSS, or Tailwind
           </button>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
       <input
         ref={pictureRef}
         type="file"
