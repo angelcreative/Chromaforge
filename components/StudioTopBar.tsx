@@ -11,11 +11,11 @@ const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onHome,
   markMotion = 'enter',
 }) => (
-  <header className="z-40 flex h-14 shrink-0 items-center border-b border-border bg-card px-3">
+  <header className="pointer-events-none absolute top-0 left-0 z-50 bg-transparent">
     <MotionButton
       type="button"
       onClick={onHome}
-      className="grid size-10 place-items-center text-foreground"
+      className="pointer-events-auto ml-3 mt-2 grid size-10 place-items-center bg-transparent text-foreground"
       aria-label="Chromaforge"
     >
       <LogoMark className="size-6" motion={markMotion} />
