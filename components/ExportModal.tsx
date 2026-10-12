@@ -1,8 +1,9 @@
 
 import { motion } from 'motion/react';
-import { Check, Copy, Download, X } from 'lucide-react';
+import { Check, Copy, Download } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
 import React, { useState, useMemo } from 'react';
-import { MotionButton, popMotion, uiTransition, useReduced } from './uiMotion';
+import { popMotion, uiTransition, useReduced } from './uiMotion';
 import { ColorData, ExportFormat, ColorGroup, GlobalCurveConfig } from '../types';
 import { 
     exportToCSS, exportToSCSS, exportToTailwind, exportToJSON, exportToFigma, exportToProcreate, createASE,
@@ -142,9 +143,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
             </h2>
             <p className="text-xs text-muted-foreground font-mono mt-1">{displayName}</p>
           </div>
-          <MotionButton type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-6 h-6" strokeWidth={1.5}/>
-          </MotionButton>
+          <CloseButton onClick={onClose} />
         </div>
 
         <div className="flex min-h-0 flex-auto flex-col overflow-hidden p-6">

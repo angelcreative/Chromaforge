@@ -1,9 +1,9 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import React from 'react';
-import { X } from 'lucide-react';
 import { legalContent } from '../utils/legalData';
-import { MotionButton, presenceFade, uiTransition, useReduced } from './uiMotion';
+import { CloseButton } from './FloatingDrawer';
+import { presenceFade, uiTransition, useReduced } from './uiMotion';
 
 export type LegalPageType = 'terms' | 'privacy' | 'cookies' | 'refunds';
 
@@ -47,23 +47,11 @@ const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
             <h2 className="text-2xl font-bold text-foreground">{data.title}</h2>
             <p className="text-xs text-muted-foreground font-mono mt-1">{data.date}</p>
           </div>
-          <MotionButton type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 bg-secondary rounded-full hover:bg-accent">
-            <X className="size-5" strokeWidth={1.5} />
-          </MotionButton>
+          <CloseButton onClick={onClose} />
         </div>
 
         <div className="min-h-0 flex-auto overflow-y-auto bg-muted p-6 custom-scrollbar">
            {renderContent(data.content)}
-        </div>
-        
-        <div className="p-4 border-t border-border bg-card shrink-0 text-center">
-            <MotionButton 
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:opacity-90"
-            >
-                Close
-            </MotionButton>
         </div>
       </motion.div>
     </motion.div>

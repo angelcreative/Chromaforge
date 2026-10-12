@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import React from 'react';
-import { Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
 import { ChatMessage } from '../types';
 import { formatCompact } from '../services/credits';
 import PigmoButton from './pigmo/PigmoButton';
@@ -50,9 +51,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[13px]">Pigmo</span>
-          <MotionButton type="button" onClick={onClose} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
-            <X className="size-4" strokeWidth={1.5} />
-          </MotionButton>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="mb-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           {messages.map((message, index) => (

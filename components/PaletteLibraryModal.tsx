@@ -1,8 +1,9 @@
 
 import { motion } from 'motion/react';
 import React from 'react';
-import { Inbox, Library, Loader2, Trash2, X } from 'lucide-react';
-import { MotionButton, enterMotion, popMotion, uiTransition, useReduced } from './uiMotion';
+import { Inbox, Library, Loader2, Trash2 } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
+import { enterMotion, popMotion, uiTransition, useReduced } from './uiMotion';
 import { SavedPalette } from '../services/storageService';
 import { ColorData } from '../types';
 
@@ -51,9 +52,7 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 <p className="text-xs text-muted-foreground">Saved in this browser.</p>
             </div>
           </div>
-          <MotionButton type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 bg-secondary rounded-full">
-            <X className="size-5" strokeWidth={1.5} />
-          </MotionButton>
+          <CloseButton onClick={onClose} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6 custom-scrollbar">

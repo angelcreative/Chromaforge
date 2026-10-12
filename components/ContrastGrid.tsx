@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
-import { MotionButton, presencePop, useReduced } from './uiMotion';
+import { CloseButton } from './FloatingDrawer';
+import { presencePop, useReduced } from './uiMotion';
 import { generateShades, getContrastRatio, getLuminance } from '../utils/colorUtils';
 import { ColorData, GlobalCurveConfig } from '../types';
 
@@ -59,10 +59,7 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, globalConfig, onClos
           <h2 className="shrink-0 text-[13px] text-foreground">Contrast grid</h2>
           <span className="truncate text-[13px] text-muted-foreground">{color.name}</span>
         </div>
-        <MotionButton type="button" onClick={onClose} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
-          <X className="size-4" strokeWidth={1.5} />
-          Close
-        </MotionButton>
+        <CloseButton onClick={onClose} />
       </div>
 
       <div className="bg-card p-4 md:p-6 rounded-2xl shadow-xl overflow-auto flex-1 border border-border relative">

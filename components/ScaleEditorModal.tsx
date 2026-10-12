@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { FloatingDrawer } from './FloatingDrawer';
 import { slideMotion, uiTransition, useReduced } from './uiMotion';
 import { ColorData, GlobalCurveConfig, ScaleConfiguration } from '../types';
 import { generateShades, createColorData, hexToRgb, rgbToOklch } from '../utils/colorUtils';
@@ -131,30 +132,39 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
   };
 
   return (
-    <motion.div
-      role="dialog"
-      aria-labelledby="edit-scale-title"
-      className="fixed inset-0 z-[160] flex h-[100dvh] flex-col bg-card text-foreground lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[380px] lg:border-l lg:border-border lg:shadow-panel"
+    <FloatingDrawer
+      title="Edit scale"
+      titleId="edit-scale-title"
+      onClose={handleDiscard}
+      header={(
+        <>
+          <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">{color.name}</p>
+          {!isPremium && usageCount !== undefined && limit !== undefined && (
+            <span className="shrink-0 text-[12px] text-muted-foreground">{usageCount} of {limit} edits</span>
+          )}
+        </>
+      )}
+      footer={(
+        <div className="flex shrink-0 gap-2 border-t border-border bg-card px-4 py-3">
+          <button
+            type="button"
+            onClick={handleDiscard}
+            className="h-11 flex-1 rounded-lg border border-border text-[13px] text-foreground hover:bg-accent"
+          >
+            Discard
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="inline-flex h-11 flex-[2] items-center justify-center gap-2 rounded-lg bg-primary text-[13px] text-primary-foreground hover:opacity-90"
+          >
+            <Check className="size-4" strokeWidth={1.5} aria-hidden />
+            Apply
+          </button>
+        </div>
+      )}
       {...slideMotion(reduce, leaving, { x: '100%' })}
     >
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <div className="min-w-0">
-          <h2 id="edit-scale-title" className="text-[15px] font-medium text-foreground">Edit scale</h2>
-          <p className="truncate text-[13px] text-muted-foreground">{color.name}</p>
-          {!isPremium && usageCount !== undefined && limit !== undefined && (
-            <p className="text-[12px] text-muted-foreground">{usageCount} of {limit} edits</p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={handleDiscard}
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[13px] text-foreground hover:bg-accent"
-        >
-          <X className="size-4" strokeWidth={1.5} aria-hidden />
-          Close
-        </button>
-      </div>
-
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <section>
           <svg
@@ -410,25 +420,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
           )}
         </section>
       </div>
-
-      <div className="flex shrink-0 gap-2 border-t border-border bg-card px-4 py-3">
-        <button
-          type="button"
-          onClick={handleDiscard}
-          className="h-11 flex-1 rounded-lg border border-border text-[13px] text-foreground hover:bg-accent"
-        >
-          Discard
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          className="inline-flex h-11 flex-[2] items-center justify-center gap-2 rounded-lg bg-primary text-[13px] text-primary-foreground hover:opacity-90"
-        >
-          <Check className="size-4" strokeWidth={1.5} aria-hidden />
-          Apply
-        </button>
-      </div>
-    </motion.div>
+    </FloatingDrawer>
   );
 };
 

@@ -1,6 +1,5 @@
-import { motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { FloatingDrawer } from './FloatingDrawer';
 import { slideMotion, useReduced } from './uiMotion';
 import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades, maxOklchChroma, oklchToRgb, rgbToHex, rgbToOklch } from '../utils/colorUtils';
@@ -100,39 +99,27 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
   if (!present) return null;
 
   return (
-    <motion.aside
-      role="dialog"
-      aria-labelledby="refine-color-title"
-      className="fixed top-14 right-0 bottom-0 z-30 flex w-[min(380px,calc(100vw-3rem))] flex-col border-l border-border bg-card text-foreground shadow-panel"
+    <FloatingDrawer
+      title="Refine color"
+      titleId="refine-color-title"
+      onClose={onClose}
+      header={showSiblings ? (
+        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto" role="group" aria-label="Color to refine">
+          {siblings!.map((swatch, index) => (
+            <button
+              key={`${swatch.hex}-${index}`}
+              type="button"
+              aria-label={`Color ${index + 1}`}
+              aria-pressed={index === colorIndex}
+              onClick={() => onSelectColor?.(index)}
+              className={`size-5 shrink-0 rounded-md outline-none ${selectedRingFocus} ${index === colorIndex ? selectedRing : ''}`}
+              style={{ backgroundColor: swatch.hex }}
+            />
+          ))}
+        </div>
+      ) : null}
       {...slideMotion(reduce, !shown, { x: '100%' })}
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
-        <h2 id="refine-color-title" className="text-[15px] font-medium text-foreground">Refine color</h2>
-        {showSiblings && (
-          <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto" role="group" aria-label="Color to refine">
-            {siblings!.map((swatch, index) => (
-              <button
-                key={`${swatch.hex}-${index}`}
-                type="button"
-                aria-label={`Color ${index + 1}`}
-                aria-pressed={index === colorIndex}
-                onClick={() => onSelectColor?.(index)}
-                className={`size-5 shrink-0 rounded-md outline-none ${selectedRingFocus} ${index === colorIndex ? selectedRing : ''}`}
-                style={{ backgroundColor: swatch.hex }}
-              />
-            ))}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          className="ml-auto grid size-8 shrink-0 place-items-center rounded-lg text-foreground hover:bg-accent"
-          aria-label="Close"
-        >
-          <X className="size-4" strokeWidth={1.5} aria-hidden />
-        </button>
-      </div>
-
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">
         <div className="flex h-12 overflow-hidden rounded-lg ring-1 ring-border" role="group" aria-label="Ramp steps">
           {shades.map((shade) => {
@@ -216,7 +203,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
           />
         </div>
       </div>
-    </motion.aside>
+    </FloatingDrawer>
   );
 };
 

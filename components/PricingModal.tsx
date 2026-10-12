@@ -1,6 +1,6 @@
-import { X } from 'lucide-react';
 import React from 'react';
 import { CREDIT_PACKS, formatCompact, type CreditPackId } from '../services/credits';
+import { CloseButton } from './FloatingDrawer';
 import { ModalFrame, MotionButton, useExit } from './uiMotion';
 
 export type LimitType = 'save' | 'ai' | 'export' | 'tuner' | 'edit' | 'general';
@@ -23,14 +23,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
       backdropClassName="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
       panelClassName="relative flex max-h-[90vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-2xl bg-card text-foreground shadow-panel ring-1 ring-border"
     >
-        <MotionButton
-          type="button"
-          onClick={() => request()}
-          className="absolute top-3 right-3 z-20 grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label="Close"
-        >
-          <X className="size-4" strokeWidth={1.5} />
-        </MotionButton>
+        <CloseButton onClick={() => request()} className="absolute top-3 right-3 z-20" />
         <div className="min-h-0 flex-auto overflow-y-auto p-6">
           <h2 className="text-xl font-medium">Credits</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">The editor stays free.</p>

@@ -1,5 +1,5 @@
 
-import { X } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
 import React, { useState } from 'react';
 import { loginUser, registerUser, resetPassword, loginWithGoogle } from '../services/authService';
 import { isDemoMode } from '../firebaseConfig';
@@ -77,9 +77,7 @@ const AuthForms: React.FC<AuthFormsProps> = ({ initialMode = 'login', onClose, o
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden relative">
-            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white">
-                <X className="w-5 h-5" strokeWidth={1.5}/>
-            </button>
+            <CloseButton onClick={onClose} className="absolute top-3 right-3 !text-white hover:!bg-white/10" />
 
             <div className="p-8">
                 <div className="mb-8 text-center">

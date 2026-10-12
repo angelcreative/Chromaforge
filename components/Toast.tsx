@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { CloseButton } from './FloatingDrawer';
 import './Toast.css';
 
 const LIFE_MS = 2500;
@@ -93,14 +94,7 @@ const ToastCard: React.FC<{
         <Check className="size-4" strokeWidth={1.5} />
       </span>
       <span className="min-w-0 py-0.5 text-[13px] font-medium leading-snug">{message}</span>
-      <button
-        type="button"
-        className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
-        aria-label="Close"
-        onClick={() => dismissRef.current()}
-      >
-        <X className="size-3.5" strokeWidth={1.5} />
-      </button>
+      <CloseButton onClick={() => dismissRef.current()} />
       <span
         className="toast-bar"
         aria-hidden="true"
