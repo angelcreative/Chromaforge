@@ -10,7 +10,6 @@ export interface CatalogGroup {
 
 interface PaletteCatalogProps {
   groups: CatalogGroup[];
-  onOpenInfo: (color: ColorData) => void;
   onOpenGrid: (color: ColorData) => void;
   onEditScale: (color: ColorData) => void;
   onCopy: (hex: string) => void;
@@ -21,7 +20,6 @@ interface PaletteCatalogProps {
 
 const PaletteCatalog: React.FC<PaletteCatalogProps> = ({
   groups,
-  onOpenInfo,
   onOpenGrid,
   onEditScale,
   onCopy,
@@ -45,7 +43,6 @@ const PaletteCatalog: React.FC<PaletteCatalogProps> = ({
               >
                 <PaletteCard
                   color={color}
-                  onOpenInfo={onOpenInfo}
                   onOpenGrid={onOpenGrid}
                   onEditScale={onEditScale}
                   onCopy={onCopy}

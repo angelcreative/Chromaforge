@@ -6,7 +6,6 @@ import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNa
 import RefineDrawer from './components/RefineDrawer';
 import { generatePaletteFromPrompt } from './services/geminiService';
 import ContrastGrid from './components/ContrastGrid';
-import ColorInfo from './components/ColorInfo';
 import PaletteCard from './components/PaletteCard';
 import ExportModal from './components/ExportModal';
 import PaletteTunerModal from './components/PaletteTunerModal';
@@ -109,7 +108,6 @@ const App: React.FC = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false); 
-  const [selectedColorForInfo, setSelectedColorForInfo] = useState<ColorData | null>(null);
   const [selectedColorForGrid, setSelectedColorForGrid] = useState<ColorData | null>(null);
   const [selectedColorForEdit, setSelectedColorForEdit] = useState<ColorData | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -940,7 +938,6 @@ const App: React.FC = () => {
                     <PaletteCard
                       key={`${color.hex}-${idx}`}
                       color={color}
-                      onOpenInfo={setSelectedColorForInfo}
                       onOpenGrid={setSelectedColorForGrid}
                       onEditScale={handleEditClick}
                       onCopy={(hex) => { navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); }}
@@ -1011,7 +1008,6 @@ const App: React.FC = () => {
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={200} isPremium />}
       {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} isPremium />}
       {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} limitType="ai" />}
-      {selectedColorForInfo && <ColorInfo color={selectedColorForInfo} onClose={() => setSelectedColorForInfo(null)} />}
       {selectedColorForGrid && <ContrastGrid color={selectedColorForGrid} onClose={() => setSelectedColorForGrid(null)} />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}
     </div>
