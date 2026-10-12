@@ -31,7 +31,7 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 <span className="p-1.5 bg-accent rounded-lg text-foreground">
                     <Library className="size-5" strokeWidth={1.5} />
                 </span>
-                My Saved Palettes
+                Saved palettes
             </h2>
             <div className="flex items-center gap-2 mt-1">
                 <p className="text-xs text-muted-foreground">Saved in this browser.</p>
