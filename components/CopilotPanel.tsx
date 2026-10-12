@@ -1,7 +1,8 @@
 import React from 'react';
-import { MessageSquare, Send, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { formatCompact } from '../services/credits';
+import PigmoButton from './pigmo/PigmoButton';
 
 export interface CopilotPanelProps {
   open: boolean;
@@ -33,14 +34,14 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   <>
     {open && (
       <form
-        className="fixed bottom-20 right-4 z-50 flex max-h-[min(28rem,calc(100dvh-8rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
+        className="fixed bottom-[6.75rem] right-4 z-50 flex max-h-[min(28rem,calc(100dvh-9rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
         }}
       >
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[13px]">Copilot</span>
+          <span className="text-[13px]">Pigmo</span>
           <button type="button" onClick={onClose} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
             <X className="size-4" strokeWidth={1.5} />
           </button>
@@ -57,14 +58,6 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => onSubmit('Fix a palette')}
-          disabled={loading}
-          className="mb-2 h-8 self-start rounded-full border border-border bg-background px-3 text-[13px] text-foreground hover:bg-accent disabled:opacity-40"
-        >
-          Fix a palette
-        </button>
         <div className="mb-2">
           {onCredits ? (
             <button type="button" onClick={onCredits} className="text-[13px] text-muted-foreground hover:text-foreground" title={balanceTitle} aria-label={balanceTitle}>
@@ -100,15 +93,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
         </div>
       </form>
     )}
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-expanded={open}
-      className="fixed bottom-4 right-4 z-50 inline-flex h-11 items-center gap-2 rounded-full bg-card px-4 text-[13px] text-foreground shadow-panel ring-1 ring-border hover:bg-accent"
-    >
-      <MessageSquare className="size-4" strokeWidth={1.5} aria-hidden />
-      Copilot
-    </button>
+    <PigmoButton open={open} onActivate={onToggle} />
   </>
 );
 
