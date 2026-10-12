@@ -1,5 +1,16 @@
 import { ColorData, ChatMessage } from "../types";
 import { createColorData } from "../utils/colorUtils";
+import { getOwnerAccessCode } from "./ownerAccess";
+
+export interface PalettePromptResult {
+  name: string;
+  colors: ColorData[];
+  description: string;
+  paymentRequired?: boolean;
+}
+
+const isHex = (value: unknown) =>
+  typeof value === 'string' && /^#?[0-9a-fA-F]{6}$/.test(value.trim());
 
 /**
  * Frontend service that calls the backend API endpoint.
@@ -7,22 +18,21 @@ import { createColorData } from "../utils/colorUtils";
  */
 export const generatePaletteFromPrompt = async (
   history: ChatMessage[], 
-  currentPalette: { name: string, hex: string }[]
-): Promise<{ name: string, colors: ColorData[], description: string }> => {
+  currentPalette: { name: string, hex: string }[],
+  idToken?: string | null
+): Promise<PalettePromptResult> => {
   try {
-    // Determine the API base URL
-    // In production, use the same origin (relative URL)
-    // In development, Vite proxy or direct localhost
     const apiUrl = '/api/palette';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (idToken) headers.Authorization = `Bearer ${idToken}`;
 
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         history,
-        currentPalette
+        currentPalette,
+        ownerAccess: getOwnerAccessCode() || undefined,
       })
     });
 
@@ -32,16 +42,29 @@ export const generatePaletteFromPrompt = async (
         colors: [], 
         description: `HTTP ${response.status}: ${response.statusText}` 
       }));
-      return errorData;
+      return {
+        name: errorData.name || "Error",
+        colors: [],
+        description: errorData.description || `HTTP ${response.status}`,
+        paymentRequired: response.status === 402 || errorData.paymentRequired === true,
+      };
     }
 
     const data = await response.json();
     
     if (data.colors && Array.isArray(data.colors)) {
+      const usable = data.colors.filter((c: { hex: string }) => isHex(c.hex));
+      if (usable.length === 0) {
+        return {
+          name: data.name || "Error",
+          colors: [],
+          description: data.description || "No colors came back.",
+        };
+      }
       return {
         name: data.name || "AI Generated Palette",
-        description: data.description || `I've updated the palette with ${data.colors.length} colors.`,
-        colors: data.colors.map((c: { hex: string, name: string }) => createColorData(c.hex, undefined, c.name))
+        description: data.description || `I've updated the palette with ${usable.length} colors.`,
+        colors: usable.map((c: { hex: string, name: string }) => createColorData(c.hex, undefined, c.name))
       };
     }
     

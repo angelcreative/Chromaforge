@@ -37,7 +37,7 @@ const CookieConsent: React.FC = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[150] p-4 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="fixed bottom-4 right-4 z-[150] w-[min(36rem,calc(100%-2rem))] animate-in slide-in-from-bottom-4 duration-500">
       <div className="max-w-4xl mx-auto bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-6 md:flex md:items-start md:gap-8 relative overflow-hidden">
         
         {/* Glow Effect */}

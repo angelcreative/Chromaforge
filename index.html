@@ -2,6 +2,24 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var params = new URLSearchParams(location.search);
+          var access = params.get('access');
+          if (access && access.length >= 16) {
+            localStorage.setItem('chromaforge_owner_access', access);
+            params.delete('access');
+            var qs = params.toString();
+            history.replaceState({}, document.title, location.pathname + (qs ? '?' + qs : '') + location.hash);
+          }
+          var theme = localStorage.getItem('chromaforge_theme') || 'system';
+          var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>ChromaForge - Advanced Color Token Builder</title>
@@ -123,6 +141,7 @@
         .perspective { perspective: 1200px; }
         .transform-style-3d { transform-style: preserve-3d; }
     </style>
+<link rel="stylesheet" href="/chrome-theme.css">
 <link rel="stylesheet" href="/index.css">
 </head>
   <body>

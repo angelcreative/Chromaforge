@@ -1,10 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
-import { ColorData, ExportFormat, ColorGroup } from '../types';
+import { ColorData, ExportFormat, ColorGroup, GlobalCurveConfig } from '../types';
 import { 
     exportToCSS, exportToSCSS, exportToTailwind, exportToJSON, exportToFigma, exportToProcreate, createASE,
     exportGroupsToCSS, exportGroupsToSCSS, exportGroupsToTailwind, exportGroupsToJSON, exportGroupsToFigma, createGroupsASE
 } from '../utils/exporters';
+import { buildGroupsColorSkill, buildStudioColorSkill } from '../utils/colorSkill';
 import { HiX, HiDownload, HiClipboardCopy, HiCheck } from 'react-icons/hi';
 
 interface ExportModalProps {
@@ -14,13 +15,15 @@ interface ExportModalProps {
   neutralPalette?: ColorData[]; // For App
   semanticPalette?: ColorData[]; // For App
   onClose: () => void;
-  usageCount?: number;
-  limit?: number;
-  isPremium?: boolean;
+  globalConfig?: GlobalCurveConfig;
 }
 
-const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPalette, neutralPalette, semanticPalette, onClose, usageCount, limit, isPremium }) => {
-  const [format, setFormat] = useState<ExportFormat>('css');
+const FORMAT_LABELS: Partial<Record<ExportFormat, string>> = {
+  skill: 'color.md',
+};
+
+const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPalette, neutralPalette, semanticPalette, onClose, globalConfig }) => {
+  const [format, setFormat] = useState<ExportFormat>('skill');
   const [copied, setCopied] = useState(false);
 
   const isBinaryFormat = format === 'ase';
@@ -32,6 +35,21 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
 
 
   const getCode = (): string => {
+    if (format === 'skill') {
+      if (isSystemExport) {
+        return buildStudioColorSkill({
+          paletteName: paletteName || 'Design Tokens',
+          brand: brandPalette!,
+          neutrals: neutralPalette,
+          semantic: semanticPalette,
+          globalConfig,
+        });
+      }
+      if (groups && groups.length > 0) {
+        return buildGroupsColorSkill(paletteName || 'Tuned Scales', groups, globalConfig);
+      }
+      return '';
+    }
     // Mode A: Full Design System Export
     if (isSystemExport) {
         switch (format) {
@@ -87,13 +105,14 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
         if (format === 'json' || format === 'figma') ext = 'json';
         else if (format === 'tailwind') ext = 'js';
         else if (format === 'procreate') ext = 'swatches';
+        else if (format === 'skill') ext = 'md';
     }
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     const sanitizedName = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    a.download = `${sanitizedName}.${ext}`;
+    a.download = format === 'skill' ? 'color.md' : `${sanitizedName}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -105,12 +124,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
         <div className="p-6 border-b border-white/5 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                Export Palette
-                {!isPremium && usageCount !== undefined && limit !== undefined && (
-                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${usageCount >= limit ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-slate-700 text-slate-500'}`}>
-                        {usageCount}/{limit}
-                    </span>
-                )}
+                Export palette
             </h2>
             <p className="text-xs text-slate-500 font-mono mt-1">{displayName}</p>
           </div>
@@ -122,20 +136,20 @@ const ExportModal: React.FC<ExportModalProps> = ({ paletteName, groups, brandPal
         <div className="p-6 flex-1 overflow-hidden flex flex-col">
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-4 bg-slate-950/50 p-1 rounded-lg w-full border border-white/5">
-            {(['css', 'scss', 'tailwind', 'json', 'figma', 'ase', 'procreate'] as ExportFormat[]).map(f => {
+            {(['skill', 'css', 'scss', 'tailwind', 'json', 'figma', 'ase', 'procreate'] as ExportFormat[]).map(f => {
                 if (groups && f === 'procreate') return null;
                 
                 return (
                   <button
                     key={f}
                     onClick={() => setFormat(f)}
-                    className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all uppercase ${
+                    className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all ${f === 'skill' ? 'normal-case' : 'uppercase'} ${
                       format === f 
                       ? 'bg-indigo-600 text-white shadow-md' 
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
-                    {f}
+                    {FORMAT_LABELS[f] || f}
                   </button>
                 );
             })}

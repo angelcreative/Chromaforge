@@ -2481,7 +2481,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       }}
                       className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                         activeTab === 'molecules'
-                          ? 'text-white'
+                          ? 'palette-ink text-white'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                       style={{
@@ -2497,7 +2497,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       }}
                       className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                         activeTab === 'organisms'
-                          ? 'text-white'
+                          ? 'palette-ink text-white'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                       style={{
@@ -2538,7 +2538,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                             }}
                             className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
                                 selectedComponent === comp.id
-                                    ? 'text-white shadow-md'
+                                    ? 'palette-ink text-white shadow-md'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                             }`}
                             style={{
@@ -2648,8 +2648,8 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                         <div className="max-w-4xl mx-auto">
                             <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-lg p-8 text-center">
                                 <HiSparkles className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                                <h3 className="text-xl font-bold text-white mb-2">Preview is a Pro Feature</h3>
-                                <p className="text-sm text-slate-400 mb-6">Upgrade to Pro to see your components rendered in real-time in the canvas</p>
+                                <h3 className="text-xl font-bold text-white mb-2">Assistant is a paid feature</h3>
+                                <p className="text-sm text-slate-400 mb-6">Generated components use the same paid assistant. The rest of the studio stays free.</p>
                                 <button
                                     onClick={() => onOpenPricing?.()}
                                     className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"

@@ -19,22 +19,21 @@ import UIPlayground from './components/UIPlayground';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
 import { HiCheck, HiX, HiPencil, HiAdjustments, HiBookOpen, HiHeart, HiArrowRight, HiChevronRight, HiPlus, HiUpload, HiArrowUp, HiViewGrid, HiCube, HiCollection, HiMenu, HiSparkles } from 'react-icons/hi';
-import { FaBolt, FaPalette, FaStar, FaCubes, FaPaperPlane, FaEyeDropper } from 'react-icons/fa';
-import { MdEmail, MdLogout } from 'react-icons/md';
-
+import { FaPalette, FaCubes, FaPaperPlane, FaEyeDropper } from 'react-icons/fa';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
-import { subscribeToAuth, logoutUser, sendVerification } from './services/authService';
+import { subscribeToAuth, ensureBillingUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
-import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, getUserUsageStats, incrementUserStat, SavedPalette, UserUsageStats } from './services/storageService';
+import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, SavedPalette } from './services/storageService';
+import { captureOwnerAccessFromUrl, clearOwnerAccess, confirmOwnerAccess, hasOwnerFlag, markOwnerUnlocked } from './services/ownerAccess';
+import { buildStudioColorSkill } from './utils/colorSkill';
+import ThemeToggle from './components/ThemeToggle';
 
 // Subscription Imports
 import { checkSubscriptionStatus, createCheckoutSession } from './services/subscriptionService';
-import PricingModal, { LimitType } from './components/PricingModal';
+import PricingModal from './components/PricingModal';
 import ConfirmModal from './components/ConfirmModal';
 
-import LandingPage from './components/LandingPage';
-import AuthForms from './components/AuthForms';
 import PaletteLibraryModal from './components/PaletteLibraryModal';
 
 // Legal & Cookies
@@ -63,18 +62,12 @@ type CreationMode = 'generator' | 'manual';
 const App: React.FC = () => {
   // Auth State
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authView, setAuthView] = useState<'landing' | 'login' | 'register'>('landing');
-  const [verificationSent, setVerificationSent] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
-  // Subscription & Limits State
+  // Subscription. The studio itself does not wait on this.
   const [isPremium, setIsPremium] = useState(false);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
-  const [pricingLimitType, setPricingLimitType] = useState<LimitType>('general');
-  const [pricingCustomCount, setPricingCustomCount] = useState(0); // For manual limit display
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
-  const [usageStats, setUsageStats] = useState<UserUsageStats>({ paletteCount: 0, aiCount: 0, exportCount: 0, tunerCount: 0, editCount: 0 });
-
   // App State
   const [creationMode, setCreationMode] = useState<CreationMode>('generator');
   const [baseColor, setBaseColor] = useState<ColorHSL>({ h: 215, s: 25, l: 47 });
@@ -95,9 +88,6 @@ const App: React.FC = () => {
   
   // NEW: View Toggle
   const [isCompactView, setIsCompactView] = useState(false);
-
-  // NEW: Profile Menu Toggle
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // NEW: Sidebar Expand/Collapse
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -152,10 +142,7 @@ const App: React.FC = () => {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
-
-  const FREE_LIMIT = 5;
-  const FREE_COLOR_LIMIT = 5;
+  const canUseAssistant = isOwner || isPremium;
 
   // Initialize Custom Colors with default
   useEffect(() => {
@@ -164,42 +151,42 @@ const App: React.FC = () => {
      }
   }, []);
 
-  // Auth & Sub Listener
+  useEffect(() => {
+    getUserPalettes('local').then(setSavedPalettes);
+  }, []);
+
+  // Owner code in ?access= is checked on the server, then kept for later visits.
+  useEffect(() => {
+    let cancelled = false;
+    const code = captureOwnerAccessFromUrl();
+    if (hasOwnerFlag() && code) setIsOwner(true);
+    if (!code) return;
+    confirmOwnerAccess(code).then((result) => {
+      if (cancelled) return;
+      if (result === 'yes') {
+        markOwnerUnlocked();
+        setIsOwner(true);
+      } else if (result === 'no') {
+        clearOwnerAccess();
+        setIsOwner(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Subscription status only. It never gates the canvas.
   useEffect(() => {
     const unsubscribe = subscribeToAuth(async (currentUser) => {
         setUser(currentUser);
         if (currentUser) {
-            // Check Premium Status
             const status = await checkSubscriptionStatus(currentUser.uid);
             setIsPremium(status);
-            
-            // Check Palettes & Usage Stats
-            const [userPalettes, stats] = await Promise.all([
-                getUserPalettes(currentUser.uid),
-                getUserUsageStats(currentUser.uid)
-            ]);
-            setSavedPalettes(userPalettes);
-            setUsageStats(stats);
+        } else {
+            setIsPremium(false);
         }
-        setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
-
-  // Close profile menu when clicking outside
-  useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-          if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-              setIsProfileOpen(false);
-          }
-      };
-      if (isProfileOpen) {
-          document.addEventListener('mousedown', handleClickOutside);
-      }
-      return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-      };
-  }, [isProfileOpen]);
 
   // --- CORE PALETTE CALCULATION LOGIC ---
   useEffect(() => {
@@ -284,14 +271,6 @@ const App: React.FC = () => {
 
   // --- MANUAL MODE HANDLERS ---
   const handleAddCustomColor = () => {
-      // LIMIT CHECK
-      if (!isPremium && customColors.length >= FREE_COLOR_LIMIT) {
-          setPricingLimitType('general'); // Reuse generic or add new specific type
-          setPricingCustomCount(customColors.length); 
-          setIsPricingOpen(true);
-          return;
-      }
-
       // Add a complementary or random color logic
       // Create a variation of the last color
       const last = customColors[customColors.length - 1];
@@ -353,11 +332,9 @@ const App: React.FC = () => {
 
   const handleChatSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault(); 
-    if (!chatInput.trim()) return;
-    if (!user) return;
+    if (!chatInput.trim() || isChatLoading) return;
 
-    if (!isPremium && usageStats.aiCount >= FREE_LIMIT) {
-        setPricingLimitType('ai');
+    if (!canUseAssistant) {
         setIsPricingOpen(true);
         return;
     }
@@ -367,48 +344,46 @@ const App: React.FC = () => {
     
     // Determine context based on mode
     const contextPalette = creationMode === 'manual' ? customColors : palette;
+    let idToken: string | null = null;
+    try {
+      idToken = user ? await user.getIdToken() : null;
+    } catch {
+      idToken = null;
+    }
 
-    const result = await generatePaletteFromPrompt([...messages, userMsg], contextPalette.map(c => ({ name: c.name, hex: c.hex })));
+    const result = await generatePaletteFromPrompt(
+      [...messages, userMsg],
+      contextPalette.map(c => ({ name: c.name, hex: c.hex })),
+      idToken
+    );
     setIsChatLoading(false);
-    
-    await incrementUserStat(user.uid, 'aiCount');
-    setUsageStats(prev => ({ ...prev, aiCount: prev.aiCount + 1 }));
+
+    if (result.paymentRequired) {
+      if (isOwner) {
+        clearOwnerAccess();
+        setIsOwner(false);
+      }
+      setIsPricingOpen(true);
+      setMessages(prev => [...prev, { role: 'model', text: result.description || 'Subscribe to use the assistant.' }]);
+      return;
+    }
 
     if (result.colors.length > 0) {
       const uniqueColors = deduplicateColorNames(result.colors); 
-      // Auto apply to manual mode if AI generated specific list
       handleApplyPalette(uniqueColors); 
       setPaletteName(result.name);
       setMessages(prev => [...prev, { role: 'model', text: result.description || `Updated palette: "${result.name}"`, palettePreview: uniqueColors }]);
     } else {
-       setMessages(prev => [...prev, { role: 'model', text: result.description || "I couldn't quite understand that." }]);
+       setMessages(prev => [...prev, { role: 'model', text: `${result.description || "No colors came back."} This reply was not billed.` }]);
     }
   };
 
-  // LIMIT CHECK: Export
-  const handleExportClick = async () => {
-      if (!user) return;
-      if (!isPremium && usageStats.exportCount >= FREE_LIMIT) {
-          setPricingLimitType('export');
-          setIsPricingOpen(true);
-          return;
-      }
+  const handleExportClick = () => {
       setIsExportOpen(true);
-      await incrementUserStat(user.uid, 'exportCount');
-      setUsageStats(prev => ({ ...prev, exportCount: prev.exportCount + 1 }));
   };
 
-  // LIMIT CHECK: Tuner
-  const handleTunerClick = async () => {
-      if (!user) return;
-      if (!isPremium && usageStats.tunerCount >= FREE_LIMIT) {
-          setPricingLimitType('tuner');
-          setIsPricingOpen(true);
-          return;
-      }
+  const handleTunerClick = () => {
       setIsTunerOpen(true);
-      await incrementUserStat(user.uid, 'tunerCount');
-      setUsageStats(prev => ({ ...prev, tunerCount: prev.tunerCount + 1 }));
   };
 
   // Pre-calculate Tuner Input from Current Palette
@@ -434,17 +409,11 @@ const App: React.FC = () => {
 
   // LIMIT CHECK: Edit Scale
   const handleEditClick = (color: ColorData) => {
-      if (!user) return;
-      if (!isPremium && usageStats.editCount >= FREE_LIMIT) {
-          setPricingLimitType('edit');
-          setIsPricingOpen(true);
-          return;
-      }
       setSelectedColorForEdit(color);
   };
 
   const handleScaleSave = async (colorHex: string, newConfig: ScaleConfiguration) => {
-      if (!user || !selectedColorForEdit) return;
+      if (!selectedColorForEdit) return;
       
       // Create updated color with new config
       const updatedColor: ColorData = { ...selectedColorForEdit, scaleConfig: newConfig };
@@ -468,66 +437,64 @@ const App: React.FC = () => {
       
       showToast("Color scale updated");
       setIsSaved(false);
-      
-      await incrementUserStat(user.uid, 'editCount');
-      setUsageStats(prev => ({ ...prev, editCount: prev.editCount + 1 }));
   };
 
-  const handleSignOut = async () => {
-    await logoutUser();
-    setIsProfileOpen(false); // Close menu
-    setAuthView('landing');
-  };
+  const currentSkill = () => buildStudioColorSkill({
+      paletteName,
+      brand: palette,
+      neutrals: neutralPalette,
+      semantic: semanticPalette,
+      globalConfig: globalCurveConfig,
+  });
 
-  const handleResendVerification = async () => {
-      if (user) {
-          await sendVerification(user);
-          setVerificationSent(true);
-          setTimeout(() => setVerificationSent(false), 5000);
+  const handleCopySkill = async () => {
+      try {
+          await navigator.clipboard.writeText(currentSkill());
+          showToast('Copied color.md');
+      } catch {
+          showToast('Could not copy color.md');
       }
   };
 
-  // --- Storage Handlers ---
+  const handleDownloadSkill = () => {
+      const blob = new Blob([currentSkill()], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'color.md';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded color.md');
+  };
+
+  // --- Storage Handlers (this browser only) ---
   const handleSavePalette = async () => {
-      if (!user) return;
-      if (!isPremium && usageStats.paletteCount >= FREE_LIMIT) {
-          setPricingLimitType('save');
-          setIsPricingOpen(true);
-          return;
-      }
-
       setIsSaving(true);
       try {
           const colorsToSave = creationMode === 'manual' ? customColors : palette;
-          const newId = await savePaletteToFirestore(user.uid, paletteName, colorsToSave);
+          const newId = await savePaletteToFirestore('local', paletteName, colorsToSave);
           
           setIsSaved(true);
-          setUsageStats(prev => ({ ...prev, paletteCount: prev.paletteCount + 1 }));
           
           const newPaletteEntry: SavedPalette = {
              id: newId,
-             userId: user.uid,
+             userId: 'local',
              name: paletteName,
              colors: colorsToSave,
              createdAt: { seconds: Date.now() / 1000 } 
           };
           setSavedPalettes(prev => [newPaletteEntry, ...prev]);
-          showToast("Added to My Palettes ❤️");
-      } catch (e: any) {
-          if (e.code === 'permission-denied') {
-              alert("Error: You do not have permission to save. Please update your Firestore Rules.");
-          } else {
-              showToast("Failed to save palette.");
-          }
+          showToast("Saved on this browser");
+      } catch {
+          showToast("Failed to save palette.");
       }
       setIsSaving(false);
   };
 
   const handleOpenLibrary = async () => {
-      if (!user) return;
       setIsLibraryOpen(true);
       setIsLibraryLoading(true);
-      const data = await getUserPalettes(user.uid);
+      const data = await getUserPalettes('local');
       setSavedPalettes(data);
       setIsLibraryLoading(false);
   };
@@ -547,32 +514,38 @@ const App: React.FC = () => {
 
   // Actual Delete Logic (Called by Modal)
   const performDelete = async () => {
-      if (!paletteToDelete || !user) return;
+      if (!paletteToDelete) return;
       
       const id = paletteToDelete;
-      setPaletteToDelete(null); // Close modal immediately
+      setPaletteToDelete(null);
       setSavedPalettes(prev => prev.filter(p => p.id !== id));
       
       try {
         await deletePaletteFromFirestore(id);
         showToast("Palette deleted");
-      } catch (e: any) {
+      } catch (e) {
         console.error(e);
-        const palettes = await getUserPalettes(user.uid);
+        const palettes = await getUserPalettes('local');
         setSavedPalettes(palettes);
-        if (e.code === 'permission-denied') {
-            alert("Error deleting palette: Permission denied.");
-        } else {
-            showToast("Error deleting palette");
-        }
+        showToast("Error deleting palette");
       }
   };
 
   const handleUpgradeCheckout = async () => {
-      if(!user) return;
       setIsCheckoutLoading(true);
-      await createCheckoutSession(user.uid);
-      setIsCheckoutLoading(false);
+      try {
+          if (isDemoMode) {
+              await createCheckoutSession('demo');
+              return;
+          }
+          const billingUser = user ?? await ensureBillingUser();
+          setUser(billingUser);
+          await createCheckoutSession(billingUser.uid);
+      } catch {
+          showToast('Payments are unavailable right now.');
+      } finally {
+          setIsCheckoutLoading(false);
+      }
   };
 
   const activeColors = activeTab === 'neutrals' ? neutralPalette : activeTab === 'system' ? semanticPalette : palette;
@@ -581,10 +554,6 @@ const App: React.FC = () => {
 
   // --- RENDER LOGIC ---
 
-  if (authLoading) {
-    return <div className="h-screen bg-slate-950 flex items-center justify-center"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
-  }
-
   const renderGlobalOverlays = () => (
       <>
           <CookieConsent />
@@ -592,56 +561,24 @@ const App: React.FC = () => {
       </>
   );
 
-  if (!user) {
-    return (
-        <>
-            {renderGlobalOverlays()}
-            {authView === 'landing' && (
-                <LandingPage 
-                    onGetStarted={() => setAuthView('register')} 
-                    onLogin={() => setAuthView('login')} 
-                    onOpenLegal={(type) => setLegalModalType(type)}
-                />
-            )}
-            {(authView === 'login' || authView === 'register') && (
-                <>
-                    <LandingPage 
-                        onGetStarted={() => {}} 
-                        onLogin={() => {}} 
-                        onOpenLegal={(type) => setLegalModalType(type)}
-                    /> 
-                    <AuthForms 
-                        initialMode={authView} 
-                        onClose={() => setAuthView('landing')} 
-                        onSuccess={() => {/* Listener handles state */}} 
-                    />
-                </>
-            )}
-        </>
-    );
-  }
-
-  if (!user.emailVerified && user.providerData.some(p => p.providerId === 'password') && !isDemoMode) {
-      return (
-          <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-              {renderGlobalOverlays()}
-              <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 animate-pulse border border-indigo-500/20">
-                  <MdEmail className="w-10 h-10 text-indigo-400" />
-              </div>
-              <h2 className="text-3xl font-bold text-white mb-4">Verify your Email</h2>
-              <p className="text-slate-400 max-w-md mb-8">
-                  We've sent a verification link to <span className="text-white font-mono">{user.email}</span>.<br/>
-                  Please click the link to activate your account.
-              </p>
-              
-              <div className="flex flex-col gap-4 w-full max-w-xs">
-                  <button onClick={() => window.location.reload()} className="w-full py-3 bg-white text-slate-800 rounded-xl font-bold hover:bg-slate-200 transition-colors">I've Verified It</button>
-                  <button onClick={handleResendVerification} disabled={verificationSent} className="w-full py-3 bg-slate-800 text-slate-300 rounded-xl font-bold hover:bg-slate-700 transition-colors disabled:opacity-50">{verificationSent ? "Email Sent!" : "Resend Email"}</button>
-                  <button onClick={handleSignOut} className="text-slate-500 text-sm hover:text-white transition-colors mt-2">Sign Out</button>
-              </div>
-          </div>
-      );
-  }
+  const renderSkillActions = () => (
+      <div className="flex items-center rounded-lg border border-slate-700 overflow-hidden">
+          <button
+              type="button"
+              onClick={handleCopySkill}
+              className="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800"
+          >
+              Copy color.md
+          </button>
+          <button
+              type="button"
+              onClick={handleDownloadSkill}
+              className="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 border-l border-slate-700"
+          >
+              Download
+          </button>
+      </div>
+  );
 
   // --- FULL SCREEN PLAYGROUND MODE ---
   if (viewMode === 'playground') {
@@ -658,8 +595,10 @@ const App: React.FC = () => {
                         </button>
                         <h1 className="text-lg font-bold text-white">Palette Playground</h1>
                    </div>
-                   <div className="flex gap-3">
-                       <button onClick={handleExportClick} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-500/20">Export Theme</button>
+                   <div className="flex items-center gap-3">
+                       <ThemeToggle />
+                       {renderSkillActions()}
+                       <button onClick={handleExportClick} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-500/20">Export</button>
                    </div>
               </header>
               <div className="flex-1 overflow-hidden">
@@ -670,24 +609,20 @@ const App: React.FC = () => {
                       config={playgroundConfig}
                       onConfigChange={setPlaygroundConfig}
                       globalConfig={globalCurveConfig}
-                      isPremium={isPremium}
-                      onOpenPricing={() => {
-                          setPricingLimitType('general');
-                          setIsPricingOpen(true);
-                      }}
+                      isPremium={canUseAssistant}
+                      onOpenPricing={() => setIsPricingOpen(true)}
                   />
               </div>
               
               {/* Shared Modals accessible from Playground */}
-              {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} onClose={() => setIsExportOpen(false)} usageCount={usageStats.exportCount} limit={FREE_LIMIT} isPremium={isPremium} />}
+              {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} globalConfig={globalCurveConfig} onClose={() => setIsExportOpen(false)} />}
               
               {isPricingOpen && (
                   <PricingModal 
                       onClose={() => setIsPricingOpen(false)}
                       onCheckout={handleUpgradeCheckout}
                       isLoading={isCheckoutLoading}
-                      limitType={pricingLimitType}
-                      currentUsage={pricingLimitType === 'general' ? pricingCustomCount : FREE_LIMIT}
+                      limitType="ai"
                   />
               )}
               
@@ -721,7 +656,7 @@ const App: React.FC = () => {
                         className="w-6 h-6 rounded-full"
                         style={{ objectFit: 'contain' }}
                     />
-                    <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">ChromaForge</h1>
+                    <h1 className="brand-wordmark text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">ChromaForge</h1>
                 </div>
                 {/* ... (Existing code) ... */}
                 <div className="hidden md:flex items-center gap-2 pl-6 border-l border-white/5">
@@ -763,6 +698,8 @@ const App: React.FC = () => {
                    <HiHeart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
                </button>
 
+               {renderSkillActions()}
+
                {/* Export Button */}
                <button 
                    onClick={handleExportClick}
@@ -771,54 +708,10 @@ const App: React.FC = () => {
                    Export
                </button>
 
-               <div className="h-6 w-px bg-white/10 mx-2 hidden md:block"></div>
-
-               {/* User Menu & Profile Dropdown */}
-               <div className="relative group" ref={profileMenuRef}>
-                   <button 
-                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-white/5 transition-colors focus:outline-none"
-                   >
-                        <div className="relative">
-                            {user.photoURL ? <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-slate-600" /> : <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white border border-slate-600">{user.displayName ? user.displayName[0] : user.email ? user.email[0].toUpperCase() : 'U'}</div>}
-                            {/* Pro Badge Indicator */}
-                            {isPremium && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-indigo-500 to-pink-500 rounded-full border border-slate-900 shadow-sm" title="Pro User"></div>
-                            )}
-                        </div>
-                   </button>
-
-                   {/* Dropdown Menu */}
-                   {isProfileOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                            <div className="px-4 py-3 border-b border-white/5 mb-1">
-                                <p className="text-xs text-slate-400">Signed in as</p>
-                                <p className="text-sm font-bold text-white truncate">{user.displayName || user.email}</p>
-                                {isPremium && (
-                                    <span className="mt-2 inline-flex items-center px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30 uppercase tracking-wider">
-                                        Pro Plan Active
-                                    </span>
-                                )}
-                            </div>
-                            
-                            {/* Friendly Upgrade Button for Non-Pros */}
-                            {!isPremium && (
-                                <button 
-                                    onClick={() => { setIsPricingOpen(true); setIsProfileOpen(false); }} 
-                                    className="w-full text-left px-4 py-3 text-sm text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 transition-all flex items-center gap-2 font-bold mx-0"
-                                >
-                                    <FaStar className="w-4 h-4 text-yellow-300" />
-                                    Upgrade to Pro
-                                </button>
-                            )}
-
-                            <button onClick={handleSignOut} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-800 hover:text-red-300 transition-colors flex items-center gap-2 mt-1">
-                                <MdLogout className="w-4 h-4" />
-                                Sign Out
-                            </button>
-                        </div>
-                   )}
-               </div>
+               <ThemeToggle />
+               {isPremium && (
+                   <span className="hidden sm:inline text-[11px] text-slate-400">AI Pro</span>
+               )}
            </div>
       </header>
 
@@ -1075,7 +968,7 @@ const App: React.FC = () => {
                     <div className="p-6 space-y-6">
                         <div className="flex justify-between items-center mb-2">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Custom Colors</label>
-                            <span className="text-[10px] text-slate-600">{customColors.length} / {isPremium ? 'Unlimited' : FREE_COLOR_LIMIT}</span>
+                            <span className="text-[10px] text-slate-600">{customColors.length}</span>
                         </div>
                         <div className="space-y-3">
                             {customColors.map((color, idx) => (
@@ -1109,11 +1002,19 @@ const App: React.FC = () => {
                             <HiSparkles className="w-4 h-4" />
                             AI Designer
                         </h3>
-                        {!isPremium && <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-500">{usageStats.aiCount}/{FREE_LIMIT}</span>}
+                        {!canUseAssistant && (
+                            <button
+                                type="button"
+                                onClick={() => setIsPricingOpen(true)}
+                                className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400"
+                            >
+                                Subscribe
+                            </button>
+                        )}
                     </div>
                     <div className={`transition-all duration-300 ease-in-out ${isChatOpen ? 'h-64' : 'h-0'} overflow-hidden bg-slate-900`}>
                         <div className="h-full overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                            {messages.length === 0 && <p className="text-xs text-slate-500 text-center mt-4">Describe your brand, mood, or industry.</p>}
+                            {messages.length === 0 && <p className="text-xs text-slate-500 text-center mt-4">Describe a brand or mood. A reply with colors replaces the brand list. An empty reply is not billed.</p>}
                             {messages.map((msg, i) => (
                                 <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                                     <div className={`px-3 py-2 rounded-lg text-xs max-w-[90%] leading-relaxed ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300 border border-slate-700'}`}>
@@ -1177,6 +1078,7 @@ const App: React.FC = () => {
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         e.preventDefault();
+                                        handleChatSubmit();
                                     }
                                 }}
                                 onFocus={() => setIsChatOpen(true)}
@@ -1316,13 +1218,13 @@ const App: React.FC = () => {
       {selectedColorForEdit && (() => {
           // Get the updated color from the active list to ensure scaleConfig is current
           const currentColor = activeColors.find(c => c.hex === selectedColorForEdit.hex) || selectedColorForEdit;
-          return <ScaleEditorModal color={currentColor} onClose={() => setSelectedColorForEdit(null)} onSave={handleScaleSave} usageCount={usageStats.editCount} limit={FREE_LIMIT} isPremium={isPremium} />;
+          return <ScaleEditorModal color={currentColor} onClose={() => setSelectedColorForEdit(null)} onSave={handleScaleSave} isPremium />;
       })()}
-      {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} onClose={() => setIsExportOpen(false)} usageCount={usageStats.exportCount} limit={FREE_LIMIT} isPremium={isPremium} />}
-      {isTunerOpen && <PaletteTunerModal onClose={() => setIsTunerOpen(false)} usageCount={usageStats.tunerCount} limit={FREE_LIMIT} isPremium={isPremium} initialCode={getTunerCode()} />}
-      {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={isPremium ? 20 : FREE_COLOR_LIMIT} isPremium={isPremium} />}
-      {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} lifetimeSaves={usageStats.paletteCount} isPremium={isPremium} />}
-      {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} limitType={pricingLimitType} currentUsage={usageStats[pricingLimitType === 'general' ? 'paletteCount' : `${pricingLimitType}Count` as keyof UserUsageStats] || 0} />}
+      {isExportOpen && <ExportModal brandPalette={palette} neutralPalette={neutralPalette} semanticPalette={semanticPalette} paletteName={paletteName} globalConfig={globalCurveConfig} onClose={() => setIsExportOpen(false)} />}
+      {isTunerOpen && <PaletteTunerModal onClose={() => setIsTunerOpen(false)} isPremium initialCode={getTunerCode()} />}
+      {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} onImport={handleImport} limit={200} isPremium />}
+      {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} isPremium />}
+      {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} limitType="ai" />}
       {selectedColorForInfo && <ColorInfo color={selectedColorForInfo} onClose={() => setSelectedColorForInfo(null)} />}
       {selectedColorForGrid && <ContrastGrid color={selectedColorForGrid} onClose={() => setSelectedColorForGrid(null)} />}
       {is3DOpen && <Palette3DModal palette={activeColors} paletteName={paletteName} onClose={() => setIs3DOpen(false)} />}

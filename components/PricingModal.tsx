@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HiX, HiCheck, HiPencil, HiAdjustments, HiDownload, HiArrowRight } from 'react-icons/hi';
+import { HiX, HiCheck, HiArrowRight } from 'react-icons/hi';
 import { FaBolt } from 'react-icons/fa';
 
 export type LimitType = 'save' | 'ai' | 'export' | 'tuner' | 'edit' | 'general';
@@ -13,69 +13,15 @@ interface PricingModalProps {
   currentUsage?: number; // Pass the usage that triggered it
 }
 
-const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoading, limitType = 'general', currentUsage = 5 }) => {
-  
-  // --- Dynamic Content Strategy ---
-  const getContent = () => {
-      switch (limitType) {
-          case 'save':
-              return {
-                  title: "Lifetime Limit Reached",
-                  icon: (
-                    <HiCheck className="w-8 h-8 text-indigo-400" />
-                  ),
-                  intro: `You've crafted ${currentUsage} beautiful palettes! 🎨`,
-                  desc: "To keep things fair, this limit counts every palette you've ever created, even the ones you've deleted. It's like a sketchbook with 5 pages—once used, they're used."
-              };
-          case 'ai':
-              return {
-                  title: "AI Limit Reached",
-                  icon: (
-                    <FaBolt className="w-8 h-8 text-indigo-400" />
-                  ),
-                  intro: `You've generated ${currentUsage} AI palettes! 🤖`,
-                  desc: "Our AI designer has been working hard for you. To generate unlimited creative ideas and variations, upgrade to Pro."
-              };
-          case 'export':
-              return {
-                  title: "Export Limit Reached",
-                  icon: (
-                    <HiDownload className="w-8 h-8 text-indigo-400" />
-                  ),
-                  intro: `You've exported ${currentUsage} times! 🚀`,
-                  desc: "Ready to ship more code? The free plan includes 5 exports to CSS, Tailwind, or Figma. Upgrade to Pro for unlimited production exports."
-              };
-          case 'tuner':
-              return {
-                  title: "Tuner Limit Reached",
-                  icon: (
-                    <HiAdjustments className="w-8 h-8 text-indigo-400" />
-                  ),
-                  intro: `You've tuned ${currentUsage} palettes! 🎛️`,
-                  desc: "Perfecting scales takes power. You've hit the limit on our advanced algorithm tuning tool. Go Pro to refine unlimited scales."
-              };
-          case 'edit':
-              return {
-                  title: "Editor Limit Reached",
-                  icon: (
-                    <HiPencil className="w-8 h-8 text-indigo-400" />
-                  ),
-                  intro: `You've edited ${currentUsage} curves! 📈`,
-                  desc: "Deep tweaking of Hue & Saturation paths is a Pro feature. You've used your free edits. Upgrade to unlock full control."
-              };
-          default:
-              return {
-                  title: "Unlock Full Power",
-                  icon: (
-                    <FaBolt className="w-8 h-8 text-indigo-400" />
-                  ),
-                  intro: "Take your design system to the next level.",
-                  desc: "Remove all limits and build without boundaries."
-              };
-      }
+const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoading }) => {
+  const content = {
+      title: "Assistant is a paid feature",
+      icon: (
+        <FaBolt className="w-8 h-8 text-indigo-400" />
+      ),
+      intro: "The studio is free.",
+      desc: "The wheel, ramps, manual edits, and export stay unlimited. The paid part is the assistant that generates palettes from a prompt."
   };
-
-  const content = getContent();
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-300">
@@ -107,29 +53,19 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
                     {content.desc}
                 </p>
                 
-                {limitType !== 'general' && (
-                    <p className="text-white text-sm font-bold leading-relaxed mb-6">
-                        Upgrade to Pro for an infinite sketchbook!
-                    </p>
-                )}
-
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Your Free Plan Includes</div>
+                <div className="text-xs font-bold text-slate-500 tracking-widest mb-3">Free studio</div>
                 <ul className="space-y-2 mb-8">
                     <li className="flex items-center gap-3 text-slate-300 text-sm">
                         <HiCheck className="w-4 h-4 text-indigo-500" />
-                        5 Lifetime Saved Palettes
+                        Wheel, ramps, and manual edits
                     </li>
                     <li className="flex items-center gap-3 text-slate-300 text-sm">
                         <HiCheck className="w-4 h-4 text-indigo-500" />
-                        5 AI Generations
+                        Export, including color.md
                     </li>
                     <li className="flex items-center gap-3 text-slate-300 text-sm">
                         <HiCheck className="w-4 h-4 text-indigo-500" />
-                        5 Code Exports
-                    </li>
-                    <li className="flex items-center gap-3 text-slate-300 text-sm">
-                        <HiCheck className="w-4 h-4 text-indigo-500" />
-                        5 Advanced Tune / Edits
+                        Local palette library
                     </li>
                 </ul>
             </div>
@@ -139,10 +75,10 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
         <div className="w-full md:w-3/5 p-8 md:p-10 bg-slate-900 relative flex flex-col justify-center">
              <div className="flex items-center gap-2 mb-6">
                  <span className="px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg">Recommended</span>
-                 <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">Yearly Plan</span>
+                 <span className="text-slate-500 text-xs font-bold tracking-widest">Yearly plan</span>
              </div>
 
-             <h3 className="text-4xl font-bold text-white mb-2">Unlimited Access</h3>
+             <h3 className="text-4xl font-bold text-white mb-2">AI assistant</h3>
              <div className="flex items-end gap-2 mb-8">
                  <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">€39</span>
                  <span className="text-slate-500 font-medium mb-2">/ year</span>
@@ -150,10 +86,10 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
 
              <div className="grid grid-cols-1 gap-4 mb-8">
                 {[
-                    "Unlimited Palettes for a year",
-                    "Unlimited AI Generation",
-                    "Unlimited Exports",
-                    "Unlimited Scale Tuning"
+                    "Generate palettes from a prompt",
+                    "Same Stripe subscription already installed",
+                    "A failed reply does not count as a use",
+                    "The rest of the studio stays free"
                 ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
                          <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
@@ -174,7 +110,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
                     <div className="w-6 h-6 border-3 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
                 ) : (
                     <>
-                        <span>Upgrade to Pro</span>
+                        <span>Subscribe</span>
                         <HiArrowRight className="w-5 h-5" />
                     </>
                 )}
