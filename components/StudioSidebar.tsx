@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
-import React from 'react';
-import { Library, PanelLeft, PanelLeftClose } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Copy, Download, FileDown, Heart, Library, PanelLeft, PanelLeftClose, Pipette, Plus } from 'lucide-react';
 import { SavedPalette } from '../services/storageService';
-import { presenceFade, presenceSlide, useReduced } from './uiMotion';
+import ThemeToggle from './ThemeToggle';
+import { MotionButton, SwitchThumb, presenceFade, presencePop, presenceSlide, useReduced } from './uiMotion';
 
 export interface StudioSidebarProps {
   open: boolean;
@@ -11,9 +12,32 @@ export interface StudioSidebarProps {
   palettes: SavedPalette[];
   onLoadPalette: (palette: SavedPalette) => void;
   activePaletteId?: string | null;
+  onNewPalette: () => void;
+  paletteOpen: boolean;
+  onSave: () => void;
+  saved: boolean;
+  saving: boolean;
+  refineOpen: boolean;
+  onRefine: () => void;
+  onCopySkill: () => void;
+  onDownloadSkill: () => void;
+  printOn: boolean;
+  onTogglePrint: () => void;
 }
 
 const SWATCH_LIMIT = 5;
+
+const actionRow =
+  'flex h-9 w-full items-center rounded-lg text-[13px] text-foreground transition-colors hover:bg-accent disabled:opacity-40';
+
+const menuItem =
+  'flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[13px] text-foreground hover:bg-accent';
+
+function GroupLabel({ children }: { children: string }) {
+  return (
+    <h2 className="px-2.5 pb-1 pt-3 text-[12px] font-medium text-muted-foreground">{children}</h2>
+  );
+}
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({
   open,
@@ -22,10 +46,44 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   palettes,
   onLoadPalette,
   activePaletteId,
+  onNewPalette,
+  paletteOpen,
+  onSave,
+  saved,
+  saving,
+  refineOpen,
+  onRefine,
+  onCopySkill,
+  onDownloadSkill,
+  printOn,
+  onTogglePrint,
 }) => {
   const reduce = useReduced();
   const slide = presenceSlide(reduce, { x: '-100%' });
   const fade = presenceFade(reduce);
+  const menu = presencePop(reduce, 'top left');
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!exportRef.current?.contains(event.target as Node)) setExportOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExportOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [exportOpen]);
+
+  useEffect(() => {
+    if (!open || !paletteOpen) setExportOpen(false);
+  }, [open, paletteOpen]);
 
   return (
     <>
@@ -47,9 +105,104 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
           <motion.aside
             key="panel"
             className="absolute top-14 bottom-4 left-3 z-40 flex w-[min(260px,calc(100vw-4.5rem))] flex-col overflow-hidden rounded-2xl bg-card shadow-panel ring-1 ring-border"
-            aria-label="Saved palettes"
+            aria-label="Tools"
             {...slide}
           >
+            <div className="min-h-0 overflow-y-auto border-b border-border p-1.5">
+              <MotionButton type="button" onClick={onNewPalette} className={actionRow}>
+                <span className="grid size-9 shrink-0 place-items-center">
+                  <Plus className="size-4" strokeWidth={1.5} aria-hidden />
+                </span>
+                <span className="pr-2 text-left">New palette</span>
+              </MotionButton>
+
+              {paletteOpen && (
+                <div>
+                  <GroupLabel>Palette</GroupLabel>
+                  <MotionButton
+                    type="button"
+                    onClick={onSave}
+                    disabled={saving}
+                    aria-pressed={saved}
+                    className={actionRow}
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center">
+                      <Heart className="size-4" strokeWidth={1.5} aria-hidden />
+                    </span>
+                    <span className="pr-2 text-left">{saved ? 'Saved' : 'Save'}</span>
+                  </MotionButton>
+                  <MotionButton
+                    type="button"
+                    onClick={onRefine}
+                    aria-pressed={refineOpen}
+                    className={`${actionRow} ${refineOpen ? 'bg-accent' : ''}`}
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center">
+                      <Pipette className="size-4" strokeWidth={1.5} aria-hidden />
+                    </span>
+                    <span className="pr-2 text-left">Refine</span>
+                  </MotionButton>
+                  <div ref={exportRef}>
+                    <MotionButton
+                      type="button"
+                      onClick={() => setExportOpen((value) => !value)}
+                      aria-expanded={exportOpen}
+                      aria-haspopup="menu"
+                      className={`${actionRow} ${exportOpen ? 'bg-accent' : ''}`}
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center">
+                        <Download className="size-4" strokeWidth={1.5} aria-hidden />
+                      </span>
+                      <span className="pr-2 text-left">Export</span>
+                    </MotionButton>
+                    <AnimatePresence>
+                      {exportOpen && (
+                        <motion.div role="menu" className="mb-1 ml-9 mr-1 flex flex-col" {...menu}>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={menuItem}
+                            onClick={() => { onCopySkill(); setExportOpen(false); }}
+                          >
+                            <Copy className="size-4" strokeWidth={1.5} aria-hidden />
+                            Copy color.md
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={menuItem}
+                            onClick={() => { onDownloadSkill(); setExportOpen(false); }}
+                          >
+                            <FileDown className="size-4" strokeWidth={1.5} aria-hidden />
+                            Download color.md
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitemcheckbox"
+                            aria-checked={printOn}
+                            className={menuItem}
+                            onClick={onTogglePrint}
+                          >
+                            <span className={`relative h-4 w-7 shrink-0 rounded-full ${printOn ? 'bg-primary' : 'bg-[var(--switch)]'}`}>
+                              <SwitchThumb on={printOn} onX={12} />
+                            </span>
+                            Print
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <GroupLabel>Appearance</GroupLabel>
+                <div className="px-1 pb-1">
+                  <ThemeToggle compact />
+                </div>
+              </div>
+            </div>
+
             <div className="shrink-0 border-b border-border p-1.5">
               <button
                 type="button"
