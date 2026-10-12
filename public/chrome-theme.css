@@ -114,6 +114,17 @@ body {
   animation: logo-breathe 1.8s ease-in-out infinite;
 }
 
+@keyframes describe-word-in {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes describe-word-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-0.35em); }
+}
+.describe-word-in { animation: describe-word-in 160ms ease-out both; }
+.describe-word-out { animation: describe-word-out 160ms ease-out both; }
+
 @media (max-width: 1023px) {
   .drawer-in,
   .drawer-out { animation-name: studio-in; }
@@ -127,7 +138,9 @@ body {
   .shell-out,
   .drawer-in,
   .drawer-out,
-  .logo-mark {
+  .logo-mark,
+  .describe-word-in,
+  .describe-word-out {
     animation: none;
   }
 }

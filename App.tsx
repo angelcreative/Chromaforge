@@ -14,6 +14,7 @@ import ScaleEditorModal from './components/ScaleEditorModal';
 import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
 import LogoMark from './components/LogoMark';
+import DescribeHeading from './components/DescribeHeading';
 import PaletteCatalog from './components/PaletteCatalog';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
@@ -56,12 +57,6 @@ const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isV
 type MobileTab = 'canvas' | 'editor';
 type ViewMode = 'grid' | 'playground' | 'gradients';
 type CreationMode = 'generator' | 'manual';
-
-const PROMPT_CHIPS = [
-  { label: 'Brand', text: 'A calm brand palette' },
-  { label: 'Mood', text: 'A warm evening mood' },
-  { label: 'Product', text: 'A skincare product' },
-];
 
 const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
   { name: 'Harbor', colors: [['#0E3A46', 'Deep water'], ['#1F7A8C', 'Tide'], ['#BFDBF7', 'Foam'], ['#E36414', 'Buoy']] },
@@ -900,9 +895,9 @@ const App: React.FC = () => {
       ) : showHome ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-24 pt-16">
           <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-8">
-            <h2 className="text-center text-3xl font-medium tracking-tight text-foreground sm:text-4xl">Describe a palette</h2>
+            <DescribeHeading />
             <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-muted-foreground">
-              Ask for a brand, a mood, or a product.
+              The limit is your imagination.
             </p>
             <form className="mt-8" onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}>
               <div className="rounded-2xl border border-border bg-card p-3 shadow-panel">
@@ -932,18 +927,6 @@ const App: React.FC = () => {
                 </div>
               </div>
             </form>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {PROMPT_CHIPS.map((chip) => (
-                <button
-                  key={chip.label}
-                  type="button"
-                  onClick={() => handleChatSubmit(undefined, chip.text)}
-                  className="h-8 rounded-full border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
             <div className="mt-10">
               <p className="mb-3 text-[13px] text-muted-foreground">Try a demo</p>
               <div className="flex gap-3 overflow-x-auto pb-2">
