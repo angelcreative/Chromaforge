@@ -780,6 +780,16 @@ const App: React.FC = () => {
 
       <StudioTopBar
           onHome={goHome}
+          markMotion={isChatLoading ? 'loading' : 'enter'}
+      />
+
+      <StudioSidebar
+          open={shellOpen}
+          onOpenChange={setShellOpen}
+          onSavedPalettes={handleOpenLibrary}
+          palettes={savedPalettes}
+          onLoadPalette={handleLoadPalette}
+          activePaletteId={activeSavedId}
           onNewPalette={goHome}
           paletteOpen={paletteOpen}
           onSave={handleSavePalette}
@@ -791,16 +801,6 @@ const App: React.FC = () => {
           onDownloadSkill={handleDownloadSkill}
           printOn={isPrintMode}
           onTogglePrint={() => setIsPrintMode((value) => !value)}
-          markMotion={isChatLoading ? 'loading' : 'enter'}
-      />
-
-      <StudioSidebar
-          open={shellOpen}
-          onOpenChange={setShellOpen}
-          onSavedPalettes={handleOpenLibrary}
-          palettes={savedPalettes}
-          onLoadPalette={handleLoadPalette}
-          activePaletteId={activeSavedId}
       />
 
       <div className={`flex min-h-0 flex-1 flex-col ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[380px]' : ''}`}>

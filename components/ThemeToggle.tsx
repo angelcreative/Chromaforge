@@ -10,7 +10,7 @@ const OPTIONS: { id: ThemePreference; label: string; icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', icon: Moon },
 ];
 
-const ThemeToggle: React.FC<{ showLabels?: boolean }> = ({ showLabels = false }) => {
+const ThemeToggle: React.FC<{ showLabels?: boolean; compact?: boolean }> = ({ showLabels = false, compact = false }) => {
   const [pref, setPref] = useState<ThemePreference>(() => readThemePreference());
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const ThemeToggle: React.FC<{ showLabels?: boolean }> = ({ showLabels = false })
 
   return (
     <div
-      className="relative grid grid-cols-3 rounded-lg border border-border bg-background p-0.5"
+      className={`relative grid grid-cols-3 rounded-lg border border-border bg-background p-0.5 ${compact ? 'w-full' : ''}`}
       role="group"
       aria-label="Color theme"
     >
@@ -53,12 +53,12 @@ const ThemeToggle: React.FC<{ showLabels?: boolean }> = ({ showLabels = false })
             onClick={() => choose(option.id)}
             aria-label={option.label}
             aria-pressed={active}
-            className={`relative z-10 flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5 ${
-              active ? 'text-primary-foreground' : 'text-foreground'
-            }`}
+            className={`relative z-10 flex items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              compact ? 'h-7 gap-1 px-1 text-[12px]' : 'h-8 gap-1.5 px-2 text-[13px] sm:px-2.5'
+            } ${active ? 'text-primary-foreground' : 'text-foreground'}`}
           >
             <Icon className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-            <span className={showLabels ? 'inline' : 'hidden sm:inline'}>{option.label}</span>
+            <span className={`whitespace-nowrap ${compact || showLabels ? 'inline' : 'hidden sm:inline'}`}>{option.label}</span>
           </MotionButton>
         );
       })}
