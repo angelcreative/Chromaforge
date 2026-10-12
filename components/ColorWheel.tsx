@@ -201,10 +201,10 @@ const SpectralCurvesPicker: React.FC<{ baseColor: ColorHSL, onChange: (c: ColorH
     const mx = (baseColor.h / 360) * width;
     const my = isPrintMode ? (1 - (Math.min(baseColor.s, CMYK_GAMUT_SCALE * 100) / 100)) * height : (1 - (baseColor.s / 100)) * height;
     return (
-        <div ref={containerRef} className={`relative w-[220px] h-[150px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 cursor-crosshair transition-all ${isMixing ? 'opacity-50 blur-sm' : ''}`} style={{ touchAction: 'none' }} onMouseDown={onStart} onTouchStart={onStart}>
+        <div ref={containerRef} className={`relative w-[220px] h-[150px] rounded-2xl overflow-hidden shadow-2xl border border-border cursor-crosshair transition-all ${isMixing ? 'opacity-50 blur-sm' : ''}`} style={{ touchAction: 'none' }} onMouseDown={onStart} onTouchStart={onStart}>
             <canvas ref={canvasRef} width={width} height={height} />
-            <div className="absolute top-0 bottom-0 w-px bg-white/50 pointer-events-none" style={{ left: mx }} />
-            <div className="absolute left-0 right-0 h-px bg-white/50 pointer-events-none" style={{ top: my }} />
+            <div className="absolute top-0 bottom-0 w-px bg-accent0 pointer-events-none" style={{ left: mx }} />
+            <div className="absolute left-0 right-0 h-px bg-accent0 pointer-events-none" style={{ top: my }} />
             <div className="absolute w-6 h-6 rounded-full border-2 border-white shadow-xl transform -translate-x-1/2 -translate-y-1/2 ring-2 ring-black/20" style={{ left: mx, top: my, backgroundColor: `hsl(${baseColor.h}, ${baseColor.s}%, ${baseColor.l}%)` }} />
             <div className="absolute top-2 left-3 text-[9px] font-bold text-white/40 uppercase tracking-widest pointer-events-none">Hue Map</div>
             <div className="absolute bottom-2 right-3 text-[9px] font-bold text-white/40 uppercase tracking-widest pointer-events-none rotate-270">Saturation</div>
@@ -268,7 +268,7 @@ const GamutCloudPicker: React.FC<{ baseColor: ColorHSL, onChange: (c: ColorHSL) 
                     onMouseDown={(e) => e.stopPropagation()} 
                     onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(2.5, z + 0.2)) }} 
-                    className="w-10 h-10 bg-slate-800 text-white rounded-lg shadow-xl border border-white/10 flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all text-xl font-bold"
+                    className="w-10 h-10 bg-secondary text-foreground rounded-lg shadow-xl border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all text-xl font-bold"
                 >
                     +
                 </button>
@@ -276,7 +276,7 @@ const GamutCloudPicker: React.FC<{ baseColor: ColorHSL, onChange: (c: ColorHSL) 
                     onMouseDown={(e) => e.stopPropagation()} 
                     onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(0.5, z - 0.2)) }} 
-                    className="w-10 h-10 bg-slate-800 text-white rounded-lg shadow-xl border border-white/10 flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all text-xl font-bold"
+                    className="w-10 h-10 bg-secondary text-foreground rounded-lg shadow-xl border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all text-xl font-bold"
                 >
                     -
                 </button>

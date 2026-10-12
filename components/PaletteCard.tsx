@@ -65,14 +65,12 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
   return (
     <div 
         ref={cardRef}
-        className={`glow-card rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col ${isCompact ? 'h-auto' : 'h-full'}`}
+        className={`relative rounded-2xl bg-card text-card-foreground ring-1 ring-border shadow-panel overflow-hidden flex flex-col ${isCompact ? 'h-auto' : 'h-full'}`}
     >
-        <div className="glow-content flex flex-col h-full flex-1">
-            {/* Custom Scale Indicator */}
+        <div className="flex flex-col h-full flex-1">
             {hasCustomScale && !isCompact && (
                  <div className="absolute top-3 right-3 z-20 pointer-events-none">
-                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border backdrop-blur-sm bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] border border-border bg-accent text-foreground">
                         Tuned
                      </span>
                  </div>
@@ -108,12 +106,12 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                                     onChange={handleNameChange}
                                     onBlur={handleNameBlur}
                                     onKeyDown={handleNameKeyDown}
-                                    className="text-lg font-bold text-white bg-slate-800/50 border border-indigo-500/50 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    className="text-[15px] font-medium text-foreground bg-background border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
                                     autoFocus
                                 />
                             ) : (
                                 <h3 
-                                    className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors cursor-text hover:bg-slate-800/30 rounded px-2 py-1 -mx-2 -my-1"
+                                    className="text-[15px] font-medium text-foreground cursor-text hover:bg-accent rounded-lg px-2 py-1 -mx-2 -my-1"
                                     onClick={() => setIsEditingName(true)}
                                     title="Click to edit name"
                                 >
@@ -121,17 +119,17 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                                 </h3>
                             )}
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs font-mono text-slate-400">
+                        <div className="flex items-center gap-3 mt-1 text-[12px] font-mono text-muted-foreground">
                             <button 
-                                className="uppercase hover:text-white transition-colors relative"
+                                className="uppercase hover:text-foreground transition-colors relative"
                                 onClick={(e) => { e.stopPropagation(); handleCopy(color.hex); }}
                             >
                                 {color.hex}
                             </button>
-                            <span className="w-px h-3 bg-slate-700"></span>
+                            <span className="w-px h-3 bg-border"></span>
                             
                             {isPrintMode ? (
-                                <span className="text-indigo-300 font-bold">
+                                <span className="text-foreground font-medium">
                                     C:{cmyk.c} M:{cmyk.m} Y:{cmyk.y} K:{cmyk.k}
                                 </span>
                             ) : (
@@ -142,14 +140,14 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                     <div className="flex gap-1">
                         <button 
                             onClick={() => onEditScale(color)}
-                            className={`p-2 rounded-lg transition-colors ${color.scaleConfig && (color.scaleConfig.hueShift !== 0 || color.scaleConfig.saturationBoost !== 0 || color.scaleConfig.useOkLCH) ? 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                            className={`p-2 rounded-lg transition-colors ${color.scaleConfig && (color.scaleConfig.hueShift !== 0 || color.scaleConfig.saturationBoost !== 0 || color.scaleConfig.useOkLCH) ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                             title="Edit Scale (Curves)"
                         >
                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                         </button>
                         <button 
                             onClick={() => onOpenGrid(color)}
-                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                             title="Contrast Grid"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +158,7 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                         {isCompact && (
                             <button 
                                 onClick={() => onOpenInfo(color)}
-                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                                 title="Info"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -172,12 +170,12 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenInfo, onOpenGrid
                 {/* Shades Grid - Dynamic based on Steps */}
                 <div className="mt-auto">
                     <div className="flex justify-between items-center mb-2">
-                        <div className="text-[10px] text-slate-500 font-bold uppercase">Shades ({shades.length})</div>
-                        {hasCustomScale && !isCompact && <div className="text-[9px] text-indigo-400 font-mono">* Modified</div>}
+                        <div className="text-[13px] text-muted-foreground">Shades ({shades.length})</div>
+                        {hasCustomScale && !isCompact && <div className="text-[12px] text-muted-foreground font-mono">Modified</div>}
                     </div>
                     
                     <div 
-                        className="grid gap-1 md:flex md:gap-0 md:rounded-lg md:overflow-hidden md:h-12 md:w-full md:ring-1 md:ring-white/10 md:shadow-inner md:bg-slate-950"
+                        className="grid gap-1 md:flex md:gap-0 md:rounded-lg md:overflow-hidden md:h-12 md:w-full md:ring-1 md:ring-border"
                         style={{ 
                             // Mobile: Dynamic Grid columns (min 5, max 10)
                             gridTemplateColumns: `repeat(${Math.min(shades.length, 10)}, 1fr)` 

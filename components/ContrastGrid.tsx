@@ -47,24 +47,24 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col p-4 md:p-8 overflow-hidden animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col p-4 md:p-8 overflow-hidden animate-in fade-in duration-200">
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-white">Contrast Grid ({color.name})</h2>
-          <p className="text-slate-400">APCA / WCAG approx. matrix</p>
+          <h2 className="text-2xl font-bold text-foreground">Contrast Grid ({color.name})</h2>
+          <p className="text-muted-foreground">APCA / WCAG approx. matrix</p>
         </div>
-        <button onClick={onClose} className="p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition">
+        <button onClick={onClose} className="p-2 bg-secondary text-foreground rounded-lg hover:bg-accent transition">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
 
-      <div className="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-xl overflow-auto flex-1 border border-slate-800 relative">
+      <div className="bg-card p-4 md:p-6 rounded-2xl shadow-xl overflow-auto flex-1 border border-border relative">
         <div className="min-w-[800px] w-full h-full flex flex-col">
             {/* Header Row */}
             <div className="flex w-full">
                 <div className="w-16 shrink-0 h-10"></div> {/* Corner */}
                 {scale.map((col) => (
-                    <div key={`head-${col.level}`} className="flex-1 min-w-[3rem] h-10 flex items-center justify-center font-bold text-slate-400 text-xs md:text-sm">
+                    <div key={`head-${col.level}`} className="flex-1 min-w-[3rem] h-10 flex items-center justify-center font-bold text-muted-foreground text-xs md:text-sm">
                         {col.level === 0 ? 'W' : col.level === 1000 ? 'B' : col.level}
                     </div>
                 ))}
@@ -74,7 +74,7 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
             {scale.map((row) => (
                 <div key={`row-${row.level}`} className="flex w-full flex-1 min-h-[3rem]">
                     {/* Row Label */}
-                    <div className="w-16 shrink-0 flex items-center justify-center font-bold text-slate-400 text-xs md:text-sm">
+                    <div className="w-16 shrink-0 flex items-center justify-center font-bold text-muted-foreground text-xs md:text-sm">
                          {row.level === 0 ? 'W' : row.level === 1000 ? 'B' : row.level}
                     </div>
 
@@ -88,7 +88,7 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
                         return (
                             <div 
                                 key={`${row.level}-${col.level}`}
-                                className="flex-1 min-w-[3rem] flex items-center justify-center text-xs md:text-sm font-medium transition-transform hover:scale-105 hover:z-10 hover:shadow-xl rounded-sm relative cursor-default border border-transparent hover:border-white/10"
+                                className="flex-1 min-w-[3rem] flex items-center justify-center text-xs md:text-sm font-medium transition-transform hover:scale-105 hover:z-10 hover:shadow-xl rounded-sm relative cursor-default border border-transparent hover:border-border"
                                 style={{ backgroundColor: row.hex, color: col.hex }}
                                 onMouseEnter={(e) => handleMouseEnter(e, ratioStr, row.hex, col.hex)}
                                 onMouseLeave={handleMouseLeave}
@@ -107,17 +107,17 @@ const ContrastGrid: React.FC<ContrastGridProps> = ({ color, onClose }) => {
       {/* Fixed Tooltip Overlay */}
       {hoveredCell && (
         <div 
-            className="fixed z-[60] pointer-events-none transform -translate-x-1/2 -translate-y-[110%] bg-slate-950 rounded-lg shadow-2xl border border-slate-700 p-3 min-w-[140px] animate-in fade-in zoom-in-95 duration-150"
+            className="fixed z-[60] pointer-events-none transform -translate-x-1/2 -translate-y-[110%] bg-background rounded-lg shadow-2xl border border-border p-3 min-w-[140px] animate-in fade-in zoom-in-95 duration-150"
             style={{ left: hoveredCell.x, top: hoveredCell.y }}
         >
-            <div className="text-white font-bold text-lg mb-1 leading-tight">
+            <div className="text-foreground font-bold text-lg mb-1 leading-tight">
                 Ratio: {hoveredCell.ratio}
             </div>
             <div className="grid grid-cols-[30px_1fr] gap-x-2 text-xs font-mono">
-                <span className="text-slate-500 font-bold">BG:</span> 
-                <span className="text-white text-right">{hoveredCell.bgHex}</span>
-                <span className="text-slate-500 font-bold">TXT:</span> 
-                <span className="text-white text-right">{hoveredCell.txtHex}</span>
+                <span className="text-muted-foreground font-bold">BG:</span> 
+                <span className="text-foreground text-right">{hoveredCell.bgHex}</span>
+                <span className="text-muted-foreground font-bold">TXT:</span> 
+                <span className="text-foreground text-right">{hoveredCell.txtHex}</span>
             </div>
         </div>
       )}

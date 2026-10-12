@@ -657,7 +657,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
       };
   }, [brandPalette, neutralPalette, semanticPalette, config, globalConfig]);
 
-  if (!theme) return <div className="p-10 text-center text-slate-500">Generate a palette first to activate the playground.</div>;
+  if (!theme) return <div className="p-10 text-center text-muted-foreground">Generate a palette first to activate the playground.</div>;
 
   // --- 2. COMPONENT MENUS ---
   const molecules: { id: MoleculeType; label: string }[] = [
@@ -2366,25 +2366,25 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
     <div className="flex flex-col h-full max-h-screen overflow-hidden">
         
         {/* --- TOP BAR: THEME CONTROLS --- */}
-        <div className="w-full bg-slate-900 border-b border-white/5 flex items-center justify-between px-6 py-4 shrink-0 z-20 shadow-lg">
+        <div className="w-full bg-card border-b border-border flex items-center justify-between px-6 py-4 shrink-0 z-20 shadow-lg">
             <div className="flex items-center gap-6">
             </div>
 
             <div className="flex items-center gap-6 flex-wrap">
                 {/* 1. Dark Mode Toggle */}
                 <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-300 uppercase whitespace-nowrap">Appearance</span>
+                    <span className="text-xs font-bold text-muted-foreground uppercase whitespace-nowrap">Appearance</span>
                     <button 
                         onClick={() => onConfigChange({ ...config, isDarkMode: !config.isDarkMode })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.isDarkMode ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.isDarkMode ? 'bg-primary' : 'bg-accent'}`}
                     >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${config.isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-primary-foreground transition duration-200 ease-in-out ${config.isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                 </div>
 
                 {/* 2. Primary Color Selection */}
                 <div className="flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Primary Color</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase whitespace-nowrap">Primary Color</label>
                     <div className="flex gap-2">
                         {brandPalette.map((color, idx) => (
                             <button
@@ -2402,17 +2402,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 
                 {/* 3. Surface Mapping */}
                 <div className="flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Background</label>
-                    <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase whitespace-nowrap">Background</label>
+                    <div className="flex bg-background p-1 rounded-lg border border-border">
                         <button 
                             onClick={() => onConfigChange({ ...config, surfaceMode: 'neutral' })}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'neutral' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'neutral' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Neutral
                         </button>
                         <button 
                             onClick={() => onConfigChange({ ...config, surfaceMode: 'brand' })}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'brand' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.surfaceMode === 'brand' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Brand
                         </button>
@@ -2421,17 +2421,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 
                 {/* 4. Text Mapping */}
                 <div className="flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Typography</label>
-                    <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase whitespace-nowrap">Typography</label>
+                    <div className="flex bg-background p-1 rounded-lg border border-border">
                         <button 
                             onClick={() => onConfigChange({ ...config, textMode: 'base' })}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'base' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'base' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Gray
                         </button>
                         <button 
                             onClick={() => onConfigChange({ ...config, textMode: 'tinted' })}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'tinted' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.textMode === 'tinted' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Tinted
                         </button>
@@ -2440,17 +2440,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
 
                 {/* 5. Disabled Mode */}
                 <div className="flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Disabled</label>
-                    <div className="flex bg-slate-950 p-1 rounded-lg border border-white/5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase whitespace-nowrap">Disabled</label>
+                    <div className="flex bg-background p-1 rounded-lg border border-border">
                         <button 
                             onClick={() => onConfigChange({ ...config, disabledMode: 'base' })}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.disabledMode === 'base' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.disabledMode === 'base' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Base
                         </button>
                         <button 
                             onClick={() => onConfigChange({ ...config, disabledMode: 'tinted' })}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.disabledMode === 'tinted' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded transition-all ${config.disabledMode === 'tinted' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             Tinted
                         </button>
@@ -2462,17 +2462,17 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
         {/* --- MAIN CONTENT AREA --- */}
         <div className="flex flex-row flex-1 overflow-hidden">
             {/* --- COMPONENT MENU SIDEBAR (LEFT) --- */}
-            <div className="relative bg-slate-900 border-r border-white/5 flex flex-col shrink-0 z-10 shadow-2xl w-full md:w-[280px] overflow-hidden">
+            <div className="relative bg-card border-r border-border flex flex-col shrink-0 z-10 shadow-2xl w-full md:w-[280px] overflow-hidden">
                 { (
                 <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                <div className="p-6 border-b border-white/5">
-                    <p className="text-xs text-slate-500">
+                <div className="p-6 border-b border-border">
+                    <p className="text-xs text-muted-foreground">
                         Browse components with your color tokens.
                     </p>
                         </div>
 
                 {/* TABS */}
-                <div className="px-4 pt-4 border-b border-white/5">
+                <div className="px-4 pt-4 border-b border-border">
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -2482,7 +2482,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                         activeTab === 'molecules'
                           ? 'palette-ink text-white'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                       }`}
                       style={{
                         backgroundColor: activeTab === 'molecules' ? theme.action.primary : 'transparent',
@@ -2498,7 +2498,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                       className={`flex-1 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                         activeTab === 'organisms'
                           ? 'palette-ink text-white'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                       }`}
                       style={{
                         backgroundColor: activeTab === 'organisms' ? theme.action.primary : 'transparent',
@@ -2510,15 +2510,15 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     </div>
 
                 {/* Search */}
-                <div className="px-4 pt-4 pb-4 border-b border-white/5">
+                <div className="px-4 pt-4 pb-4 border-b border-border">
                   <div className="relative">
-                    <HiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <HiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <input
                       type="text"
                       placeholder={`Search ${activeTab}...`}
                       value={componentSearchQuery}
                       onChange={(e) => setComponentSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-lg text-sm bg-slate-800 border border-white/10 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      className="w-full pl-10 pr-4 py-2 rounded-lg text-sm bg-secondary border border-border text-muted-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                     />
                   </div>
                 </div>
@@ -2539,7 +2539,7 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                             className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
                                 selectedComponent === comp.id
                                     ? 'palette-ink text-white shadow-md'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                             }`}
                             style={{
                                 backgroundColor: selectedComponent === comp.id ? theme.action.primary : 'transparent',
@@ -2618,9 +2618,9 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                             
                                 {/* Code - 1/3 width */}
                                 <div className="lg:col-span-1">
-                                    <div className="bg-slate-950 border border-slate-700 rounded-lg p-4 h-[600px] flex flex-col">
+                                    <div className="bg-background border border-border rounded-lg p-4 h-[600px] flex flex-col">
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-xs font-semibold text-slate-300">Generated Code</span>
+                                            <span className="text-xs font-semibold text-muted-foreground">Generated Code</span>
                                             <button
                                                 onClick={async () => {
                                                     try {
@@ -2630,13 +2630,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                                                         showToast('Failed to copy code');
                                                     }
                                                 }}
-                                                className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                                                className="text-xs text-foreground hover:text-foreground flex items-center gap-1"
                                             >
                                                 <HiClipboard className="w-4 h-4" />
                                                 Copy
                                             </button>
                                         </div>
-                                        <pre className="flex-1 text-xs text-slate-300 overflow-auto">
+                                        <pre className="flex-1 text-xs text-muted-foreground overflow-auto">
                                             <code>{removeAllImports(replaceUnsplashUrls(replaceThemeReferences(aiGeneratedComponent.code, theme)))}</code>
                                         </pre>
                                     </div>
@@ -2646,13 +2646,13 @@ const UIPlayground: React.FC<UIPlaygroundProps> = ({
                     ) : aiGeneratedComponent && !isPremium ? (
                         // Non-premium: Show banner
                         <div className="max-w-4xl mx-auto">
-                            <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-lg p-8 text-center">
-                                <HiSparkles className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                                <h3 className="text-xl font-bold text-white mb-2">Assistant is a paid feature</h3>
-                                <p className="text-sm text-slate-400 mb-6">Generated components use the same paid assistant. The rest of the studio stays free.</p>
+                            <div className="bg-gradient-to-r from-primary/20 to-purple-600/20 border border-primary rounded-lg p-8 text-center">
+                                <HiSparkles className="w-12 h-12 text-foreground mx-auto mb-4" />
+                                <h3 className="text-xl font-bold text-foreground mb-2">Assistant is a paid feature</h3>
+                                <p className="text-sm text-muted-foreground mb-6">Generated components use the same paid assistant. The rest of the studio stays free.</p>
                                 <button
                                     onClick={() => onOpenPricing?.()}
-                                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"
+                                    className="px-6 py-3 bg-primary hover:opacity-90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
                                 >
                                     Upgrade to Pro
                                 </button>

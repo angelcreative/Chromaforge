@@ -1,156 +1,81 @@
-html[data-theme="light"] {
+/* Light and dark are two token sets, same roles as Live Mockup.
+   Components read these variables. They are not a repaint of slate/indigo classes. */
+
+:root {
   color-scheme: light;
-  background-color: #f8fafc;
+  --background: #f7f7f7;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #171717;
+  --primary-foreground: #fafafa;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #171717;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --accent: #f0f0f0;
+  --accent-foreground: #171717;
+  --destructive: #e11d48;
+  --border: #ebebeb;
+  --input: #ebebeb;
+  --ring: #a3a3a3;
+  --sidebar: #ffffff;
+  --canvas: #f7f7f7;
+  --switch: #d4d4d4;
+  --radius: 0.625rem;
+  --shadow-panel: 0 10px 30px rgba(23, 23, 23, 0.08);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  background-color: #020617;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --canvas: oklch(0.145 0 0);
+  --switch: oklch(0.37 0 0);
+  --shadow-panel: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
-html[data-theme="light"] body {
-  background-color: #f8fafc;
-  color: #0f172a;
+html, body, #root {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
 }
 
-html[data-theme="dark"] body {
-  background-color: #020617;
-  color: #e2e8f0;
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-html[data-theme="light"] .bg-slate-950,
-html[data-theme="light"] .bg-\[\#020617\] {
-  background-color: #f8fafc;
+::selection {
+  background: color-mix(in oklch, var(--foreground) 16%, transparent);
+  color: var(--foreground);
 }
 
-html[data-theme="light"] .bg-slate-950\/30,
-html[data-theme="light"] .bg-slate-950\/50,
-html[data-theme="light"] .bg-slate-950\/80,
-html[data-theme="light"] .bg-slate-950\/90 {
-  background-color: rgba(248, 250, 252, 0.92);
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--foreground) 22%, transparent);
+  border-radius: 3px;
 }
-
-html[data-theme="light"] .bg-slate-900,
-html[data-theme="light"] .bg-slate-900\/80,
-html[data-theme="light"] .bg-slate-900\/50 {
-  background-color: #ffffff;
-}
-
-html[data-theme="light"] .bg-slate-800,
-html[data-theme="light"] .bg-slate-800\/50,
-html[data-theme="light"] .bg-slate-800\/90 {
-  background-color: #f1f5f9;
-}
-
-html[data-theme="light"] .bg-slate-700 {
-  background-color: #e2e8f0;
-}
-
-html[data-theme="light"] .hover\:bg-slate-800:hover,
-html[data-theme="light"] .hover\:bg-slate-700:hover {
-  background-color: #e2e8f0;
-}
-
-html[data-theme="light"] .hover\:bg-white\/5:hover,
-html[data-theme="light"] .bg-white\/5 {
-  background-color: rgba(15, 23, 42, 0.05);
-}
-
-html[data-theme="light"] .border-slate-800,
-html[data-theme="light"] .border-slate-700,
-html[data-theme="light"] .border-slate-600 {
-  border-color: #e2e8f0;
-}
-
-html[data-theme="light"] .border-white\/5 {
-  border-color: rgba(15, 23, 42, 0.08);
-}
-
-html[data-theme="light"] .border-white\/10 {
-  border-color: rgba(15, 23, 42, 0.12);
-}
-
-html[data-theme="light"] .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(15, 23, 42, 0.08);
-}
-
-html[data-theme="light"] .ring-white\/10 {
-  --tw-ring-color: rgba(15, 23, 42, 0.12);
-}
-
-html[data-theme="light"] .text-white:not(.palette-ink):not(.palette-ink *),
-html[data-theme="light"] .text-slate-100:not(.palette-ink):not(.palette-ink *) {
-  color: #0f172a;
-}
-
-html[data-theme="light"] .text-slate-200:not(.palette-ink):not(.palette-ink *) {
-  color: #1e293b;
-}
-
-html[data-theme="light"] .text-slate-300:not(.palette-ink):not(.palette-ink *) {
-  color: #334155;
-}
-
-html[data-theme="light"] .text-slate-400:not(.palette-ink):not(.palette-ink *) {
-  color: #475569;
-}
-
-html[data-theme="light"] .text-slate-500:not(.palette-ink):not(.palette-ink *),
-html[data-theme="light"] .text-slate-600:not(.palette-ink):not(.palette-ink *) {
-  color: #64748b;
-}
-
-html[data-theme="light"] .text-white\/90:not(.palette-ink):not(.palette-ink *),
-html[data-theme="light"] .text-white\/80:not(.palette-ink):not(.palette-ink *),
-html[data-theme="light"] .text-white\/50:not(.palette-ink):not(.palette-ink *) {
-  color: #0f172a;
-}
-
-html[data-theme="light"] .hover\:text-white:hover:not(.palette-ink):not(.bg-indigo-600):not(.bg-indigo-500),
-html[data-theme="light"] .hover\:text-slate-200:hover,
-html[data-theme="light"] .hover\:text-slate-300:hover {
-  color: #0f172a;
-}
-
-html[data-theme="light"] :is(
-  .bg-indigo-600,
-  .bg-indigo-500,
-  .bg-cyan-500,
-  .bg-orange-500,
-  .bg-fuchsia-600,
-  .bg-pink-500,
-  .from-indigo-600,
-  .from-indigo-500,
-  .to-violet-600,
-  .to-pink-500
-).text-white,
-html[data-theme="light"] :is(
-  .bg-indigo-600,
-  .bg-indigo-500,
-  .bg-cyan-500,
-  .bg-orange-500,
-  .bg-fuchsia-600
-) :is(.text-white, .text-white\/90) {
-  color: #ffffff !important;
-}
-
-html[data-theme="light"] .brand-wordmark {
-  background-image: linear-gradient(to right, #0f172a, #64748b);
-}
-
-html[data-theme="light"] .glow-card::after {
-  background-color: #ffffff;
-}
-
-html[data-theme="light"] .glow-card {
-  background-color: rgba(15, 23, 42, 0.03);
-}
-
-html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-}
-
-html[data-theme="light"] .placeholder-slate-600::placeholder,
-html[data-theme="light"] .placeholder-slate-500::placeholder {
-  color: #94a3b8;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--foreground) 36%, transparent);
 }

@@ -106,29 +106,29 @@ export const CardsSidebar: React.FC<CardsSidebarProps> = ({
 
   return (
     <div
-      className="relative bg-slate-900 border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl w-full md:w-[280px] overflow-hidden">
+      className="relative bg-card border-l border-border flex flex-col shrink-0 z-10 shadow-2xl w-full md:w-[280px] overflow-hidden">
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
           {/* Header */}
-          <div className="p-6 border-b border-white/5">
-            <p className="text-xs text-slate-500">
+          <div className="p-6 border-b border-border">
+            <p className="text-xs text-muted-foreground">
               Browse cards with your color tokens.
             </p>
           </div>
 
           {/* Search */}
           {filteredCategories.length > 0 && (
-            <div className="px-4 pt-4 pb-4 border-b border-white/5">
+            <div className="px-4 pt-4 pb-4 border-b border-border">
               <div className="relative">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                 />
                 <input
                   type="text"
                   placeholder="Search cards..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg text-sm bg-slate-800 border border-white/10 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg text-sm bg-secondary border border-border text-muted-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                 />
               </div>
             </div>
@@ -138,7 +138,7 @@ export const CardsSidebar: React.FC<CardsSidebarProps> = ({
           <div className="p-4 space-y-1">
             {filteredCategories.map((category, categoryIdx) => (
               <div key={categoryIdx} className="mb-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2 px-2 text-slate-500">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2 px-2 text-muted-foreground">
                   {category.name}
                 </h3>
                 <div className="space-y-1">
@@ -148,8 +148,8 @@ export const CardsSidebar: React.FC<CardsSidebarProps> = ({
                       onClick={() => onSelectCard(card.id)}
                       className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
                         selectedCardId === card.id
-                          ? 'text-white shadow-md'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          ? 'text-foreground shadow-md'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                       }`}
                       style={{
                         backgroundColor: selectedCardId === card.id ? theme.action.primary : 'transparent',
