@@ -1,5 +1,5 @@
 
-import { Check, Home, Pipette, Plus, Send, Upload } from 'lucide-react';
+import { Check, Pipette, Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex } from './utils/colorUtils';
@@ -727,15 +727,9 @@ const App: React.FC = () => {
       {renderGlobalOverlays()}
       <Toast message={toastMessage} isVisible={isToastVisible} />
 
-      <div className="absolute left-4 top-4 z-50 flex items-center gap-1.5">
-          <button type="button" onClick={goHome} className="grid size-10 place-items-center text-foreground" aria-label="Chromaforge">
-              <LogoMark className="size-6" />
-          </button>
-          <button type="button" onClick={goHome} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] text-foreground shadow-panel ring-1 ring-border" aria-label="Home">
-              <Home className="size-4" strokeWidth={1.5} />
-              Home
-          </button>
-      </div>
+      <button type="button" onClick={goHome} className="absolute left-4 top-4 z-50 grid size-10 place-items-center text-foreground" aria-label="Chromaforge">
+          <LogoMark className="size-6" />
+      </button>
 
       <StudioSidebar
           open={shellOpen}
