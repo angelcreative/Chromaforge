@@ -841,7 +841,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className={`flex min-h-0 flex-1 flex-col pt-14 ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[400px]' : ''}`}>
+      <div className={`flex min-h-0 flex-1 flex-col pt-14 ${(selectedColorForEdit || refinePad) ? 'lg:pr-[400px]' : ''}`}>
       <motion.div key={viewKey} className="flex min-h-0 flex-1 flex-col" {...fadeEnter(reduce)}>
       {selectedColorForGrid ? (
         <ContrastGrid color={selectedColorForGrid} globalConfig={globalCurveConfig} onClose={() => setSelectedColorForGrid(null)} />
