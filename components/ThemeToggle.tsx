@@ -4,13 +4,13 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { ThemePreference, applyThemePreference, readThemePreference, writeThemePreference } from '../utils/theme';
 import { MotionButton, uiTransition, useReduced } from './uiMotion';
 
-const OPTIONS: { id: ThemePreference; label: string; icon: typeof Sun }[] = [
+export const THEME_OPTIONS: { id: ThemePreference; label: string; icon: typeof Sun }[] = [
   { id: 'system', label: 'System', icon: Monitor },
   { id: 'light', label: 'Light', icon: Sun },
   { id: 'dark', label: 'Dark', icon: Moon },
 ];
 
-const ThemeToggle: React.FC<{ showLabels?: boolean; compact?: boolean }> = ({ showLabels = false, compact = false }) => {
+export function useThemePreference() {
   const [pref, setPref] = useState<ThemePreference>(() => readThemePreference());
 
   useEffect(() => {
@@ -27,8 +27,14 @@ const ThemeToggle: React.FC<{ showLabels?: boolean; compact?: boolean }> = ({ sh
     writeThemePreference(next);
   };
 
+  return { pref, choose };
+}
+
+const ThemeToggle: React.FC<{ showLabels?: boolean; compact?: boolean }> = ({ showLabels = false, compact = false }) => {
+  const { pref, choose } = useThemePreference();
+
   const reduce = useReduced();
-  const index = Math.max(0, OPTIONS.findIndex((option) => option.id === pref));
+  const index = Math.max(0, THEME_OPTIONS.findIndex((option) => option.id === pref));
 
   return (
     <div
@@ -43,7 +49,7 @@ const ThemeToggle: React.FC<{ showLabels?: boolean; compact?: boolean }> = ({ sh
         animate={{ x: `${index * 100}%` }}
         transition={uiTransition(reduce, 0.18)}
       />
-      {OPTIONS.map((option) => {
+      {THEME_OPTIONS.map((option) => {
         const active = pref === option.id;
         const Icon = option.icon;
         return (

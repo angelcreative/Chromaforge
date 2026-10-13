@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
-import { Copy, Download, FileDown, Heart, Library, PanelLeft, PanelLeftClose, Pipette, Plus } from 'lucide-react';
-import ThemeToggle from './ThemeToggle';
-import { MotionButton, SwitchThumb, presenceFade, presencePop, presenceSlide, useReduced } from './uiMotion';
+import { Download, Library, PanelLeft, PanelLeftClose, Pipette, Plus, Settings } from 'lucide-react';
+import { THEME_OPTIONS, useThemePreference } from './ThemeToggle';
+import { MotionButton, presenceFade, presencePop, presenceSlide, useReduced } from './uiMotion';
 
 export interface StudioSidebarProps {
   open: boolean;
@@ -10,27 +10,25 @@ export interface StudioSidebarProps {
   onSavedPalettes: () => void;
   onNewPalette: () => void;
   paletteOpen: boolean;
-  onSave: () => void;
-  saved: boolean;
-  saving: boolean;
   refineOpen: boolean;
   onRefine: () => void;
-  onCopySkill: () => void;
-  onDownloadSkill: () => void;
-  printOn: boolean;
-  onTogglePrint: () => void;
+  onExportMarkdown: () => void;
 }
 
 const actionRow =
   'flex h-9 w-full items-center rounded-lg text-[13px] text-foreground transition-colors hover:bg-accent disabled:opacity-40';
 
 const menuItem =
-  'flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[13px] text-foreground hover:bg-accent';
+  'flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[13px] text-foreground hover:bg-accent';
 
 function GroupLabel({ children }: { children: string }) {
   return (
-    <h2 className="px-2.5 pb-1 pt-3 text-[12px] font-medium text-muted-foreground">{children}</h2>
+    <h2 className="px-2.5 pb-1 pt-1 text-[12px] font-medium text-muted-foreground">{children}</h2>
   );
+}
+
+function GroupDivider() {
+  return <div className="mx-2 my-1 h-px bg-border" role="separator" />;
 }
 
 const StudioSidebar: React.FC<StudioSidebarProps> = ({
@@ -39,30 +37,29 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onSavedPalettes,
   onNewPalette,
   paletteOpen,
-  onSave,
-  saved,
-  saving,
   refineOpen,
   onRefine,
-  onCopySkill,
-  onDownloadSkill,
-  printOn,
-  onTogglePrint,
+  onExportMarkdown,
 }) => {
   const reduce = useReduced();
   const slide = presenceSlide(reduce, { x: '-100%' });
   const fade = presenceFade(reduce);
-  const menu = presencePop(reduce, 'top left');
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
+  const menu = presencePop(reduce, 'bottom left');
+  const { pref, choose } = useThemePreference();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!exportOpen) return;
+    if (!open) setSettingsOpen(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
     const onPointer = (event: MouseEvent) => {
-      if (!exportRef.current?.contains(event.target as Node)) setExportOpen(false);
+      if (!settingsRef.current?.contains(event.target as Node)) setSettingsOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setExportOpen(false);
+      if (event.key === 'Escape') setSettingsOpen(false);
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);
@@ -70,11 +67,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
       document.removeEventListener('mousedown', onPointer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [exportOpen]);
-
-  useEffect(() => {
-    if (!open || !paletteOpen) setExportOpen(false);
-  }, [open, paletteOpen]);
+  }, [settingsOpen]);
 
   return (
     <>
@@ -83,7 +76,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
           <motion.button
             key="scrim"
             type="button"
-            aria-label="Hide tools"
+            aria-label="Hide"
             className="fixed inset-0 z-30 bg-black/30 md:hidden"
             onClick={() => onOpenChange(false)}
             {...fade}
@@ -95,11 +88,11 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
         {open ? (
           <motion.aside
             key="panel"
-            className="absolute top-14 bottom-4 left-3 z-40 flex w-[min(260px,calc(100vw-4.5rem))] flex-col overflow-hidden rounded-2xl bg-card shadow-panel ring-1 ring-border"
+            className="absolute top-14 left-3 z-40 w-[min(260px,calc(100vw-4.5rem))] rounded-2xl bg-card shadow-panel ring-1 ring-border"
             aria-label="Tools"
             {...slide}
           >
-            <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
+            <div className="p-1.5">
               <MotionButton type="button" onClick={onNewPalette} className={actionRow}>
                 <span className="grid size-9 shrink-0 place-items-center">
                   <Plus className="size-4" strokeWidth={1.5} aria-hidden />
@@ -107,21 +100,11 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 <span className="pr-2 text-left">New palette</span>
               </MotionButton>
 
+              <GroupDivider />
+
               {paletteOpen && (
-                <div>
+                <>
                   <GroupLabel>Palette</GroupLabel>
-                  <MotionButton
-                    type="button"
-                    onClick={onSave}
-                    disabled={saving}
-                    aria-pressed={saved}
-                    className={actionRow}
-                  >
-                    <span className="grid size-9 shrink-0 place-items-center">
-                      <Heart className="size-4" strokeWidth={1.5} aria-hidden />
-                    </span>
-                    <span className="pr-2 text-left">{saved ? 'Saved' : 'Save'}</span>
-                  </MotionButton>
                   <MotionButton
                     type="button"
                     onClick={onRefine}
@@ -133,89 +116,79 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     </span>
                     <span className="pr-2 text-left">Refine</span>
                   </MotionButton>
-                  <div ref={exportRef}>
-                    <MotionButton
-                      type="button"
-                      onClick={() => setExportOpen((value) => !value)}
-                      aria-expanded={exportOpen}
-                      aria-haspopup="menu"
-                      className={`${actionRow} ${exportOpen ? 'bg-accent' : ''}`}
-                    >
-                      <span className="grid size-9 shrink-0 place-items-center">
-                        <Download className="size-4" strokeWidth={1.5} aria-hidden />
-                      </span>
-                      <span className="pr-2 text-left">Export</span>
-                    </MotionButton>
-                    <AnimatePresence>
-                      {exportOpen && (
-                        <motion.div role="menu" className="mb-1 ml-9 mr-1 flex flex-col" {...menu}>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className={menuItem}
-                            onClick={() => { onCopySkill(); setExportOpen(false); }}
-                          >
-                            <Copy className="size-4" strokeWidth={1.5} aria-hidden />
-                            Copy color.md
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className={menuItem}
-                            onClick={() => { onDownloadSkill(); setExportOpen(false); }}
-                          >
-                            <FileDown className="size-4" strokeWidth={1.5} aria-hidden />
-                            Download color.md
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitemcheckbox"
-                            aria-checked={printOn}
-                            className={menuItem}
-                            onClick={onTogglePrint}
-                          >
-                            <span className={`relative h-4 w-7 shrink-0 rounded-full ${printOn ? 'bg-primary' : 'bg-[var(--switch)]'}`}>
-                              <SwitchThumb on={printOn} onX={12} />
-                            </span>
-                            Print
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
+                  <MotionButton type="button" onClick={onExportMarkdown} className={actionRow}>
+                    <span className="grid size-9 shrink-0 place-items-center">
+                      <Download className="size-4" strokeWidth={1.5} aria-hidden />
+                    </span>
+                    <span className="pr-2 text-left">Export md</span>
+                  </MotionButton>
+                  <GroupDivider />
+                </>
               )}
 
-              <div>
-                <GroupLabel>Appearance</GroupLabel>
-                <div className="px-1 pb-1">
-                  <ThemeToggle compact />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onSavedPalettes}
-                className="flex h-9 w-full items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
+              <MotionButton type="button" onClick={onSavedPalettes} className={actionRow}>
                 <span className="grid size-9 shrink-0 place-items-center">
                   <Library className="size-4" strokeWidth={1.5} aria-hidden />
                 </span>
-                <span className="pr-2 text-left text-[13px]">Saved palettes</span>
-              </button>
-            </div>
+                <span className="pr-2 text-left">Library</span>
+              </MotionButton>
 
-            <div className="shrink-0 border-t border-border p-1.5">
-              <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                className="flex h-9 w-full items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
+              <GroupDivider />
+
+              <div className="relative" ref={settingsRef}>
+                <MotionButton
+                  type="button"
+                  onClick={() => setSettingsOpen((value) => !value)}
+                  aria-expanded={settingsOpen}
+                  aria-haspopup="menu"
+                  className={`${actionRow} ${settingsOpen ? 'bg-accent' : ''}`}
+                >
+                  <span className="grid size-9 shrink-0 place-items-center">
+                    <Settings className="size-4" strokeWidth={1.5} aria-hidden />
+                  </span>
+                  <span className="pr-2 text-left">Settings</span>
+                </MotionButton>
+                <AnimatePresence>
+                  {settingsOpen && (
+                    <motion.div
+                      role="menu"
+                      aria-label="Color theme"
+                      className="absolute right-0 bottom-full z-50 mb-1 w-full rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
+                      {...menu}
+                    >
+                      {THEME_OPTIONS.map((option) => {
+                        const active = pref === option.id;
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={active}
+                            className={`${menuItem} ${active ? 'bg-accent' : ''}`}
+                            onClick={() => {
+                              choose(option.id);
+                              setSettingsOpen(false);
+                            }}
+                          >
+                            <Icon className="size-4" strokeWidth={1.5} aria-hidden />
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <GroupDivider />
+
+              <MotionButton type="button" onClick={() => onOpenChange(false)} className={actionRow}>
                 <span className="grid size-9 shrink-0 place-items-center">
                   <PanelLeftClose className="size-4" strokeWidth={1.5} aria-hidden />
                 </span>
-                <span className="text-left text-[13px]">Hide tools</span>
-              </button>
+                <span className="pr-2 text-left">Hide</span>
+              </MotionButton>
             </div>
           </motion.aside>
         ) : (
