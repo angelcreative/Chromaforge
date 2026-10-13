@@ -100,35 +100,25 @@ export const loginUser = async (email: string, pass: string) => {
 };
 
 export const loginWithGoogle = async () => {
-    if (!isDemoMode && auth && provider) {
-        try {
-            return await signInWithPopup(auth, provider);
-        } catch (error: any) {
-            // Robustness: If the domain is not authorized (common in preview environments like StackBlitz),
-            // or operation not allowed, log warning and FALLBACK to Demo Mode logic below.
-            if (error.code === 'auth/unauthorized-domain' || error.code === 'auth/operation-not-allowed') {
-                console.warn(`[Auth Service] Firebase configuration error (${error.code}). Falling back to Demo Mode for this session.`);
-                // Execution continues to Mock Login section below...
-            } else {
-                // Re-throw other errors (e.g. user cancelled, network error)
-                throw error;
-            }
-        }
+    if (isDemoMode || !auth || !provider) {
+        // Mock Google Login (Demo Mode only)
+        await new Promise(r => setTimeout(r, 800));
+        mockCurrentUser = {
+            uid: 'demo-google-user-' + Date.now(),
+            email: 'demo.google@example.com',
+            displayName: 'Demo Google User',
+            photoURL: 'https://lh3.googleusercontent.com/a/default-user',
+            emailVerified: true,
+            providerData: [{ providerId: 'google.com' }]
+        };
+        localStorage.setItem('chroma_demo_user', JSON.stringify(mockCurrentUser));
+        notifyListeners();
+        return { user: mockCurrentUser };
     }
-    
-    // Mock Google Login (Demo Mode or Fallback)
-    await new Promise(r => setTimeout(r, 800));
-    mockCurrentUser = {
-        uid: 'demo-google-user-' + Date.now(),
-        email: 'demo.google@example.com',
-        displayName: 'Demo Google User',
-        photoURL: 'https://lh3.googleusercontent.com/a/default-user',
-        emailVerified: true,
-        providerData: [{ providerId: 'google.com' }]
-    };
-    localStorage.setItem('chroma_demo_user', JSON.stringify(mockCurrentUser));
-    notifyListeners();
-    return { user: mockCurrentUser };
+    // Real Firebase session: surface popup errors so the menu can explain them.
+    // A silent demo fallback here would never reach the real auth listener,
+    // which is why the button previously looked like it did nothing.
+    return await signInWithPopup(auth, provider);
 };
 
 export const registerUser = async (email: string, pass: string, name?: string) => {

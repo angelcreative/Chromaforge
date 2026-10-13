@@ -14,6 +14,7 @@ import {
   fetchDisplayedBalance,
   showsUnlimited,
 } from '../utils/accountMenu';
+import { resetPassword } from '../services/authService';
 import { MotionButton, presencePop, useReduced } from './uiMotion';
 
 export interface AccountMenuProps {
@@ -44,9 +45,12 @@ const authError = (error: unknown, mode: AuthMode): string => {
   }
   if (code === 'auth/invalid-email') return 'Enter a valid email.';
   if (code === 'auth/weak-password') return 'Use at least 6 characters.';
-  if (code === 'auth/popup-closed-by-user') return 'Google sign-in was cancelled.';
-  if (code === 'auth/popup-blocked') return 'Allow popups to continue with Google.';
-  if (code === 'auth/unauthorized-domain') return 'Google sign-in is not available on this domain yet.';
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return 'Google sign-in was cancelled. Try again.';
+  if (code === 'auth/popup-blocked') return 'Allow popups to continue with Google, then try again.';
+  if (code === 'auth/unauthorized-domain') return 'Google sign-in is not enabled for this domain yet. Use email instead.';
+  if (code === 'auth/operation-not-allowed') return 'Google sign-in is disabled in Firebase. Enable the Google provider, then try again.';
+  if (code === 'auth/account-exists-with-different-credential') return 'That email already uses another sign-in method. Sign in with email instead.';
+  if (code === 'auth/network-request-failed') return 'Network error. Check your connection and try again.';
   return mode === 'signup' ? 'Could not create the account.' : 'Could not sign in.';
 };
 
@@ -72,7 +76,10 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   const [avatarMemory, setAvatarMemory] = useState<{ key: string; id: string | null }>({ key: '', id: null });
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authErrorText, setAuthErrorText] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
+  const [resetting, setResetting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [shownBalance, setShownBalance] = useState<number | null>(balance);
   const [shownAllowance, setShownAllowance] = useState<CreditAllowance>(allowance);
@@ -150,12 +157,15 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     }
     setOpen(false);
     setAuthErrorText('');
+    setAuthNotice('');
     setPasswordInput('');
+    setShowPassword(false);
   }, [signedIn]);
 
   useEffect(() => {
     if (open) return;
     setAuthErrorText('');
+    setAuthNotice('');
     setChoosingAvatar(false);
   }, [open]);
 
@@ -201,6 +211,27 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   const switchMode = (next: AuthMode) => {
     setMode(next);
     setAuthErrorText('');
+    setAuthNotice('');
+  };
+
+  const sendResetLink = async () => {
+    const address = emailInput.trim();
+    if (resetting) return;
+    if (!address) {
+      setAuthErrorText('Enter your email first, then ask for the reset link.');
+      return;
+    }
+    setResetting(true);
+    setAuthErrorText('');
+    setAuthNotice('');
+    try {
+      await resetPassword(address);
+      setAuthNotice('Reset link sent. Check your email.');
+    } catch (error: unknown) {
+      setAuthErrorText(authError(error, mode));
+    } finally {
+      setResetting(false);
+    }
   };
 
   const chooseAvatar = (id: string) => {
@@ -333,20 +364,47 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                         className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                       />
                     </label>
-                    <label className="mt-2 block text-[13px] text-muted-foreground">
-                      Password
-                      <input
-                        type="password"
-                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                        minLength={6}
-                        required
-                        value={passwordInput}
-                        onChange={(event) => setPasswordInput(event.target.value)}
-                        className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                      />
-                    </label>
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between text-[13px] text-muted-foreground">
+                        <label htmlFor={`${menuId}-password`}>Password</label>
+                        {mode === 'signin' && (
+                          <button
+                            type="button"
+                            disabled={resetting}
+                            className="text-foreground hover:underline disabled:opacity-40"
+                            onClick={() => { void sendResetLink(); }}
+                          >
+                            {resetting ? 'Sending…' : 'Forgot password?'}
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative mt-1">
+                        <input
+                          id={`${menuId}-password`}
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                          minLength={6}
+                          required
+                          value={passwordInput}
+                          onChange={(event) => setPasswordInput(event.target.value)}
+                          className="h-9 w-full rounded-lg border border-border bg-background px-2 pr-16 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                        />
+                        <button
+                          type="button"
+                          aria-pressed={showPassword}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowPassword((value) => !value)}
+                        >
+                          {showPassword ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    </div>
                     {authErrorText && (
                       <p className="mt-2 text-[13px] text-destructive" role="alert">{authErrorText}</p>
+                    )}
+                    {authNotice && (
+                      <p className="mt-2 text-[13px] text-foreground" role="status">{authNotice}</p>
                     )}
                     <button
                       type="submit"
