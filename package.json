@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "start": "node dist-server/server.js",
     "start:dev": "PORT=8080 node dist-server/server.js",
-    "test:credits": "npm run build:server && node --test services/credits.test.mjs"
+    "test:credits": "npm run build:server && node --test --test-concurrency=1 services/credits.test.mjs"
   },
   "dependencies": {
     "@google/genai": "latest",

@@ -1,4 +1,3 @@
-import { getOwnerAccessCode } from './ownerAccess';
 import { getCreditWalletId } from './creditWallet';
 
 export interface CreditSnapshot {
@@ -16,7 +15,6 @@ const postCredits = async (path: string, idToken?: string | null): Promise<Credi
       headers,
       body: JSON.stringify({
         walletId: getCreditWalletId(),
-        ownerAccess: getOwnerAccessCode() || undefined,
       }),
     });
     if (!response.ok) return null;

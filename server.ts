@@ -1,5 +1,4 @@
 import express from 'express';
-import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
@@ -7,16 +6,16 @@ import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
 import { compileComponent, cleanupOldBundles } from './services/componentCompiler.js';
 import { CreditLedger } from './services/creditLedger.js';
+import { isOwnerAccount } from './services/ownerGate.js';
+import { grantFromStripeEvent, verifyStripeSignature } from './services/stripeFulfillment.js';
 import {
   buildPalettePrompt,
   callModelIfAllowed,
   creditsForTokens,
   DESIGN_RESERVED_OUTPUT_TOKENS,
-  grantsFromCustomerDocuments,
   isWalletId,
   prepareTurn,
   tokensFromUsage,
-  type FirestoreRestDoc,
   type TurnDecision,
 } from './services/credits.js';
 
@@ -49,18 +48,6 @@ const app = express();
 const PORT = Number(process.env.PORT) || 8080;
 
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyBY0XUym3soacWnPG8kmEW52aPBv_vrIIk';
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'chroma-forge';
-
-const ownerSecret = () => (process.env.OWNER_ACCESS_CODE || process.env.CREATOR_BYPASS_SECRET || '').trim();
-
-const isValidOwnerCode = (provided: unknown): boolean => {
-  const secret = ownerSecret();
-  if (!secret || typeof provided !== 'string' || !provided) return false;
-  const a = Buffer.from(provided);
-  const b = Buffer.from(secret);
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
-};
 
 const bearerToken = (req: express.Request): string | null => {
   const header = req.get('authorization') || '';
@@ -68,44 +55,47 @@ const bearerToken = (req: express.Request): string | null => {
   return match ? match[1].trim() : null;
 };
 
-const firebaseUidFromIdToken = async (idToken: string): Promise<string | null> => {
+/** Identity Toolkit is the only proof of who is signed in. */
+const firebaseAccountFromIdToken = async (idToken: string): Promise<{ email?: string } | null> => {
+  if (!idToken || idToken.length > 8192) return null;
   const res = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(FIREBASE_WEB_API_KEY)}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken }),
+      redirect: 'error',
     }
   );
   if (!res.ok) return null;
-  const data = await res.json().catch(() => null) as { users?: { localId?: string }[] } | null;
-  return data?.users?.[0]?.localId || null;
+  const data = await res.json().catch(() => null) as { users?: { email?: string }[] } | null;
+  const email = data?.users?.[0]?.email;
+  return typeof email === 'string' ? { email } : null;
 };
 
 const ledger = new CreditLedger(
   process.env.CREDIT_LEDGER_PATH || join(baseDir, 'data', 'credit-ledger.json'),
 );
 
-const listCustomerDocs = async (
-  idToken: string,
-  uid: string,
-  collectionName: 'payments' | 'subscriptions',
-): Promise<FirestoreRestDoc[]> => {
-  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/customers/${encodeURIComponent(uid)}/${collectionName}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
-  if (!res.ok) return [];
-  const data = await res.json().catch(() => null) as { documents?: FirestoreRestDoc[] } | null;
-  return Array.isArray(data?.documents) ? data.documents : [];
+/** Unlimited use follows the verified owner account, never a client flag. */
+const isOwnerRequest = async (req: express.Request): Promise<boolean> => {
+  const token = bearerToken(req);
+  if (!token) return false;
+  try {
+    return isOwnerAccount(await firebaseAccountFromIdToken(token));
+  } catch {
+    return false;
+  }
 };
 
-/** Owner code skips the meter. Everyone else must have enough credits before Gemini. */
+/** The owner account skips the meter. Everyone else needs credits before Gemini. */
 const decideTurn = async (
   req: express.Request,
   prompt: string,
   kind: 'palette' | 'design',
   reservedOutputTokens?: number,
 ): Promise<TurnDecision> => {
-  const owner = isValidOwnerCode(req.body?.ownerAccess);
+  const owner = await isOwnerRequest(req);
   const walletId = req.body?.walletId;
   const balance = owner || !isWalletId(walletId) ? 0 : await ledger.balance(walletId);
   return prepareTurn({ owner, walletId, prompt, balance, kind, reservedOutputTokens });
@@ -123,23 +113,51 @@ const chargeTurn = async (
   return { creditsSpent: settled.spent, creditsRemaining: settled.remaining };
 };
 
+const webhookSecret = () => (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+
+// Raw body, before JSON parsing, so the Stripe signature matches the bytes Stripe sent.
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req, res) => {
+  const secret = webhookSecret();
+  if (!secret) {
+    console.warn('[Backend] Stripe webhook secret is not configured');
+    return res.status(503).json({ received: false });
+  }
+  const payload = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+  if (!verifyStripeSignature(payload, req.get('stripe-signature'), secret)) {
+    return res.status(400).json({ received: false });
+  }
+  let event: unknown;
+  try {
+    event = JSON.parse(payload.toString('utf8'));
+  } catch {
+    return res.status(400).json({ received: false });
+  }
+  const grant = grantFromStripeEvent(event);
+  if (!grant) return res.json({ received: true, granted: 0 });
+  try {
+    const result = await ledger.grant(grant.walletId, grant.id, grant.credits);
+    return res.json({ received: true, granted: result.added });
+  } catch {
+    console.error('[Backend] Credit grant failed');
+    return res.status(500).json({ received: false });
+  }
+});
+
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Serve static files from dist (but NOT index.html - we handle that in catch-all)
 app.use(express.static(join(baseDir, 'dist'), {
   index: false // Don't serve index.html automatically
 }));
 
-app.post('/api/owner-unlock', (req, res) => {
-  if (isValidOwnerCode(req.body?.access)) {
-    return res.json({ ok: true });
-  }
+app.post('/api/owner-unlock', async (req, res) => {
+  if (await isOwnerRequest(req)) return res.json({ ok: true });
   return res.status(403).json({ ok: false });
 });
 
 app.post('/api/credits', async (req, res) => {
-  if (isValidOwnerCode(req.body?.ownerAccess)) {
+  if (await isOwnerRequest(req)) {
     return res.json({ owner: true, balance: null });
   }
   if (!isWalletId(req.body?.walletId)) {
@@ -150,34 +168,14 @@ app.post('/api/credits', async (req, res) => {
 });
 
 app.post('/api/credits/claim', async (req, res) => {
-  if (isValidOwnerCode(req.body?.ownerAccess)) {
+  if (await isOwnerRequest(req)) {
     return res.json({ owner: true, balance: null, added: 0 });
   }
   if (!isWalletId(req.body?.walletId)) {
     return res.status(400).json({ owner: false, balance: 0, added: 0 });
   }
-  const walletId = req.body.walletId as string;
-  let added = 0;
-  const token = bearerToken(req);
-  if (token) {
-    try {
-      const uid = await firebaseUidFromIdToken(token);
-      if (uid) {
-        const [payments, subscriptions] = await Promise.all([
-          listCustomerDocs(token, uid, 'payments'),
-          listCustomerDocs(token, uid, 'subscriptions'),
-        ]);
-        for (const grant of grantsFromCustomerDocuments(payments, subscriptions)) {
-          const result = await ledger.grant(walletId, grant.id, grant.credits);
-          added += result.added;
-        }
-      }
-    } catch {
-      console.warn('[Backend] Could not claim credit packs');
-    }
-  }
-  const balance = await ledger.balance(walletId);
-  return res.json({ owner: false, balance, added });
+  const balance = await ledger.balance(req.body.walletId);
+  return res.json({ owner: false, balance, added: 0 });
 });
 
 // API endpoint for palette generation
@@ -739,7 +737,7 @@ if (invokedDirectly) {
     } else {
       console.log(`[Server] ❌ API_KEY is NOT configured. Create .env.local with: API_KEY=your_gemini_api_key`);
     }
-    console.log(`[Server] Owner unlock ${ownerSecret() ? 'configured' : 'disabled (set OWNER_ACCESS_CODE)'}`);
+    console.log(`[Server] Stripe webhook ${webhookSecret() ? 'configured' : 'not configured'}`);
   });
 }
 

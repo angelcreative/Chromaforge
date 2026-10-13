@@ -1,6 +1,5 @@
 import { ColorData, ChatMessage } from "../types";
 import { createColorData } from "../utils/colorUtils";
-import { getOwnerAccessCode } from "./ownerAccess";
 import { getCreditWalletId } from "./creditWallet";
 
 export interface PalettePromptResult {
@@ -35,7 +34,6 @@ export const generatePaletteFromPrompt = async (
       body: JSON.stringify({
         history,
         currentPalette,
-        ownerAccess: getOwnerAccessCode() || undefined,
         walletId: getCreditWalletId(),
       })
     });
