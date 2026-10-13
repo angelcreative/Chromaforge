@@ -1,7 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../types';
 import { MotionButton, SelectionMark } from './uiMotion';
 import { buildPlaygroundTheme, PlaygroundTheme } from './cards/playgroundTheme';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Input,
+  Label,
+  Pill,
+  ProgressBar,
+  Radio,
+  Select,
+  Slider,
+  Switch,
+  Tag,
+  Textarea,
+} from './cards/Molecules';
 
 interface ComponentsPreviewProps {
   brandPalette: ColorData[];
@@ -12,8 +27,62 @@ interface ComponentsPreviewProps {
   globalConfig?: GlobalCurveConfig;
 }
 
-type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'link';
-type ButtonState = 'default' | 'disabled' | 'active';
+type ComponentId =
+  | 'badge'
+  | 'button'
+  | 'checkbox'
+  | 'input'
+  | 'label'
+  | 'pill'
+  | 'progress'
+  | 'radio'
+  | 'select'
+  | 'slider'
+  | 'switch'
+  | 'tag'
+  | 'textarea';
+
+type RadiusId = '0' | '4' | '8' | '16' | '999';
+
+const RADIUS_OPTIONS: { id: RadiusId; label: string }[] = [
+  { id: '0', label: 'Square' },
+  { id: '4', label: 'Small' },
+  { id: '8', label: 'Medium' },
+  { id: '16', label: 'Large' },
+  { id: '999', label: 'Full' },
+];
+
+function radiusValue(id: RadiusId) {
+  return id === '999' ? '999px' : `${id}px`;
+}
+
+const COMPONENT_RADIUS_CSS = `
+[data-component-preview] :is(button, input, textarea, [role="progressbar"]) {
+  border-radius: var(--component-radius) !important;
+}
+[data-component-preview] span:is(.rounded, .rounded-full):not(.w-4) {
+  border-radius: var(--component-radius) !important;
+}
+[data-component-preview] div.w-5.rounded-full {
+  border-radius: var(--component-radius) !important;
+}
+`;
+
+const COMPONENTS: { id: ComponentId; label: string }[] = [
+  { id: 'badge', label: 'Badge' },
+  { id: 'button', label: 'Button' },
+  { id: 'checkbox', label: 'Checkbox' },
+  { id: 'input', label: 'Input' },
+  { id: 'label', label: 'Label' },
+  { id: 'pill', label: 'Pill' },
+  { id: 'progress', label: 'Progress' },
+  { id: 'radio', label: 'Radio' },
+  { id: 'select', label: 'Select' },
+  { id: 'slider', label: 'Slider' },
+  { id: 'switch', label: 'Switch' },
+  { id: 'tag', label: 'Tag' },
+  { id: 'textarea', label: 'Textarea' },
+];
 
 function Segmented<T extends string>({
   label,
@@ -58,78 +127,135 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function buttonStyle(theme: PlaygroundTheme, variant: ButtonVariant, state: ButtonState): React.CSSProperties {
-  if (state === 'disabled') {
-    return {
-      backgroundColor: variant === 'link' || variant === 'tertiary' ? 'transparent' : theme.disabled.bg,
-      color: theme.disabled.text,
-      textDecoration: variant === 'link' ? 'underline' : undefined,
-      textUnderlineOffset: variant === 'link' ? '3px' : undefined,
-      cursor: 'not-allowed',
-    };
+function ControlPreview({ id, theme, radius }: { id: ComponentId; theme: PlaygroundTheme; radius: string }): React.ReactElement {
+  const [checked, setChecked] = useState(true);
+  const [text, setText] = useState('Harbor');
+  const [note, setNote] = useState('A note about this palette.');
+  const [choice, setChoice] = useState('tide');
+  const [selected, setSelected] = useState('tide');
+  const [level, setLevel] = useState([62]);
+  const [on, setOn] = useState(true);
+
+  let body: React.ReactNode;
+  if (id === 'badge') {
+    body = (
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge theme={theme}>Primary</Badge>
+        <Badge theme={theme} variant="secondary">Secondary</Badge>
+        <Badge theme={theme} variant="success">Success</Badge>
+        <Badge theme={theme} variant="error">Error</Badge>
+        <Badge theme={theme} variant="warning">Warning</Badge>
+        <Badge theme={theme} variant="info">Info</Badge>
+      </div>
+    );
+  } else if (id === 'button') {
+    body = (
+      <div className="flex flex-wrap items-center gap-3">
+        <Button theme={theme}>Primary</Button>
+        <Button theme={theme} variant="secondary">Secondary</Button>
+        <Button theme={theme} variant="tertiary">Tertiary</Button>
+        <Button theme={theme} variant="link">Link</Button>
+        <Button theme={theme} disabled>Disabled</Button>
+      </div>
+    );
+  } else if (id === 'checkbox') {
+    body = (
+      <div className="flex flex-wrap items-center gap-6">
+        <Checkbox theme={theme} checked={checked} onCheckedChange={setChecked} label="Remember" />
+        <Checkbox theme={theme} checked={false} onCheckedChange={() => {}} label="Optional" />
+        <Checkbox theme={theme} checked disabled onCheckedChange={() => {}} label="Locked" />
+      </div>
+    );
+  } else if (id === 'input') {
+    body = (
+      <div className="max-w-sm">
+        <Input theme={theme} value={text} onChange={(event) => setText(event.target.value)} placeholder="Palette name" />
+      </div>
+    );
+  } else if (id === 'label') {
+    body = (
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+        <Label theme={theme}>Palette name</Label>
+        <Label theme={theme} variant="secondary">Secondary</Label>
+        <Label theme={theme} variant="small">Step</Label>
+      </div>
+    );
+  } else if (id === 'pill') {
+    body = (
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill theme={theme}>Harbor</Pill>
+        <Pill theme={theme}>Tide</Pill>
+        <Pill theme={theme}>Foam</Pill>
+      </div>
+    );
+  } else if (id === 'progress') {
+    body = (
+      <div className="max-w-sm">
+        <ProgressBar theme={theme} value={level[0] ?? 62} />
+      </div>
+    );
+  } else if (id === 'radio') {
+    body = (
+      <div className="flex flex-wrap items-center gap-6">
+        <Radio theme={theme} value="tide" checked={choice === 'tide'} onCheckedChange={setChoice} label="Tide" />
+        <Radio theme={theme} value="foam" checked={choice === 'foam'} onCheckedChange={setChoice} label="Foam" />
+        <Radio theme={theme} value="buoy" checked={choice === 'buoy'} onCheckedChange={setChoice} label="Buoy" />
+      </div>
+    );
+  } else if (id === 'select') {
+    body = (
+      <div className="max-w-xs">
+        <Select
+          theme={theme}
+          value={selected}
+          onValueChange={setSelected}
+          placeholder="Choose a color"
+          radius={radius}
+          options={[
+            { value: 'tide', label: 'Tide' },
+            { value: 'foam', label: 'Foam' },
+            { value: 'buoy', label: 'Buoy' },
+          ]}
+        />
+      </div>
+    );
+  } else if (id === 'slider') {
+    body = (
+      <div className="max-w-sm pt-1">
+        <Slider theme={theme} value={level} onValueChange={setLevel} />
+      </div>
+    );
+  } else if (id === 'switch') {
+    body = (
+      <div className="flex max-w-sm flex-col gap-3">
+        <Switch theme={theme} checked={on} onCheckedChange={setOn} label="Use brand surface" />
+        <Switch theme={theme} checked={false} onCheckedChange={() => {}} label="Locked" disabled />
+      </div>
+    );
+  } else if (id === 'tag') {
+    body = (
+      <div className="flex flex-wrap items-center gap-2">
+        <Tag theme={theme}>Primary</Tag>
+        <Tag theme={theme} variant="secondary">Secondary</Tag>
+        <Tag theme={theme} variant="outline">Outline</Tag>
+        <Tag theme={theme} variant="success">Success</Tag>
+      </div>
+    );
+  } else {
+    body = (
+      <div className="max-w-md">
+        <Textarea theme={theme} rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Write a note" />
+      </div>
+    );
   }
 
-  if (variant === 'primary') {
-    return {
-      backgroundColor: state === 'active' ? theme.action.primaryHover : theme.action.primary,
-      color: theme.text.onPrimary,
-      boxShadow: state === 'active' ? 'inset 0 1px 2px rgba(0, 0, 0, 0.22)' : undefined,
-    };
-  }
-
-  if (variant === 'secondary') {
-    return {
-      backgroundColor: state === 'active' ? theme.action.secondaryHover : theme.action.secondaryBg,
-      color: theme.action.secondaryText,
-      boxShadow: state === 'active' ? 'inset 0 1px 2px rgba(0, 0, 0, 0.12)' : undefined,
-    };
-  }
-
-  if (variant === 'tertiary') {
-    return {
-      backgroundColor: state === 'active' ? theme.action.secondaryBg : 'transparent',
-      color: theme.action.primary,
-    };
-  }
-
-  return {
-    backgroundColor: 'transparent',
-    color: state === 'active' ? theme.action.primaryHover : theme.action.primary,
-    textDecoration: 'underline',
-    textUnderlineOffset: '3px',
-  };
-}
-
-function PreviewButton({
-  label,
-  variant,
-  state,
-  theme,
-}: {
-  label: string;
-  variant: ButtonVariant;
-  state: ButtonState;
-  theme: PlaygroundTheme;
-}) {
   return (
-    <button
-      type="button"
-      disabled={state === 'disabled'}
-      aria-pressed={state === 'active' ? true : undefined}
-      className="inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-[13px]"
-      style={buttonStyle(theme, variant, state)}
-    >
-      {label}
-    </button>
+    <div data-component-preview style={{ '--component-radius': radius } as React.CSSProperties}>
+      <style>{COMPONENT_RADIUS_CSS}</style>
+      {body}
+    </div>
   );
 }
-
-const BUTTON_ROWS: { variant: ButtonVariant; label: string; sample: string }[] = [
-  { variant: 'primary', label: 'Primary', sample: 'Primary' },
-  { variant: 'secondary', label: 'Secondary', sample: 'Secondary' },
-  { variant: 'tertiary', label: 'Tertiary', sample: 'Tertiary' },
-  { variant: 'link', label: 'Link', sample: 'Link' },
-];
 
 const ComponentsPreview: React.FC<ComponentsPreviewProps> = ({
   brandPalette,
@@ -139,6 +265,8 @@ const ComponentsPreview: React.FC<ComponentsPreviewProps> = ({
   onConfigChange,
   globalConfig,
 }) => {
+  const [componentId, setComponentId] = useState<ComponentId>('button');
+  const [radius, setRadius] = useState<RadiusId>('8');
   const primaryIndex = brandPalette.length === 0
     ? 0
     : Math.min(Math.max(config.primaryIndex, 0), brandPalette.length - 1);
@@ -168,6 +296,15 @@ const ComponentsPreview: React.FC<ComponentsPreviewProps> = ({
               { id: 'dark', label: 'Dark' },
             ]}
             onChange={(id) => onConfigChange({ ...config, isDarkMode: id === 'dark' })}
+          />
+        </Field>
+        <Field label="Radius">
+          <Segmented
+            label="Radius"
+            layoutId="components-radius"
+            value={radius}
+            options={RADIUS_OPTIONS}
+            onChange={setRadius}
           />
         </Field>
         <Field label="Primary color">
@@ -232,23 +369,40 @@ const ComponentsPreview: React.FC<ComponentsPreviewProps> = ({
       <div
         className="rounded-2xl p-5 sm:p-6"
         data-components-stage
+        data-component={componentId}
         style={{ backgroundColor: theme.bg.page, color: theme.text.main }}
       >
-        <h2 className="text-[15px]" style={{ color: theme.text.main }}>Buttons</h2>
-        <p className="mt-2 max-w-xl text-[13px] leading-relaxed" style={{ color: theme.text.secondary }}>
-          These controls use the open palette. Change a setting above and this preview follows.
-        </p>
-        <div className="mt-6 flex flex-col gap-6">
-          {BUTTON_ROWS.map((row) => (
-            <div key={row.variant}>
-              <h3 className="mb-3 text-[13px]" style={{ color: theme.text.secondary }}>{row.label}</h3>
-              <div className="flex flex-wrap items-center gap-3">
-                <PreviewButton label={row.sample} variant={row.variant} state="default" theme={theme} />
-                <PreviewButton label="Disabled" variant={row.variant} state="disabled" theme={theme} />
-                <PreviewButton label="Active" variant={row.variant} state="active" theme={theme} />
-              </div>
-            </div>
-          ))}
+        <h2 className="text-[15px]" style={{ color: theme.text.main }}>Components</h2>
+        <div
+          className="mt-4 flex w-full max-w-[36rem] flex-wrap gap-1"
+          role="group"
+          aria-label="Component"
+          data-component-group
+        >
+          {COMPONENTS.map((item) => {
+            const active = componentId === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setComponentId(item.id)}
+                className="h-8 shrink-0 rounded-md px-2.5 text-[13px]"
+                style={{
+                  backgroundColor: active ? theme.action.primary : theme.bg.card,
+                  color: active ? theme.text.onPrimary : theme.text.main,
+                  boxShadow: active ? undefined : `inset 0 0 0 1px ${theme.border.default}`,
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-6">
+          <React.Fragment key={componentId}>
+            <ControlPreview id={componentId} theme={theme} radius={radiusValue(radius)} />
+          </React.Fragment>
         </div>
       </div>
     </section>
