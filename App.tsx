@@ -27,6 +27,7 @@ import { subscribeToAuth, ensureBillingUser, logoutUser } from './services/authS
 import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, renamePaletteInFirestore, SavedPalette } from './services/storageService';
 import { claimCreditPacks, fetchCreditBalance } from './services/creditClient';
+import { identityFromAccount } from './utils/accountMenu';
 import { formatCompact, type CreditPackId } from './services/credits';
 import { getCreditWalletId } from './services/creditWallet';
 import { buildStudioColorSkill } from './utils/colorSkill';
@@ -65,6 +66,7 @@ const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
 const App: React.FC = () => {
   // Auth State
   const [user, setUser] = useState<User | null>(null);
+  const [profileTick, setProfileTick] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
 
   const [isPricingOpen, setIsPricingOpen] = useState(false);
@@ -165,6 +167,17 @@ const App: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user || user.displayName) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      setProfileTick((tick) => tick + 1);
+      if (user.displayName || tries >= 6) window.clearInterval(timer);
+    }, 200);
+    return () => window.clearInterval(timer);
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -768,6 +781,7 @@ const App: React.FC = () => {
     setIsSaved(false);
   };
 
+  const accountIdentity = useMemo(() => identityFromAccount(user), [user, profileTick]);
   const reduce = useReduced();
   const showLoader = isChatLoading && !showWork;
   const paletteOpen = showWork && hasPalette && !showHome;
@@ -793,11 +807,17 @@ const App: React.FC = () => {
           markMotion="enter"
       />
       <AccountMenu
-          email={user?.email ?? null}
-          name={user?.displayName ?? null}
+          email={accountIdentity.email}
+          name={accountIdentity.name}
+          signedIn={Boolean(user && !user.isAnonymous)}
           ownerSession={isOwner}
           balance={credits}
-          onLogout={logoutUser}
+          onLogout={async () => {
+            await logoutUser();
+            setUser(null);
+            setIsOwner(false);
+          }}
+          onBuyMore={() => setIsPricingOpen(true)}
       />
 
       <StudioSidebar

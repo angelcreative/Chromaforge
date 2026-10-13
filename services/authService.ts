@@ -156,14 +156,14 @@ export const ensureBillingUser = async () => {
 };
 
 export const logoutUser = async () => {
-    if (!isDemoMode && auth) {
-        return firebaseSignOut(auth);
-    } else {
-        // Mock Logout
-        mockCurrentUser = null;
+    mockCurrentUser = null;
+    try {
         localStorage.removeItem('chroma_demo_user');
-        notifyListeners();
+    } catch {
+        /* ignore */
     }
+    notifyListeners();
+    if (auth) await firebaseSignOut(auth);
 };
 
 export const resetPassword = async (email: string) => {

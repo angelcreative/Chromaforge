@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { accountInitial, creditsMenuCopy, UNLIMITED_ACCOUNT_EMAIL } from './accountMenu.ts';
+import { accountInitial, creditsMenuCopy, identityFromAccount, UNLIMITED_ACCOUNT_EMAIL } from './accountMenu.ts';
 
 test('the owner account on the free URL reads unlimited', () => {
   const copy = creditsMenuCopy({
@@ -49,4 +49,17 @@ test('the avatar uses the first letter of the name, then the email', () => {
   assert.equal(accountInitial('Ada Lovelace', 'studio@example.com'), 'A');
   assert.equal(accountInitial(null, UNLIMITED_ACCOUNT_EMAIL), 'A');
   assert.equal(accountInitial('  ', ''), '');
+  assert.equal(accountInitial('🎨', 'studio@example.com'), 'S');
+  assert.equal(accountInitial('Ángel', 'studio@example.com'), 'A');
+  assert.equal(accountInitial('王', 'studio@example.com'), '王');
+});
+
+test('provider profile supplies the initial when the account email is empty', () => {
+  const identity = identityFromAccount({
+    displayName: null,
+    email: null,
+    providerData: [{ displayName: null, email: UNLIMITED_ACCOUNT_EMAIL }],
+  });
+  assert.equal(identity.email, UNLIMITED_ACCOUNT_EMAIL);
+  assert.equal(accountInitial(identity.name, identity.email), 'A');
 });
