@@ -19,6 +19,8 @@ import DescribeHeading from './components/DescribeHeading';
 import LogoMark from './components/LogoMark';
 import GradientList from './components/GradientList';
 import RampScaleControls from './components/RampScaleControls';
+import ComponentsPreview from './components/ComponentsPreview';
+import PlaygroundCards from './components/PlaygroundCards';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
@@ -49,6 +51,7 @@ import { showToast, ToastHost } from './components/Toast';
 
 type MobileTab = 'canvas' | 'editor';
 type ViewMode = 'list' | 'ramp' | 'gradients';
+type PreviewMode = 'palette' | 'components' | 'ui-demo';
 type CreationMode = 'generator' | 'manual';
 
 const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
@@ -104,6 +107,7 @@ const App: React.FC = () => {
   const [refinePad, setRefinePad] = useState(false);
   const [refineIndex, setRefineIndex] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('ramp');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('palette');
   const [copilotOpen, setCopilotOpen] = useState(false); 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -281,6 +285,7 @@ const App: React.FC = () => {
   const goHome = () => {
     setStudioPane('composer');
     setViewMode('ramp');
+    setPreviewMode('palette');
     setShowWork(false);
     setMessages([]);
     setChatInput('');
@@ -296,6 +301,7 @@ const App: React.FC = () => {
     setBaseColor({ h: 215, s: 25, l: 47 }); setBrightness(47); setHarmony('monochromatic'); setPaletteName('Design Tokens');
     setMessages([]); setChatInput('');     setIsPrintMode(false); setActiveTab('brand');
     setViewMode('ramp');
+    setPreviewMode('palette');
     setCreationMode('generator');
     setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
     setGlobalCurveConfig({ vibrancy: 0, contrast: 0, hueTorsion: 0, steps: 11 }); // Reset global controls
@@ -662,6 +668,7 @@ const App: React.FC = () => {
     handleApplyPalette(demo.colors.map(([hex, name]) => createColorData(hex, undefined, name)));
     setPaletteName(demo.name);
     setViewMode('ramp');
+    setPreviewMode('palette');
     setStudioPane('composer');
   };
   const openColors = () => {
@@ -915,18 +922,21 @@ const App: React.FC = () => {
                       ['list', 'List'],
                       ['ramp', 'Ramp'],
                       ['gradients', 'Gradients'],
-                    ] as const).map(([id, label]) => (
+                    ] as const).map(([id, label]) => {
+                      const selected = previewMode === 'palette' && viewMode === id;
+                      return (
                       <MotionButton
                         key={id}
                         type="button"
-                        aria-pressed={viewMode === id}
-                        onClick={() => { setStudioPane('composer'); setViewMode(id); }}
-                        className={`relative h-8 rounded-md px-3 text-[13px] ${viewMode === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        aria-pressed={selected}
+                        onClick={() => { setStudioPane('composer'); setPreviewMode('palette'); setViewMode(id); }}
+                        className={`relative h-8 rounded-md px-3 text-[13px] ${selected ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                       >
-                        <SelectionMark active={viewMode === id} layoutId="palette-view" />
+                        <SelectionMark active={selected} layoutId="palette-view" />
                         <span className="relative z-10">{label}</span>
                       </MotionButton>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette group">
                     {([
@@ -944,6 +954,23 @@ const App: React.FC = () => {
                           <SelectionMark active={activeTab === id} layoutId="palette-group" />
                           <span className="relative z-10">{label}</span>
                         </MotionButton>
+                    ))}
+                  </div>
+                  <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Component preview">
+                    {([
+                      ['components', 'Components'],
+                      ['ui-demo', 'UI demo'],
+                    ] as const).map(([id, label]) => (
+                      <MotionButton
+                        key={id}
+                        type="button"
+                        aria-pressed={previewMode === id}
+                        onClick={() => { setStudioPane('composer'); setPreviewMode(id); }}
+                        className={`relative h-8 whitespace-nowrap rounded-md px-3 text-[13px] ${previewMode === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                      >
+                        <SelectionMark active={previewMode === id} layoutId="component-preview" />
+                        <span className="relative z-10">{label}</span>
+                      </MotionButton>
                     ))}
                   </div>
                   <div className="ml-auto flex items-center gap-2">
@@ -969,7 +996,29 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {showWork && hasPalette && (viewMode === 'list' || viewMode === 'ramp') && (
+              {showWork && hasPalette && previewMode === 'components' && (
+                <ComponentsPreview
+                  brandPalette={activeColors}
+                  neutralPalette={neutralPalette}
+                  semanticPalette={semanticPalette}
+                  config={playgroundConfig}
+                  onConfigChange={setPlaygroundConfig}
+                  globalConfig={globalCurveConfig}
+                />
+              )}
+
+              {showWork && hasPalette && previewMode === 'ui-demo' && (
+                <PlaygroundCards
+                  brandPalette={activeColors}
+                  neutralPalette={neutralPalette}
+                  semanticPalette={semanticPalette}
+                  config={playgroundConfig}
+                  globalConfig={globalCurveConfig}
+                  onPrimaryIndex={(index) => setPlaygroundConfig((prev) => ({ ...prev, primaryIndex: index }))}
+                />
+              )}
+
+              {showWork && hasPalette && previewMode === 'palette' && (viewMode === 'list' || viewMode === 'ramp') && (
                 <>
                 <motion.div {...enterMotion(reduce)}>
                   <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
@@ -997,7 +1046,7 @@ const App: React.FC = () => {
                 </>
               )}
 
-              {showWork && hasPalette && viewMode === 'gradients' && (
+              {showWork && hasPalette && previewMode === 'palette' && viewMode === 'gradients' && (
                 <GradientList colors={activeColors} globalConfig={globalCurveConfig} onCopy={(t) => { navigator.clipboard.writeText(t); showToast('CSS copied'); }} />
               )}
               <div ref={chatEndRef} />
