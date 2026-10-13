@@ -114,6 +114,20 @@ export const estimateRequestCredits = (
   reservedOutputTokens = PALETTE_RESERVED_OUTPUT_TOKENS,
 ): number => creditsForTokens(estimateTokens(prompt), reservedOutputTokens);
 
+/** Reserved cost of one generated palette, using the same short prompt the meter tests. */
+export const generatedPaletteCredits = (): number =>
+  estimateRequestCredits(buildPalettePrompt(
+    [{ role: 'user', text: 'A calm coastal studio' }],
+    [],
+  ));
+
+/** How many of those palettes a credit amount covers. */
+export const palettesCovered = (credits: number): number => {
+  const cost = generatedPaletteCredits();
+  if (cost <= 0) return 0;
+  return Math.floor(Math.max(0, credits) / cost);
+};
+
 export interface PromptTurn {
   role: string;
   text: string;

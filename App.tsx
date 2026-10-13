@@ -23,7 +23,7 @@ import ComponentsPreview from './components/ComponentsPreview';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
-import { subscribeToAuth, ensureBillingUser, logoutUser } from './services/authService';
+import { subscribeToAuth, ensureBillingUser, logoutUser, signInOrCreateAccount } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, renamePaletteInFirestore, SavedPalette } from './services/storageService';
 import { claimCreditPacks, fetchCreditBalance } from './services/creditClient';
@@ -675,10 +675,11 @@ const App: React.FC = () => {
       }
   };
 
+  const studioSignedIn = Boolean(user && !user.isAnonymous);
   const creditLabel = credits === null ? 'Credits' : `${formatCompact(credits)} credits`;
   const creditExact = credits === null ? 'Credits' : `${credits} credits`;
   const renderCreditMeter = () => (
-      isOwner ? null : (
+      !studioSignedIn || isOwner ? null : (
           <button type="button" onClick={() => setIsPricingOpen(true)} className="text-[13px] text-muted-foreground hover:text-foreground" title={creditExact} aria-label={creditExact}>
               {creditLabel}
           </button>
@@ -818,9 +819,11 @@ const App: React.FC = () => {
             setIsOwner(false);
           }}
           onBuyMore={() => setIsPricingOpen(true)}
+          onSignIn={signInOrCreateAccount}
       />
 
-      <StudioSidebar
+      {!isPricingOpen && (
+        <StudioSidebar
           open={shellOpen}
           onOpenChange={setShellOpen}
           onSavedPalettes={handleOpenLibrary}
@@ -829,7 +832,8 @@ const App: React.FC = () => {
           refineOpen={refineOpen}
           onRefine={() => { if (refineOpen) setRefineOpen(false); else openRefine(); }}
           onExportMarkdown={handleDownloadSkill}
-      />
+        />
+      )}
 
       <div className={`flex min-h-0 flex-1 flex-col pt-14 ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[400px]' : ''}`}>
       <motion.div key={viewKey} className="flex min-h-0 flex-1 flex-col" {...fadeEnter(reduce)}>

@@ -16,6 +16,7 @@ export interface AccountMenuProps {
   balance: number | null;
   onLogout: () => void | Promise<void>;
   onBuyMore: () => void;
+  onSignIn: (email: string, password: string) => void | Promise<void>;
 }
 
 const AccountMenu: React.FC<AccountMenuProps> = ({
@@ -26,8 +27,14 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   balance,
   onLogout,
   onBuyMore,
+  onSignIn,
 }) => {
   const [open, setOpen] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [signInError, setSignInError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [shownBalance, setShownBalance] = useState<number | null>(balance);
   const rootRef = useRef<HTMLDivElement>(null);
   const reduce = useReduced();
@@ -72,9 +79,48 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (signedIn) {
+      setSigningIn(false);
+      setSignInError('');
+      setPasswordInput('');
+    }
+  }, [signedIn]);
+
+  useEffect(() => {
+    if (open) return;
+    setSigningIn(false);
+    setSignInError('');
+  }, [open]);
+
   const signOut = () => {
     setOpen(false);
     void onLogout();
+  };
+
+  const submitSignIn = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setSignInError('');
+    try {
+      await onSignIn(emailInput, passwordInput);
+      setPasswordInput('');
+      setSigningIn(false);
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        setSignInError('That password does not match this account.');
+      } else if (code === 'auth/invalid-email') {
+        setSignInError('Enter a valid email.');
+      } else if (code === 'auth/weak-password') {
+        setSignInError('Use at least 6 characters.');
+      } else {
+        setSignInError('Could not sign in.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const buyMore = () => {
@@ -93,7 +139,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
               : 'grid size-10 place-items-center rounded-full bg-transparent text-foreground ring-1 ring-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]'
           }
           style={initial ? { backgroundColor: 'var(--foreground)', color: 'var(--background)' } : undefined}
-          aria-label={signedIn ? (name || email || 'Account') : 'Signed out'}
+          aria-label={signedIn ? (name || email || 'Account') : 'Account'}
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls={open ? menuId : undefined}
@@ -110,29 +156,72 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
               className="absolute right-0 top-full z-50 mt-1 w-max min-w-44 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
               {...menu}
             >
-              {!signedIn && (
-                <p className="px-2.5 py-2 text-[13px] text-foreground">Signed out</p>
-              )}
-              <div className="flex items-center gap-3 px-2.5 py-2">
-                <p className="text-[13px] text-foreground" title={copy.title} aria-label={copy.title}>
-                  {copy.text}
-                </p>
-                <button
-                  type="button"
-                  className="text-[13px] text-foreground hover:underline"
-                  onClick={buyMore}
-                >
-                  Buy more
-                </button>
-              </div>
-              {signedIn && (
+              {signedIn ? (
+                <>
+                  <div className="flex items-center gap-3 px-2.5 py-2">
+                    <p className="text-[13px] text-foreground" title={copy.title} aria-label={copy.title}>
+                      {copy.text}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-[13px] text-foreground hover:underline"
+                      onClick={buyMore}
+                    >
+                      Buy more
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex h-9 w-full items-center rounded-lg px-2.5 text-left text-[13px] text-foreground hover:bg-accent"
+                    onClick={signOut}
+                  >
+                    Log out
+                  </button>
+                </>
+              ) : signingIn ? (
+                <form className="w-56 p-1.5" onSubmit={(event) => { void submitSignIn(event); }}>
+                  <label className="block text-[13px] text-muted-foreground">
+                    Email
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={emailInput}
+                      onChange={(event) => setEmailInput(event.target.value)}
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                    />
+                  </label>
+                  <label className="mt-2 block text-[13px] text-muted-foreground">
+                    Password
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={passwordInput}
+                      onChange={(event) => setPasswordInput(event.target.value)}
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                    />
+                  </label>
+                  {signInError && (
+                    <p className="mt-2 px-0.5 text-[13px] text-destructive" role="alert">{signInError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-foreground text-[13px] text-background disabled:opacity-40"
+                  >
+                    {submitting ? 'Signing in' : 'Sign in'}
+                  </button>
+                </form>
+              ) : (
                 <button
                   type="button"
                   role="menuitem"
                   className="flex h-9 w-full items-center rounded-lg px-2.5 text-left text-[13px] text-foreground hover:bg-accent"
-                  onClick={signOut}
+                  onClick={() => setSigningIn(true)}
                 >
-                  Log out
+                  Sign in
                 </button>
               )}
             </motion.div>
