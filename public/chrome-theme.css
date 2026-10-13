@@ -323,6 +323,16 @@ body {
   box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--ring);
 }
 
+/* Line drawings are black ink. A light disk keeps the strokes visible in light and dark. */
+.account-avatar-disk {
+  background: #f7f7f7;
+  box-shadow: inset 0 0 0 1px rgba(23, 23, 23, 0.16);
+}
+
+.account-avatar-disk[aria-checked="true"] {
+  box-shadow: inset 0 0 0 2px #171717;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .studio-fade,
   .studio-in,

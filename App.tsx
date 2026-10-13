@@ -815,6 +815,7 @@ const App: React.FC = () => {
       <AccountMenu
           email={accountIdentity.email}
           name={accountIdentity.name}
+          accountId={user && !user.isAnonymous ? user.uid : null}
           signedIn={Boolean(user && !user.isAnonymous)}
           ownerSession={isOwner}
           balance={credits}

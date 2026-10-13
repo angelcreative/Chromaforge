@@ -1,7 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useId, useRef, useState } from 'react';
 import {
-  accountInitial,
+  AVATAR_GROUPS,
+  avatarAccountKey,
+  avatarById,
+  displayedAvatarId,
+  readAccountAvatar,
+  writeAccountAvatar,
+} from '../utils/accountAvatar';
+import {
   creditsMenuCopy,
   fetchDisplayedBalance,
   isUnlimitedAccount,
@@ -11,6 +18,7 @@ import { MotionButton, presencePop, useReduced } from './uiMotion';
 export interface AccountMenuProps {
   email: string | null;
   name: string | null;
+  accountId?: string | null;
   signedIn: boolean;
   ownerSession: boolean;
   balance: number | null;
@@ -22,6 +30,7 @@ export interface AccountMenuProps {
 const AccountMenu: React.FC<AccountMenuProps> = ({
   email,
   name,
+  accountId = null,
   signedIn,
   ownerSession,
   balance,
@@ -31,6 +40,8 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [choosingAvatar, setChoosingAvatar] = useState(false);
+  const [avatarMemory, setAvatarMemory] = useState<{ key: string; id: string | null }>({ key: '', id: null });
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [signInError, setSignInError] = useState('');
@@ -46,7 +57,15 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     ownerSession: unlimited,
     balance: unlimited ? null : shownBalance,
   });
-  const initial = signedIn ? accountInitial(name, email) : '';
+  const accountKey = signedIn ? avatarAccountKey(email, accountId) : '';
+  if (avatarMemory.key !== accountKey) {
+    setAvatarMemory({
+      key: accountKey,
+      id: accountKey ? readAccountAvatar(accountKey) : null,
+    });
+  }
+  const avatarId = avatarMemory.key === accountKey ? avatarMemory.id : null;
+  const face = signedIn ? avatarById(displayedAvatarId(avatarId)) : null;
 
   useEffect(() => {
     setShownBalance(balance);
@@ -84,13 +103,16 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
       setSigningIn(false);
       setSignInError('');
       setPasswordInput('');
+      return;
     }
+    setChoosingAvatar(false);
   }, [signedIn]);
 
   useEffect(() => {
     if (open) return;
     setSigningIn(false);
     setSignInError('');
+    setChoosingAvatar(false);
   }, [open]);
 
   const signOut = () => {
@@ -128,24 +150,30 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     onBuyMore();
   };
 
+  const chooseAvatar = (id: string) => {
+    if (!accountKey || !writeAccountAvatar(accountKey, id)) return;
+    setAvatarMemory({ key: accountKey, id });
+  };
+
   return (
     <div ref={rootRef} className="pointer-events-none absolute top-0 right-0 z-50 bg-transparent">
       <div className="pointer-events-auto relative mr-3 mt-2">
         <MotionButton
           type="button"
           className={
-            initial
-              ? 'grid size-10 place-items-center rounded-full text-[15px] font-medium leading-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]'
+            face
+              ? 'account-avatar-disk grid size-10 place-items-center overflow-hidden rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]'
               : 'grid size-10 place-items-center rounded-full bg-transparent text-foreground ring-1 ring-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]'
           }
-          style={initial ? { backgroundColor: 'var(--foreground)', color: 'var(--background)' } : undefined}
           aria-label={signedIn ? (name || email || 'Account') : 'Account'}
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls={open ? menuId : undefined}
           onClick={() => setOpen((value) => !value)}
         >
-          {initial}
+          {face && (
+            <img src={face.src} alt="" draggable={false} className="h-[82%] w-[82%] object-contain" />
+          )}
         </MotionButton>
         <AnimatePresence>
           {open && (
@@ -170,6 +198,42 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                       Buy more
                     </button>
                   </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-expanded={choosingAvatar}
+                    className="flex h-9 w-full items-center rounded-lg px-2.5 text-left text-[13px] text-foreground hover:bg-accent"
+                    onClick={() => setChoosingAvatar((value) => !value)}
+                  >
+                    Change avatar
+                  </button>
+                  {choosingAvatar && (
+                    <div className="px-1.5 pb-1">
+                      {AVATAR_GROUPS.map((group) => (
+                        <div key={group.id} className="py-1" role="group" aria-label={group.label}>
+                          <p className="px-1 pb-1.5 text-[12px] text-muted-foreground">{group.label}</p>
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {group.faces.map((item) => {
+                              const selected = item.id === face?.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  role="menuitemradio"
+                                  aria-checked={selected}
+                                  aria-label={item.label}
+                                  className="account-avatar-disk grid size-10 place-items-center overflow-hidden rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+                                  onClick={() => chooseAvatar(item.id)}
+                                >
+                                  <img src={item.src} alt="" draggable={false} className="h-[78%] w-[78%] object-contain" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <button
                     type="button"
                     role="menuitem"
