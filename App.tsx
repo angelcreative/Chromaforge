@@ -1,6 +1,6 @@
 
 import { motion } from 'motion/react';
-import { Plus, Send, Upload } from 'lucide-react';
+import { Heart, Plus, Send, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MotionButton, SelectionMark, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
@@ -320,6 +320,29 @@ const App: React.FC = () => {
 
       const newColor = createColorData(hex, undefined, name);
       setCustomColors([...customColors, newColor]);
+  };
+
+  const addColorToOpenPalette = () => {
+      const source = activeTab === 'neutrals'
+        ? neutralPalette
+        : activeTab === 'system'
+          ? semanticPalette
+          : (creationMode === 'manual' ? customColors : palette);
+      const brand = creationMode === 'manual' ? customColors : palette;
+      const seed = source[source.length - 1] ?? brand[brand.length - 1];
+      if (!seed) return;
+      const next = createColorDataFromHSL((seed.hsl.h + 30) % 360, seed.hsl.s, seed.hsl.l);
+      const added = deduplicateColorNames([...source, next]);
+      if (activeTab === 'neutrals') {
+        setNeutralPalette(added);
+      } else if (activeTab === 'system') {
+        setSemanticPalette(added);
+      } else {
+        setCustomColors(added);
+        setPalette(added);
+        setCreationMode('manual');
+      }
+      setIsSaved(false);
   };
 
   const handleUpdateCustomColor = (index: number, newColor: ColorData) => {
@@ -789,15 +812,9 @@ const App: React.FC = () => {
           onSavedPalettes={handleOpenLibrary}
           onNewPalette={goHome}
           paletteOpen={paletteOpen}
-          onSave={handleSavePalette}
-          saved={isSaved}
-          saving={isSaving}
           refineOpen={refineOpen}
           onRefine={() => { if (refineOpen) setRefineOpen(false); else openRefine(); }}
-          onCopySkill={handleCopySkill}
-          onDownloadSkill={handleDownloadSkill}
-          printOn={isPrintMode}
-          onTogglePrint={() => setIsPrintMode((value) => !value)}
+          onExportMarkdown={handleDownloadSkill}
       />
 
       <div className={`flex min-h-0 flex-1 flex-col pt-14 ${shellOpen ? 'md:pl-[280px]' : ''} ${(selectedColorForEdit || refinePad) ? 'lg:pr-[400px]' : ''}`}>
@@ -960,6 +977,26 @@ const App: React.FC = () => {
                           <span className="relative z-10">{label}</span>
                         </MotionButton>
                     ))}
+                  </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <MotionButton
+                      type="button"
+                      onClick={addColorToOpenPalette}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground hover:bg-accent"
+                    >
+                      <Plus className="size-4" strokeWidth={1.5} aria-hidden />
+                      Add a color
+                    </MotionButton>
+                    <MotionButton
+                      type="button"
+                      onClick={handleSavePalette}
+                      disabled={isSaving}
+                      aria-pressed={isSaved}
+                      className={`inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
+                    >
+                      <Heart className="size-4" strokeWidth={1.5} aria-hidden />
+                      Save palette
+                    </MotionButton>
                   </div>
                 </div>
               )}
