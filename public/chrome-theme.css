@@ -153,6 +153,24 @@ body {
 .logo-mark--loading .logo-petal:nth-child(5) { animation-delay: 1.2s; }
 .logo-mark--loading .logo-petal:nth-child(6) { animation-delay: 1.5s; }
 
+/* Hover wordmark: letters ease in one after another, then fade out together. */
+.logo-wordmark-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.08em);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.group:hover .logo-wordmark-letter,
+.group:focus-visible .logo-wordmark-letter {
+  opacity: 1;
+  transform: none;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--logo-letter, 0) * 48ms);
+}
+
 @keyframes describe-word-in {
   from { opacity: 0; transform: translateY(0.35em); }
   to { opacity: 1; transform: none; }
@@ -345,5 +363,16 @@ body {
   .logo-mark--loading .logo-petal {
     animation: none;
     opacity: 1;
+  }
+  .logo-wordmark-letter {
+    transform: none;
+    transition: none;
+  }
+  .group:hover .logo-wordmark-letter,
+  .group:focus-visible .logo-wordmark-letter {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    transition-delay: 0s;
   }
 }
