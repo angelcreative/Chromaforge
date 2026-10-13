@@ -1,11 +1,12 @@
 
 import { motion } from 'motion/react';
-import React from 'react';
+import React, { useRef } from 'react';
 import { Inbox, Library, Loader2, Trash2 } from 'lucide-react';
 import { CloseButton } from './FloatingDrawer';
 import { enterMotion, popMotion, uiTransition, useReduced } from './uiMotion';
 import { SavedPalette } from '../services/storageService';
 import { ColorData } from '../types';
+import PaletteNameEditor from './PaletteNameEditor';
 
 interface PaletteLibraryModalProps {
   palettes: SavedPalette[];
@@ -13,6 +14,7 @@ interface PaletteLibraryModalProps {
   onClose: () => void;
   onLoadPalette: (palette: SavedPalette) => void;
   onDeletePalette: (id: string) => void;
+  onRenamePalette: (id: string, name: string) => void;
   lifetimeSaves?: number;
   isPremium?: boolean;
 }
@@ -23,9 +25,18 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
     onClose, 
     onLoadPalette, 
     onDeletePalette,
+    onRenamePalette,
 }) => {
   const reduce = useReduced();
   const pop = popMotion(reduce);
+  const namesRef = useRef<Record<string, string>>({});
+  const loadPalette = (palette: SavedPalette) => {
+    onLoadPalette({ ...palette, name: namesRef.current[palette.id] ?? palette.name });
+  };
+  const renamePalette = (id: string, name: string) => {
+    namesRef.current[id] = name;
+    onRenamePalette(id, name);
+  };
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
@@ -72,18 +83,23 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {palettes.map((palette, index) => (
                         <motion.div key={palette.id} className="bg-background border border-border rounded-xl p-4 hover:border-primary group relative" {...enterMotion(reduce, index)}>
-                            <div className="flex justify-between items-start mb-3">
-                                <h3 className="font-bold text-foreground text-sm truncate pr-2">{palette.name}</h3>
+                            <div className="flex justify-between items-start mb-3 gap-2">
+                                <PaletteNameEditor
+                                    name={palette.name}
+                                    onSave={(name) => renamePalette(palette.id, name)}
+                                    as="h3"
+                                    className="text-sm font-bold text-foreground"
+                                />
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); onDeletePalette(palette.id); }}
-                                    className="text-muted-foreground hover:text-red-400 p-1"
+                                    className="shrink-0 text-muted-foreground hover:text-red-400 p-1"
                                     aria-label="Delete palette"
                                 >
                                     <Trash2 className="size-4" strokeWidth={1.5} />
                                 </button>
                             </div>
                             
-                            <div className="flex h-12 rounded-lg overflow-hidden cursor-pointer ring-1 ring-white/5 mb-3" onClick={() => onLoadPalette(palette)}>
+                            <div className="flex h-12 rounded-lg overflow-hidden cursor-pointer ring-1 ring-white/5 mb-3" onClick={() => loadPalette(palette)}>
                                 {palette.colors.slice(0, 5).map((c: ColorData, i: number) => (
                                     <div key={i} className="flex-1 h-full" style={{ backgroundColor: c.hex }}></div>
                                 ))}
@@ -92,7 +108,7 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                             <div className="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
                                 <span>{palette.colors.length} colors</span>
                                 <button 
-                                    onClick={() => onLoadPalette(palette)}
+                                    onClick={() => loadPalette(palette)}
                                     className="text-foreground hover:text-foreground font-bold uppercase tracking-wider"
                                 >
                                     Load

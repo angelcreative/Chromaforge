@@ -25,7 +25,7 @@ import { ntc } from './utils/ntc';
 import { User } from 'firebase/auth'; 
 import { subscribeToAuth, ensureBillingUser, logoutUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
-import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, SavedPalette } from './services/storageService';
+import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, renamePaletteInFirestore, SavedPalette } from './services/storageService';
 import { claimCreditPacks, fetchCreditBalance } from './services/creditClient';
 import { formatCompact, type CreditPackId } from './services/credits';
 import { getCreditWalletId } from './services/creditWallet';
@@ -42,6 +42,8 @@ import PricingModal from './components/PricingModal';
 import ConfirmModal from './components/ConfirmModal';
 
 import PaletteLibraryModal from './components/PaletteLibraryModal';
+import PaletteNameEditor from './components/PaletteNameEditor';
+import { renameSavedPaletteList } from './utils/paletteName';
 
 // Legal & Cookies
 import CookieConsent from './components/CookieConsent';
@@ -603,6 +605,19 @@ const App: React.FC = () => {
       showToast(`Loaded "${p.name}"`);
   };
 
+  const renameOpenPalette = (name: string) => {
+      setPaletteName(name);
+      if (!activeSavedId) return;
+      setSavedPalettes((prev) => renameSavedPaletteList(prev, activeSavedId, name));
+      void renamePaletteInFirestore(activeSavedId, name);
+  };
+
+  const renameLibraryPalette = (id: string, name: string) => {
+      setSavedPalettes((prev) => renameSavedPaletteList(prev, id, name));
+      void renamePaletteInFirestore(id, name);
+      if (activeSavedId === id) setPaletteName(name);
+  };
+
   // Trigger modal instead of native confirm
   const handleDeleteRequest = (id: string) => {
       setPaletteToDelete(id);
@@ -918,7 +933,11 @@ const App: React.FC = () => {
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-24 pt-6">
               {showWork && hasPalette && (
-                <h1 className="min-w-0 truncate text-xl font-medium tracking-tight text-foreground">{paletteName}</h1>
+                <PaletteNameEditor
+                  name={paletteName}
+                  onSave={renameOpenPalette}
+                  className="text-xl font-medium tracking-tight text-foreground"
+                />
               )}
               {showWork && hasPalette && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -1100,7 +1119,7 @@ const App: React.FC = () => {
           imageFile={importImage}
         />
       )}
-      {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} isPremium />}
+      {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} onRenamePalette={renameLibraryPalette} isPremium />}
       {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} limitType="ai" />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}
     </div>
