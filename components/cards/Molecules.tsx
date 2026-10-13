@@ -898,7 +898,8 @@ export const Select: React.FC<{
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-}> = ({ value, onValueChange, theme, options, placeholder = 'Choose an option...', disabled = false, className = '' }) => {
+  radius?: string;
+}> = ({ value, onValueChange, theme, options, placeholder = 'Choose an option...', disabled = false, className = '', radius }) => {
   const [ripplePosition, setRipplePosition] = React.useState<{ x: number; y: number } | null>(null);
   const [isRippling, setIsRippling] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -922,6 +923,7 @@ export const Select: React.FC<{
           backgroundColor: disabled ? theme.disabled.bg : theme.bg.input,
           color: disabled ? theme.disabled.text : theme.text.main,
           border: `1px solid ${disabled ? theme.disabled.border : theme.border.default}`,
+          borderRadius: radius,
         }}
         onMouseEnter={(e) => {
           if (!disabled && document.activeElement !== e.currentTarget) {
@@ -949,6 +951,7 @@ export const Select: React.FC<{
           style={{ 
             backgroundColor: theme.bg.card, 
             borderColor: theme.border.subtle,
+            borderRadius: radius,
           }}
         >
           <SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6">

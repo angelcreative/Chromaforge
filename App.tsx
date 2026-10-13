@@ -20,7 +20,6 @@ import LogoMark from './components/LogoMark';
 import GradientList from './components/GradientList';
 import RampScaleControls from './components/RampScaleControls';
 import ComponentsPreview from './components/ComponentsPreview';
-import PlaygroundCards from './components/PlaygroundCards';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
@@ -51,7 +50,7 @@ import { showToast, ToastHost } from './components/Toast';
 
 type MobileTab = 'canvas' | 'editor';
 type ViewMode = 'list' | 'ramp' | 'gradients';
-type PreviewMode = 'palette' | 'components' | 'ui-demo';
+type PreviewMode = 'palette' | 'components';
 type CreationMode = 'generator' | 'manual';
 
 const DEMO_PALETTES: { name: string; colors: [string, string][] }[] = [
@@ -957,21 +956,15 @@ const App: React.FC = () => {
                     ))}
                   </div>
                   <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Component preview">
-                    {([
-                      ['components', 'Components'],
-                      ['ui-demo', 'UI demo'],
-                    ] as const).map(([id, label]) => (
-                      <MotionButton
-                        key={id}
-                        type="button"
-                        aria-pressed={previewMode === id}
-                        onClick={() => { setStudioPane('composer'); setPreviewMode(id); }}
-                        className={`relative h-8 whitespace-nowrap rounded-md px-3 text-[13px] ${previewMode === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
-                      >
-                        <SelectionMark active={previewMode === id} layoutId="component-preview" />
-                        <span className="relative z-10">{label}</span>
-                      </MotionButton>
-                    ))}
+                    <MotionButton
+                      type="button"
+                      aria-pressed={previewMode === 'components'}
+                      onClick={() => { setStudioPane('composer'); setPreviewMode('components'); }}
+                      className={`relative h-8 whitespace-nowrap rounded-md px-3 text-[13px] ${previewMode === 'components' ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                    >
+                      <SelectionMark active={previewMode === 'components'} layoutId="component-preview" />
+                      <span className="relative z-10">Components</span>
+                    </MotionButton>
                   </div>
                   <div className="ml-auto flex items-center gap-2">
                     <MotionButton
@@ -1004,17 +997,6 @@ const App: React.FC = () => {
                   config={playgroundConfig}
                   onConfigChange={setPlaygroundConfig}
                   globalConfig={globalCurveConfig}
-                />
-              )}
-
-              {showWork && hasPalette && previewMode === 'ui-demo' && (
-                <PlaygroundCards
-                  brandPalette={activeColors}
-                  neutralPalette={neutralPalette}
-                  semanticPalette={semanticPalette}
-                  config={playgroundConfig}
-                  globalConfig={globalCurveConfig}
-                  onPrimaryIndex={(index) => setPlaygroundConfig((prev) => ({ ...prev, primaryIndex: index }))}
                 />
               )}
 
