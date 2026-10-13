@@ -201,7 +201,7 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenGrid, onEditScal
                             return (
                                 <div 
                                     key={shade.level} 
-                                    className="aspect-square rounded md:rounded-none md:aspect-auto md:flex-1 md:min-w-0 cursor-pointer relative flex flex-col justify-center items-center shadow-sm md:shadow-none"
+                                    className="group/step aspect-square rounded md:rounded-none md:aspect-auto md:flex-1 md:min-w-0 cursor-pointer relative flex flex-col justify-center items-center shadow-sm md:shadow-none"
                                     style={{ backgroundColor: shade.hex }}
                                     onClick={() => handleCopy(shade.hex)}
                                     aria-label={`Step ${shade.level}, ${shade.hex}`}
@@ -210,7 +210,7 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenGrid, onEditScal
                                         type="button"
                                         data-color-info-trigger
                                         aria-label={`Color details, step ${shade.level}`}
-                                        className={`absolute top-0.5 left-0.5 grid size-4 place-items-center rounded ${isLight ? 'text-black/80 hover:bg-black/10' : 'text-white/90 hover:bg-white/15'}`}
+                                        className={`absolute top-0.5 left-0.5 grid size-4 place-items-center rounded opacity-0 pointer-events-none transition-opacity duration-150 group-hover/step:pointer-events-auto group-hover/step:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 ${isLight ? 'text-black/80 hover:bg-black/10' : 'text-white/90 hover:bg-white/15'}`}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             openInfo(event.currentTarget, {
