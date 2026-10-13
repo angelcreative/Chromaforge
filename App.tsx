@@ -123,6 +123,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('ramp');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('palette');
   const [copilotOpen, setCopilotOpen] = useState(false); 
+  const [fabAttention, setFabAttention] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -158,6 +159,9 @@ const App: React.FC = () => {
   const [legalModalType, setLegalModalType] = useState<LegalPageType | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const workScrollRef = useRef<HTMLDivElement>(null);
+  const paletteTitleRef = useRef<HTMLDivElement>(null);
+  const prevWorkLandedRef = useRef(false);
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const pendingClaim = useRef(false);
   const paletteOwnerId = user && !user.isAnonymous ? user.uid : 'local';
@@ -325,7 +329,19 @@ const App: React.FC = () => {
      setIsSaved(false);
   }, [paletteName]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isChatLoading, studioPane]);
+  // A fresh home generation lands on the palette title. The old chat-end
+  // scroll pushed the work view to the bottom, so it is gone.
+  const landedWork = showWork && (creationMode === 'manual' ? customColors.length > 0 : palette.length > 0);
+  useEffect(() => {
+    const justLanded = landedWork && !prevWorkLandedRef.current;
+    prevWorkLandedRef.current = landedWork;
+    if (!justLanded) return;
+    const frame = window.requestAnimationFrame(() => {
+      workScrollRef.current?.scrollTo({ top: 0 });
+      paletteTitleRef.current?.scrollIntoView({ block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [landedWork]);
 
   useEffect(() => {
     if (refineOpen) {
@@ -498,6 +514,7 @@ const App: React.FC = () => {
     if (!text || isChatLoading) return;
 
     const userMsg: ChatMessage = { role: 'user', text };
+    const fromHome = !showWork && messages.length === 0;
     setGeneratingName(text);
     setMessages(prev => [...prev, userMsg]); setChatInput(''); setIsChatLoading(true); setIsChatOpen(true);
     
@@ -534,7 +551,14 @@ const App: React.FC = () => {
       const uniqueColors = deduplicateColorNames(result.colors); 
       handleApplyPalette(uniqueColors); 
       setPaletteName(result.name);
-      setCopilotOpen(true);
+      // A home generation lands cleanly: title in view, tools closed on
+      // phones (openPaletteShell keeps desktop behavior), assistant panel
+      // closed with the FAB bouncing for attention. Follow-up edits from
+      // the open panel keep their current behavior.
+      if (fromHome) {
+        setCopilotOpen(false);
+        setFabAttention((value) => value + 1);
+      }
       setMessages(prev => [...prev, {
         role: 'model',
         text: result.description || `Updated palette: "${result.name}"`,
@@ -1052,14 +1076,16 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div ref={workScrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-24 pt-6">
               {showWork && hasPalette && (
+                <div ref={paletteTitleRef} className="scroll-mt-6">
                 <PaletteNameEditor
                   name={paletteName}
                   onSave={renameOpenPalette}
                   className="text-xl font-medium tracking-tight text-foreground"
                 />
+                </div>
               )}
               {showWork && hasPalette && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -1194,6 +1220,7 @@ const App: React.FC = () => {
           balanceTitle={ownerView ? '' : creditCopy.detail}
           balanceDetail={ownerView ? '' : creditCopy.detail}
           onCredits={ownerView ? undefined : openCredits}
+          attention={fabAttention}
         />
       )}
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import markUrl from './pigmo-mark-dark.png';
+import markUrl from './pigmento-mark-dark.png';
 
 const FIT = 0.66;
 const INK = 16;
@@ -7,7 +7,7 @@ const INK = 16;
 const loadImage = (url) => new Promise((resolve, reject) => {
   const image = new Image();
   image.onload = () => resolve(image);
-  image.onerror = () => reject(new Error('Pigmo mark failed to load'));
+  image.onerror = () => reject(new Error('Pigmento mark failed to load'));
   image.src = url;
 });
 
@@ -73,7 +73,7 @@ const segmentMark = (image) => {
       && component.cy < height * 0.68
     ))
     .sort((a, b) => a.cx - b.cx);
-  if (eyes.length !== 2) throw new Error('Pigmo mark is missing its eyes');
+  if (eyes.length !== 2) throw new Error('Pigmento mark is missing its eyes');
 
   const eyeIds = new Set(eyes.map((eye) => eye.id));
   for (let y = 0; y < height; y += 1) {
@@ -157,7 +157,7 @@ const paintMask = (mark, include) => {
 
 /** The robot mark. Only the eyes blink. Call dispose() when unmounting. */
 export class ChromaCompanion {
-  constructor(container, { variant = 'positive', name = 'Pigmo', onActivate } = {}) {
+  constructor(container, { variant = 'positive', name = 'Pigmento', onActivate } = {}) {
     if (!(container instanceof HTMLElement)) throw new TypeError('Expected an HTMLElement');
     this.container = container;
     this.variant = variant;
