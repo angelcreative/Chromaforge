@@ -1,6 +1,6 @@
 
 import { motion } from 'motion/react';
-import { Heart, Plus, Send, Upload } from 'lucide-react';
+import { ArrowUp, Heart, Plus, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MotionButton, SelectionMark, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
@@ -108,6 +108,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [generatingName, setGeneratingName] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false); 
   const [selectedColorForGrid, setSelectedColorForGrid] = useState<ColorData | null>(null);
@@ -425,6 +426,7 @@ const App: React.FC = () => {
     if (!text || isChatLoading) return;
 
     const userMsg: ChatMessage = { role: 'user', text };
+    setGeneratingName(text);
     setMessages(prev => [...prev, userMsg]); setChatInput(''); setIsChatLoading(true); setIsChatOpen(true);
     
     // Determine context based on mode
@@ -824,9 +826,12 @@ const App: React.FC = () => {
             role="status"
             aria-live="polite"
             aria-busy="true"
-            aria-label="Generating palette"
+            aria-label={generatingName ? `Generating ${generatingName}` : 'Generating palette'}
           >
-            <LogoMark motion="enter" className="block size-[46px] max-h-[46px] max-w-[46px] bg-transparent text-foreground" />
+            <div className="flex w-full max-w-3xl items-center justify-center gap-3">
+              <LogoMark motion="loading" className="block size-[46px] max-h-[46px] max-w-[46px] shrink-0 bg-transparent text-foreground" />
+              <h1 className="min-w-0 truncate text-3xl font-medium tracking-tight text-foreground">{generatingName}</h1>
+            </div>
           </div>
         </div>
       ) : showHome ? (
@@ -868,7 +873,7 @@ const App: React.FC = () => {
                     className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
                     aria-label="Send"
                   >
-                    <Send className="size-4" strokeWidth={1.5} />
+                    <ArrowUp className="size-4" strokeWidth={1.5} />
                   </MotionButton>
                 </div>
               </div>
@@ -900,6 +905,9 @@ const App: React.FC = () => {
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-24 pt-6">
+              {showWork && hasPalette && (
+                <h1 className="min-w-0 truncate text-xl font-medium tracking-tight text-foreground">{paletteName}</h1>
+              )}
               {showWork && hasPalette && (
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette view">
