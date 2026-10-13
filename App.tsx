@@ -33,6 +33,7 @@ import { buildStudioColorSkill } from './utils/colorSkill';
 import StudioSidebar from './components/StudioSidebar';
 import StudioTopBar from './components/StudioTopBar';
 import CopilotPanel from './components/CopilotPanel';
+import DotGrid from './components/DotGrid';
 
 // Subscription Imports
 import { createCheckoutSession } from './services/subscriptionService';
@@ -760,7 +761,8 @@ const App: React.FC = () => {
           : 'work';
 
   return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-canvas font-sans text-foreground">
+    <div className="relative isolate flex h-[100dvh] flex-col overflow-hidden bg-canvas font-sans text-foreground">
+      <DotGrid />
       {renderGlobalOverlays()}
       <ToastHost />
 
