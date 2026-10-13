@@ -15,6 +15,8 @@ interface PaletteLibraryModalProps {
   onLoadPalette: (palette: SavedPalette) => void;
   onDeletePalette: (id: string) => void;
   onRenamePalette: (id: string, name: string) => void;
+  accountStorage: boolean;
+  maxPalettes: number;
   lifetimeSaves?: number;
   isPremium?: boolean;
 }
@@ -26,6 +28,8 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
     onLoadPalette, 
     onDeletePalette,
     onRenamePalette,
+    accountStorage,
+    maxPalettes,
 }) => {
   const reduce = useReduced();
   const pop = popMotion(reduce);
@@ -60,7 +64,12 @@ const PaletteLibraryModal: React.FC<PaletteLibraryModalProps> = ({
                 Saved palettes
             </h2>
             <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs text-muted-foreground">Saved in this browser.</p>
+                <p className="text-xs text-muted-foreground">
+                  {accountStorage ? 'Synced with your account.' : 'Saved in this browser.'}
+                </p>
+                <span className="text-xs text-muted-foreground" aria-label={`${palettes.length} of ${maxPalettes} palettes saved`}>
+                  {palettes.length}/{maxPalettes}
+                </span>
             </div>
           </div>
           <CloseButton onClick={onClose} />
