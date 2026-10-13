@@ -23,7 +23,7 @@ import ComponentsPreview from './components/ComponentsPreview';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
-import { subscribeToAuth, ensureBillingUser } from './services/authService';
+import { subscribeToAuth, ensureBillingUser, logoutUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, SavedPalette } from './services/storageService';
 import { captureOwnerAccessFromUrl, clearOwnerAccess, confirmOwnerAccess, hasOwnerFlag, markOwnerUnlocked } from './services/ownerAccess';
@@ -33,6 +33,7 @@ import { getCreditWalletId } from './services/creditWallet';
 import { buildStudioColorSkill } from './utils/colorSkill';
 import StudioSidebar from './components/StudioSidebar';
 import StudioTopBar from './components/StudioTopBar';
+import AccountMenu from './components/AccountMenu';
 import CopilotPanel from './components/CopilotPanel';
 import DotGrid from './components/DotGrid';
 
@@ -777,6 +778,13 @@ const App: React.FC = () => {
       <StudioTopBar
           onHome={goHome}
           markMotion="enter"
+      />
+      <AccountMenu
+          email={user?.email ?? null}
+          name={user?.displayName ?? null}
+          ownerSession={isOwner}
+          balance={credits}
+          onLogout={logoutUser}
       />
 
       <StudioSidebar
