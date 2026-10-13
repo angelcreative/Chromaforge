@@ -24,7 +24,15 @@ import { ntc } from './utils/ntc';
 import { User } from 'firebase/auth'; 
 import { subscribeToAuth, loginUser, loginWithGoogle, logoutUser, registerUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
-import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, renamePaletteInFirestore, SavedPalette } from './services/storageService';
+import {
+  deletePaletteFromFirestore,
+  getUserPalettes,
+  MAX_SAVED_PALETTES,
+  PaletteLimitError,
+  renamePaletteInFirestore,
+  savePaletteToFirestore,
+  SavedPalette,
+} from './services/storageService';
 import { claimCreditPacks, fetchCreditBalance, type CreditAllowance, type CreditSnapshot } from './services/creditClient';
 import { creditStatusCopy, identityFromAccount, isUnlimitedAccount } from './utils/accountMenu';
 import { type CreditPackId } from './services/credits';
@@ -152,16 +160,13 @@ const App: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const pendingClaim = useRef(false);
+  const paletteOwnerId = user && !user.isAnonymous ? user.uid : 'local';
 
   // Initialize Custom Colors with default
   useEffect(() => {
      if (customColors.length === 0) {
          setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
      }
-  }, []);
-
-  useEffect(() => {
-    getUserPalettes('local').then(setSavedPalettes);
   }, []);
 
   useEffect(() => {
@@ -204,6 +209,24 @@ const App: React.FC = () => {
     buyAfterAuth.current = false;
     setIsPricingOpen(true);
   }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setActiveSavedId(null);
+    getUserPalettes(paletteOwnerId)
+      .then((palettes) => {
+        if (!cancelled) setSavedPalettes(palettes);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSavedPalettes([]);
+          showToast('Could not load saved palettes.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [paletteOwnerId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -609,18 +632,18 @@ const App: React.FC = () => {
       showToast('Downloaded color.md');
   };
 
-  // --- Storage Handlers (this browser only) ---
+  // --- Storage Handlers ---
   const handleSavePalette = async () => {
       setIsSaving(true);
       try {
           const colorsToSave = creationMode === 'manual' ? customColors : palette;
-          const newId = await savePaletteToFirestore('local', paletteName, colorsToSave);
+          const newId = await savePaletteToFirestore(paletteOwnerId, paletteName, colorsToSave);
           
           setIsSaved(true);
           
           const newPaletteEntry: SavedPalette = {
              id: newId,
-             userId: 'local',
+             userId: paletteOwnerId,
              name: paletteName,
              colors: colorsToSave,
              createdAt: { seconds: Date.now() / 1000 } 
@@ -628,9 +651,14 @@ const App: React.FC = () => {
           setSavedPalettes(prev => [newPaletteEntry, ...prev]);
           setActiveSavedId(newId);
           setShellOpen(true);
-          showToast("Saved on this browser");
-      } catch {
-          showToast("Failed to save palette.");
+          showToast(paletteOwnerId === 'local' ? 'Saved on this browser' : 'Saved to your account');
+      } catch (error) {
+          if (error instanceof PaletteLimitError) {
+            setIsLibraryOpen(true);
+            showToast(`You have ${MAX_SAVED_PALETTES} saved palettes. Delete one before saving another.`);
+          } else {
+            showToast("Failed to save palette.");
+          }
       }
       setIsSaving(false);
   };
@@ -638,9 +666,14 @@ const App: React.FC = () => {
   const handleOpenLibrary = async () => {
       setIsLibraryOpen(true);
       setIsLibraryLoading(true);
-      const data = await getUserPalettes('local');
-      setSavedPalettes(data);
-      setIsLibraryLoading(false);
+      try {
+        const data = await getUserPalettes(paletteOwnerId);
+        setSavedPalettes(data);
+      } catch {
+        showToast('Could not load saved palettes.');
+      } finally {
+        setIsLibraryLoading(false);
+      }
   };
 
   const handleLoadPalette = (p: SavedPalette) => {
@@ -656,12 +689,12 @@ const App: React.FC = () => {
       setPaletteName(name);
       if (!activeSavedId) return;
       setSavedPalettes((prev) => renameSavedPaletteList(prev, activeSavedId, name));
-      void renamePaletteInFirestore(activeSavedId, name);
+      void renamePaletteInFirestore(paletteOwnerId, activeSavedId, name);
   };
 
   const renameLibraryPalette = (id: string, name: string) => {
       setSavedPalettes((prev) => renameSavedPaletteList(prev, id, name));
-      void renamePaletteInFirestore(id, name);
+      void renamePaletteInFirestore(paletteOwnerId, id, name);
       if (activeSavedId === id) setPaletteName(name);
   };
 
@@ -680,11 +713,11 @@ const App: React.FC = () => {
       setActiveSavedId((current) => (current === id ? null : current));
       
       try {
-        await deletePaletteFromFirestore(id);
+        await deletePaletteFromFirestore(paletteOwnerId, id);
         showToast("Palette deleted");
       } catch (e) {
         console.error(e);
-        const palettes = await getUserPalettes('local');
+        const palettes = await getUserPalettes(paletteOwnerId);
         setSavedPalettes(palettes);
         showToast("Error deleting palette");
       }
@@ -1187,7 +1220,7 @@ const App: React.FC = () => {
           imageFile={importImage}
         />
       )}
-      {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} onRenamePalette={renameLibraryPalette} isPremium />}
+      {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} accountStorage={paletteOwnerId !== 'local'} maxPalettes={MAX_SAVED_PALETTES} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} onRenamePalette={renameLibraryPalette} isPremium />}
       {isPricingOpen && <PricingModal onClose={() => { setIsPricingOpen(false); setCheckoutError(null); }} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} error={checkoutError} limitType="ai" />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}
     </div>
