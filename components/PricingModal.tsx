@@ -48,6 +48,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
               </MotionButton>
             ))}
           </div>
+          {isLoading && (
+            <p className="mt-3 text-[13px] text-muted-foreground" role="status">
+              Connecting to secure checkout… Do not close this window.
+            </p>
+          )}
         </div>
     </ModalFrame>
   );
