@@ -149,7 +149,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   </span>
                   <span className="pr-2 text-left">Settings</span>
                 </MotionButton>
-                <div className="absolute top-0 left-[calc(100%+0.875rem)] z-50 flex h-9 w-max max-w-[calc(100vw-100%-2.75rem)] items-center">
+                <div className="absolute top-0 left-[calc(100%+0.875rem)] z-50 flex h-9 w-max max-w-[calc(100vw-100%-2.75rem)] items-center max-sm:items-end">
                   <AnimatePresence>
                     {settingsOpen && (
                       <motion.div
