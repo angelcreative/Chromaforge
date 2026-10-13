@@ -203,6 +203,19 @@ app.use(express.static(join(baseDir, 'dist'), {
   index: false // Don't serve index.html automatically
 }));
 
+// Stripe Price IDs are public identifiers, but are supplied at runtime so Docker
+// builds do not need to bake deployment-specific configuration into the bundle.
+app.get('/api/payment-config', (_req, res) => {
+  const price600 = (process.env.VITE_STRIPE_PRICE_CREDITS_600 || '').trim();
+  const price2400 = (process.env.VITE_STRIPE_PRICE_CREDITS_2400 || '').trim();
+  return res.json({
+    prices: {
+      pack_600: price600.startsWith('price_') ? price600 : null,
+      pack_2400: price2400.startsWith('price_') ? price2400 : null,
+    },
+  });
+});
+
 app.post('/api/owner-unlock', async (req, res) => {
   if (await isOwnerRequest(req)) return res.json({ ok: true });
   return res.status(403).json({ ok: false });
