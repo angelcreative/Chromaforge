@@ -4,18 +4,27 @@ import { collection, addDoc, onSnapshot, query, where, getDocs, doc, getDoc } fr
 import type { DocumentReference } from "firebase/firestore";
 import { buildCheckoutSession, type CreditPackId } from "./credits";
 
-interface ViteEnv {
-  env?: Record<string, string | undefined>;
-}
+type PaymentConfig = { prices?: Partial<Record<CreditPackId, string | null>> };
 
-const priceIdForPack = (packId: CreditPackId): string | undefined => {
-  const env = (import.meta as ImportMeta & ViteEnv).env;
-  const value = packId === 'pack_600'
-    ? env?.VITE_STRIPE_PRICE_CREDITS_600
-    : env?.VITE_STRIPE_PRICE_CREDITS_2400;
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}; 
+let paymentConfigPromise: Promise<PaymentConfig> | null = null;
+
+const priceIdForPack = async (packId: CreditPackId): Promise<string> => {
+    paymentConfigPromise ??= fetch('/api/payment-config', { headers: { Accept: 'application/json' } })
+        .then(async (response) => {
+            if (!response.ok) throw new Error('Payment configuration is unavailable.');
+            return response.json() as Promise<PaymentConfig>;
+        })
+        .catch((error) => {
+            paymentConfigPromise = null;
+            throw error;
+        });
+    const config = await paymentConfigPromise;
+    const price = config.prices?.[packId]?.trim();
+    if (!price?.startsWith('price_')) {
+        throw new Error(`The ${packId === 'pack_600' ? '600-credit' : '2.4K-credit'} Stripe price is not configured.`);
+    }
+    return price;
+};
 
 export const checkSubscriptionStatus = async (userId: string): Promise<boolean> => {
     if (isDemoMode || !db) return false;
@@ -147,7 +156,7 @@ export const createCheckoutSession = async (userId: string, packId: CreditPackId
         origin: window.location.origin,
         path: window.location.pathname,
         walletId,
-        priceId: priceIdForPack(packId),
+        priceId: await priceIdForPack(packId),
     });
 
     let checkoutRef;
