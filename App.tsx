@@ -379,13 +379,18 @@ const App: React.FC = () => {
       setCustomColors(updated);
   };
 
+  // Tools dock from the md breakpoint. On a phone the shell stays closed until the toggle.
+  const openPaletteShell = () => {
+      if (window.matchMedia('(min-width: 768px)').matches) setShellOpen(true);
+  };
+
   const handleImport = (colors: ColorData[]) => {
       setCustomColors(colors);
       setCreationMode('manual');
       setIsImportOpen(false);
       setImportImage(null);
       setShowWork(true);
-      setShellOpen(true);
+      openPaletteShell();
       setActiveSavedId(null);
       setSelectedColorForGrid(null);
       setStudioPane('composer');
@@ -434,7 +439,7 @@ const App: React.FC = () => {
       setIsSaved(false);
       if (!showWork) setViewMode('ramp');
       setShowWork(true);
-      setShellOpen(true);
+      openPaletteShell();
       setActiveSavedId(null);
       setSelectedColorForGrid(null);
   };
