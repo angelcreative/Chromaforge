@@ -4,11 +4,11 @@ import { ArrowUp } from 'lucide-react';
 import { CloseButton } from './FloatingDrawer';
 import { ChatMessage } from '../types';
 import { formatCompact } from '../services/credits';
-import PigmoButton from './pigmo/PigmoButton';
+import PigmentoButton from './pigmento/PigmentoButton';
 import { MotionButton, enterMotion, presencePop, useReduced } from './uiMotion';
 
-const PIGMO_GREETING = "Hi! I'm Pigmo your Ai assistant, I can modify your palette add colors, etc";
-const PIGMO_STATUSES = ['Thinking', 'Working', 'Painting'] as const;
+const PIGMENTO_GREETING = "Hi! I'm Pigmento, your AI assistant. I can modify your palette, add colors, and more.";
+const PIGMENTO_STATUSES = ['Thinking', 'Working', 'Painting'] as const;
 const STATUS_STEP_MS = 1000;
 
 export interface CopilotPanelProps {
@@ -24,6 +24,7 @@ export interface CopilotPanelProps {
   balanceTitle: string;
   balanceDetail?: string;
   onCredits?: () => void;
+  attention?: number;
 }
 
 const CopilotPanel: React.FC<CopilotPanelProps> = ({
@@ -39,6 +40,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   balanceTitle,
   balanceDetail,
   onCredits,
+  attention = 0,
 }) => {
   const reduce = useReduced();
   const pop = presencePop(reduce, 'bottom right');
@@ -51,7 +53,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
     }
     setStatusIndex(0);
     const timer = window.setInterval(() => {
-      setStatusIndex((current) => Math.min(current + 1, PIGMO_STATUSES.length - 1));
+      setStatusIndex((current) => Math.min(current + 1, PIGMENTO_STATUSES.length - 1));
     }, STATUS_STEP_MS);
     return () => window.clearInterval(timer);
   }, [loading]);
@@ -70,13 +72,13 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
         {...pop}
       >
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[13px]">Pigmo</span>
+          <span className="text-[13px]">Pigmento</span>
           <CloseButton onClick={onClose} />
         </div>
         <div className="mb-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           <div className="flex justify-start">
             <div className="max-w-[90%] rounded-2xl bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground ring-1 ring-border">
-              {PIGMO_GREETING}
+              {PIGMENTO_GREETING}
             </div>
           </div>
           {messages.map((message, index) => (
@@ -92,7 +94,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
           {loading && (
             <div className="flex justify-start" role="status" aria-live="polite">
               <div className="rounded-2xl bg-background px-3 py-2 text-[13px] text-muted-foreground ring-1 ring-border">
-                {PIGMO_STATUSES[statusIndex]}
+                {PIGMENTO_STATUSES[statusIndex]}
               </div>
             </div>
           )}
@@ -138,7 +140,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
       </motion.form>
     )}
     </AnimatePresence>
-    <PigmoButton open={open} onActivate={onToggle} />
+    <PigmentoButton open={open} onActivate={onToggle} attention={attention} />
   </>
   );
 };
