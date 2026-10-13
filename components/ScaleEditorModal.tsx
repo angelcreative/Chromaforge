@@ -263,12 +263,12 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                   key={shade.level}
                   type="button"
                   onClick={() => setActiveShade(shade.level)}
-                  className="min-w-0 flex-1"
+                  className="group min-w-0 flex-1 rounded-md outline-none"
                   aria-pressed={selected}
                   aria-label={`Step ${shade.level}`}
                 >
                   <span
-                    className={`oklch-swatch block h-8 rounded-md ring-2 ring-offset-2 ring-offset-card ${selected ? 'scale-[1.06] ring-foreground' : 'ring-transparent'}`}
+                    className={`oklch-swatch block h-8 rounded-md ${selected ? 'ring-1 ring-foreground' : 'group-focus-visible:ring-1 group-focus-visible:ring-foreground'}`}
                     style={{ backgroundColor: shade.hex }}
                   />
                   <span className="mt-1 block text-center font-mono text-[10px] text-muted-foreground">{shade.level}</span>
