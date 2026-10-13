@@ -44,7 +44,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   const reduce = useReduced();
   const slide = presenceSlide(reduce, { y: '100%' });
   const fade = presenceFade(reduce);
-  const menu = presencePop(reduce, 'bottom left');
+  const menu = presencePop(reduce, 'left center');
   const { pref, choose } = useThemePreference();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -149,37 +149,39 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   </span>
                   <span className="pr-2 text-left">Settings</span>
                 </MotionButton>
-                <AnimatePresence>
-                  {settingsOpen && (
-                    <motion.div
-                      role="menu"
-                      aria-label="Color theme"
-                      className="absolute right-0 bottom-full z-50 mb-1 w-full rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
-                      {...menu}
-                    >
-                      {THEME_OPTIONS.map((option) => {
-                        const active = pref === option.id;
-                        const Icon = option.icon;
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={active}
-                            className={`${menuItem} ${active ? 'bg-accent' : ''}`}
-                            onClick={() => {
-                              choose(option.id);
-                              setSettingsOpen(false);
-                            }}
-                          >
-                            <Icon className="size-4" strokeWidth={1.5} aria-hidden />
-                            {option.label}
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="absolute top-0 left-[calc(100%+0.875rem)] z-50 flex h-9 w-max max-w-[calc(100vw-100%-2.75rem)] items-center">
+                  <AnimatePresence>
+                    {settingsOpen && (
+                      <motion.div
+                        role="menu"
+                        aria-label="Color theme"
+                        className="w-max max-w-full rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
+                        {...menu}
+                      >
+                        {THEME_OPTIONS.map((option) => {
+                          const active = pref === option.id;
+                          const Icon = option.icon;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={active}
+                              className={`${menuItem} whitespace-nowrap ${active ? 'bg-accent' : ''}`}
+                              onClick={() => {
+                                choose(option.id);
+                                setSettingsOpen(false);
+                              }}
+                            >
+                              <Icon className="size-4" strokeWidth={1.5} aria-hidden />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               <GroupDivider />
