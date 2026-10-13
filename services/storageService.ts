@@ -2,6 +2,7 @@
 import { db, isDemoMode } from "../firebaseConfig";
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import { ColorData } from "../types";
+import { renameSavedPaletteList } from "../utils/paletteName";
 
 export interface SavedPalette {
     id: string;
@@ -106,4 +107,10 @@ export const getUserUsageStats = async (userId: string): Promise<UserUsageStats>
 export const deletePaletteFromFirestore = async (paletteId: string) => {
     const palettes = readLocalPalettes().filter((palette) => palette.id !== paletteId);
     writeLocalPalettes(palettes);
+};
+
+export const renamePaletteInFirestore = async (paletteId: string, name: string) => {
+    const palettes = readLocalPalettes();
+    const next = renameSavedPaletteList(palettes, paletteId, name);
+    if (next !== palettes) writeLocalPalettes(next);
 };
