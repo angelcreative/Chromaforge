@@ -4,15 +4,20 @@ import { GlobalCurveConfig } from '../types';
 interface RampScaleControlsProps {
   curve: GlobalCurveConfig;
   onCurve: (next: GlobalCurveConfig) => void;
+  variant?: 'grid' | 'stack';
 }
 
 const rangeFill = (value: number, min: number, max: number): React.CSSProperties => ({
   '--range-fill': `${((value - min) / (max - min)) * 100}%`,
 } as React.CSSProperties);
 
-const RampScaleControls: React.FC<RampScaleControlsProps> = ({ curve, onCurve }) => (
+const RampScaleControls: React.FC<RampScaleControlsProps> = ({ curve, onCurve, variant = 'grid' }) => (
   <div
-    className="grid gap-x-4 gap-y-3 rounded-xl border border-border bg-card p-3 sm:grid-cols-2 xl:grid-cols-4"
+    className={
+      variant === 'stack'
+        ? 'grid grid-cols-1 gap-y-3'
+        : 'grid gap-x-4 gap-y-3 rounded-xl border border-border bg-card p-3 sm:grid-cols-2 xl:grid-cols-4'
+    }
     data-scale-controls
     aria-label="Scale"
   >
