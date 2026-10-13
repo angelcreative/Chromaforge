@@ -2,8 +2,7 @@ import { motion } from 'motion/react';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MotionButton, enterMotion, popMotion, useReduced } from './uiMotion';
-import { ColorData, GlobalCurveConfig, PlaygroundConfig, Shade } from '../types';
-import { generateShades } from '../utils/colorUtils';
+import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../types';
 import { PLAYGROUND_CARDS } from './cards/CardsSidebar';
 import { PlaygroundCardPreview } from './cards/CardsViewer';
 import { buildPlaygroundTheme } from './cards/playgroundTheme';
@@ -14,7 +13,7 @@ interface PlaygroundCardsProps {
   semanticPalette: ColorData[];
   config: PlaygroundConfig;
   globalConfig?: GlobalCurveConfig;
-  onPrimaryColorChange: (hex: string) => void;
+  onPrimaryIndex: (index: number) => void;
 }
 
 const place = (anchor: DOMRect, width: number, height: number) => {
@@ -38,17 +37,15 @@ const place = (anchor: DOMRect, width: number, height: number) => {
 
 interface PaletteColorControlProps {
   cardName: string;
-  swatch: string;
-  primaryHex: string;
-  shades: Shade[];
-  onChange: (hex: string) => void;
+  swatches: ColorData[];
+  selectedIndex: number;
+  onChange: (index: number) => void;
 }
 
 const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
   cardName,
-  swatch,
-  primaryHex,
-  shades,
+  swatches,
+  selectedIndex,
   onChange,
 }) => {
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -115,7 +112,7 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
     };
-  }, [open, shades.length]);
+  }, [open, swatches.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -170,23 +167,26 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
       animate={pop.animate}
       transition={pop.transition}
     >
-      <div className="grid grid-cols-6 gap-1.5" role="listbox" aria-label="Palette steps">
-        {shades.map((shade) => {
-          const selected = shade.hex.toLowerCase() === swatch;
+      <div className="flex max-h-72 w-[min(16rem,calc(100vw-2rem))] flex-col gap-0.5 overflow-y-auto" role="listbox" aria-label="Palette colors">
+        {swatches.map((color, index) => {
+          const selected = index === selectedIndex;
           return (
             <MotionButton
-              key={shade.level}
+              key={`${color.name}-${color.hex}-${index}`}
               type="button"
               role="option"
               aria-selected={selected}
-              aria-label={`Step ${shade.level}, ${shade.hex}`}
+              aria-label={`${color.name}, ${color.hex}`}
               onClick={() => {
-                onChange(shade.hex);
+                onChange(index);
                 requestClose();
               }}
-              className={`size-8 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-popover ${selected ? 'ring-2 ring-foreground ring-offset-2 ring-offset-popover' : 'ring-1 ring-border'}`}
-              style={{ backgroundColor: shade.hex }}
-            />
+              className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-foreground ${selected ? 'bg-accent' : 'hover:bg-accent'}`}
+            >
+              <span className="size-6 shrink-0 rounded-md ring-1 ring-border" style={{ backgroundColor: color.hex }} />
+              <span className="min-w-0 flex-1 text-[13px] leading-snug text-foreground">{color.name}</span>
+              <span className="shrink-0 font-mono text-[12px] text-muted-foreground">{color.hex}</span>
+            </MotionButton>
           );
         })}
       </div>
@@ -194,9 +194,13 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
     document.body,
   ) : null;
 
+  const selected = swatches[selectedIndex] || swatches[0];
+  const primaryHex = selected?.hex ?? '#000000';
+  const swatch = /^#[0-9a-f]{6}$/i.test(primaryHex) ? primaryHex.toLowerCase() : '#000000';
+
   return (
     <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-      <span>Palette color</span>
+      <span className="whitespace-nowrap">Palette color</span>
       <button
         ref={triggerRef}
         type="button"
@@ -205,10 +209,10 @@ const PaletteColorControl: React.FC<PaletteColorControlProps> = ({
         aria-haspopup="dialog"
         aria-expanded={open && !closing}
         onClick={toggle}
-        className="size-8 cursor-pointer rounded-md border border-border"
+        className="size-8 shrink-0 cursor-pointer rounded-md border border-border"
         style={{ backgroundColor: swatch }}
       />
-      <span className="font-mono text-[12px] text-foreground" data-palette-color={primaryHex}>
+      <span className="whitespace-nowrap font-mono text-[12px] text-foreground" data-palette-color={primaryHex}>
         {primaryHex}
       </span>
       {panel}
@@ -222,19 +226,22 @@ const PlaygroundCards: React.FC<PlaygroundCardsProps> = ({
   semanticPalette,
   config,
   globalConfig,
-  onPrimaryColorChange,
+  onPrimaryIndex,
 }) => {
   const reduce = useReduced();
+  const selectedIndex = brandPalette.length === 0
+    ? 0
+    : Math.min(Math.max(config.primaryIndex, 0), brandPalette.length - 1);
+  const primary = brandPalette[selectedIndex] || brandPalette[0];
   const theme = useMemo(
-    () => buildPlaygroundTheme(brandPalette, neutralPalette, semanticPalette, config, globalConfig),
-    [brandPalette, neutralPalette, semanticPalette, config, globalConfig],
-  );
-  const primary = brandPalette[config.primaryIndex] || brandPalette[0];
-  const primaryHex = primary?.hex ?? '#000000';
-  const swatch = /^#[0-9a-f]{6}$/i.test(primaryHex) ? primaryHex.toLowerCase() : '#000000';
-  const shades = useMemo(
-    () => (primary ? generateShades(primary, globalConfig) : []),
-    [primary, globalConfig],
+    () => buildPlaygroundTheme(
+      brandPalette,
+      neutralPalette,
+      semanticPalette,
+      { ...config, primaryIndex: selectedIndex },
+      globalConfig,
+    ),
+    [brandPalette, neutralPalette, semanticPalette, config, selectedIndex, globalConfig],
   );
 
   if (!theme || !primary) {
@@ -250,14 +257,13 @@ const PlaygroundCards: React.FC<PlaygroundCardsProps> = ({
           {...enterMotion(reduce, index)}
           whileTap={reduce ? undefined : { scale: 0.99 }}
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-[13px] text-foreground">{card.name}</h2>
             <PaletteColorControl
               cardName={card.name}
-              swatch={swatch}
-              primaryHex={primaryHex}
-              shades={shades}
-              onChange={onPrimaryColorChange}
+              swatches={brandPalette}
+              selectedIndex={selectedIndex}
+              onChange={onPrimaryIndex}
             />
           </div>
           <div className="flex justify-center overflow-hidden rounded-xl p-4" style={{ backgroundColor: theme.bg.page }}>
