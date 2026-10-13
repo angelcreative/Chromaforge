@@ -5,10 +5,10 @@ import { dirname, join, resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
 import { compileComponent, cleanupOldBundles } from './services/componentCompiler.js';
-import { CreditLedger } from './services/creditLedger.js';
+import { CreditLedger, networkKeyForIp } from './services/creditLedger.js';
 import { isOwnerAccount } from './services/ownerGate.js';
 import { grantFromStripeEvent, verifyStripeSignature } from './services/stripeFulfillment.js';
-import { buildPalettePrompt, callModelIfAllowed, creditsForTokens, DESIGN_RESERVED_OUTPUT_TOKENS, isWalletId, prepareTurn, tokensFromUsage, } from './services/credits.js';
+import { buildPalettePrompt, callModelIfAllowed, creditsForTokens, DESIGN_RESERVED_OUTPUT_TOKENS, FREE_CREDITS, isWalletId, prepareTurn, tokensFromUsage, } from './services/credits.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Resolver la ruta base: si estamos en dist-server, subir un nivel
@@ -33,6 +33,11 @@ else {
     }
 }
 const app = express();
+// Production sits behind one proxy. Trusting that hop uses the visitor address.
+// A client-supplied forwarding header is ignored when the process is reached directly.
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+}
 const PORT = Number(process.env.PORT) || 8080;
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyBY0XUym3soacWnPG8kmEW52aPBv_vrIIk';
 const bearerToken = (req) => {
@@ -54,27 +59,70 @@ const firebaseAccountFromIdToken = async (idToken) => {
         return null;
     const data = await res.json().catch(() => null);
     const email = data?.users?.[0]?.email;
-    return typeof email === 'string' ? { email } : null;
+    if (typeof email !== 'string')
+        return null;
+    const localId = data?.users?.[0]?.localId;
+    return { email, uid: typeof localId === 'string' ? localId : null };
+};
+const clientIp = (req) => {
+    const raw = req.ip || req.socket.remoteAddress || 'unknown';
+    return raw.replace(/^::ffff:/, '');
+};
+const accountFromRequest = async (req) => {
+    const token = bearerToken(req);
+    if (!token)
+        return null;
+    try {
+        return await firebaseAccountFromIdToken(token);
+    }
+    catch {
+        return null;
+    }
 };
 const ledger = new CreditLedger(process.env.CREDIT_LEDGER_PATH || join(baseDir, 'data', 'credit-ledger.json'));
 /** Unlimited use follows the verified owner account, never a client flag. */
-const isOwnerRequest = async (req) => {
-    const token = bearerToken(req);
-    if (!token)
-        return false;
-    try {
-        return isOwnerAccount(await firebaseAccountFromIdToken(token));
-    }
-    catch {
-        return false;
-    }
-};
+const isOwnerRequest = async (req) => isOwnerAccount(await accountFromRequest(req));
 /** The owner account skips the meter. Everyone else needs credits before Gemini. */
 const decideTurn = async (req, prompt, kind, reservedOutputTokens) => {
-    const owner = await isOwnerRequest(req);
-    const walletId = req.body?.walletId;
-    const balance = owner || !isWalletId(walletId) ? 0 : await ledger.balance(walletId);
-    return prepareTurn({ owner, walletId, prompt, balance, kind, reservedOutputTokens });
+    const account = await accountFromRequest(req);
+    const owner = isOwnerAccount(account);
+    const requested = isWalletId(req.body?.walletId) ? req.body.walletId : '';
+    if (owner) {
+        return prepareTurn({ owner: true, walletId: requested, prompt, balance: 0, kind, reservedOutputTokens });
+    }
+    if (!requested && !account?.uid) {
+        return prepareTurn({ owner: false, walletId: req.body?.walletId, prompt, balance: 0, kind, reservedOutputTokens });
+    }
+    const opened = await ledger.open(requested, networkKeyForIp(clientIp(req)), account?.uid ?? null);
+    return prepareTurn({
+        owner: false,
+        walletId: opened.walletId,
+        prompt,
+        balance: opened.balance,
+        kind,
+        reservedOutputTokens,
+    });
+};
+const creditView = async (req) => {
+    const account = await accountFromRequest(req);
+    if (isOwnerAccount(account)) {
+        return { status: 200, body: { owner: true, balance: null, freeCredits: FREE_CREDITS, allowance: 'owner', walletId: null } };
+    }
+    const requested = isWalletId(req.body?.walletId) ? req.body.walletId : '';
+    if (!requested) {
+        return { status: 400, body: { owner: false, balance: 0, freeCredits: FREE_CREDITS, allowance: 'blocked', walletId: null } };
+    }
+    const opened = await ledger.open(requested, networkKeyForIp(clientIp(req)), account?.uid ?? null);
+    return {
+        status: 200,
+        body: {
+            owner: false,
+            balance: opened.balance,
+            freeCredits: FREE_CREDITS,
+            allowance: opened.freeGranted ? 'granted' : 'blocked',
+            walletId: opened.walletId,
+        },
+    };
 };
 const chargeTurn = async (decision, prompt, output, usage) => {
     if (decision.kind === 'owner')
@@ -126,24 +174,12 @@ app.post('/api/owner-unlock', async (req, res) => {
     return res.status(403).json({ ok: false });
 });
 app.post('/api/credits', async (req, res) => {
-    if (await isOwnerRequest(req)) {
-        return res.json({ owner: true, balance: null });
-    }
-    if (!isWalletId(req.body?.walletId)) {
-        return res.status(400).json({ owner: false, balance: 0 });
-    }
-    const balance = await ledger.balance(req.body.walletId);
-    return res.json({ owner: false, balance });
+    const view = await creditView(req);
+    return res.status(view.status).json(view.body);
 });
 app.post('/api/credits/claim', async (req, res) => {
-    if (await isOwnerRequest(req)) {
-        return res.json({ owner: true, balance: null, added: 0 });
-    }
-    if (!isWalletId(req.body?.walletId)) {
-        return res.status(400).json({ owner: false, balance: 0, added: 0 });
-    }
-    const balance = await ledger.balance(req.body.walletId);
-    return res.json({ owner: false, balance, added: 0 });
+    const view = await creditView(req);
+    return res.status(view.status).json({ ...view.body, added: 0 });
 });
 // API endpoint for palette generation
 app.post('/api/palette', async (req, res) => {

@@ -16,7 +16,7 @@ import {
   prepareTurn,
   tokensFromUsage,
 } from '../dist-server/services/credits.js';
-import { CreditLedger } from '../dist-server/services/creditLedger.js';
+import { CreditLedger, networkKeyForIp } from '../dist-server/services/creditLedger.js';
 import { OWNER_ACCOUNT_EMAIL, isOwnerAccount } from '../dist-server/services/ownerGate.js';
 import { grantFromStripeEvent, verifyStripeSignature } from '../dist-server/services/stripeFulfillment.js';
 
@@ -47,7 +47,7 @@ test('free balance counts down after a reply', async () => {
   try {
     const ledger = new CreditLedger(join(dir, 'ledger.json'));
     const walletId = 'wallet000000000001';
-    assert.equal(await ledger.balance(walletId), 30);
+    assert.equal(await ledger.balance(walletId, networkKeyForIp('198.51.100.10')), 30);
     const prompt = shortPrompt();
     const decision = prepareTurn({ owner: false, walletId, prompt, balance: 30 });
     assert.equal(decision.kind, 'metered');
@@ -66,6 +66,42 @@ test('free balance counts down after a reply', async () => {
     assert.ok(settled.spent >= 1);
     assert.ok(settled.remaining < 30);
     assert.equal(await ledger.balance(walletId), settled.remaining);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('one network gets one free allowance, and an account keeps its wallet', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'chroma-network-'));
+  try {
+    const ledger = new CreditLedger(join(dir, 'ledger.json'));
+    assert.equal(networkKeyForIp('203.0.113.10'), networkKeyForIp('::ffff:203.0.113.10'));
+    assert.notEqual(networkKeyForIp('203.0.113.10'), networkKeyForIp('203.0.113.11'));
+    const home = networkKeyForIp('203.0.113.10');
+    const cafe = networkKeyForIp('203.0.113.11');
+    const first = await ledger.open('wallet000000000031', home);
+    const second = await ledger.open('wallet000000000032', home);
+    const other = await ledger.open('wallet000000000033', cafe);
+    assert.equal(first.balance, 30);
+    assert.equal(first.freeGranted, true);
+    assert.equal(second.balance, 0);
+    assert.equal(second.freeGranted, false);
+    assert.equal(other.balance, 30);
+    await ledger.debit('wallet000000000031', 4);
+    assert.equal((await ledger.open('wallet000000000031', home)).balance, 26);
+    const minted = await ledger.debit('wallet000000000034', 10);
+    assert.equal(minted.spent, 0);
+    assert.equal(minted.remaining, 0);
+    const paidOnly = await ledger.grant('wallet000000000035', 'stripe:pi:pi_new', 600);
+    assert.equal(paidOnly.added, 600);
+    assert.equal(paidOnly.balance, 600);
+    const uid = 'firebaseUid000000000001';
+    const bound = await ledger.open('wallet000000000031', cafe, uid);
+    assert.equal(bound.walletId, 'wallet000000000031');
+    assert.equal(bound.balance, 26);
+    const otherBrowser = await ledger.open('wallet000000000099', cafe, uid);
+    assert.equal(otherBrowser.walletId, 'wallet000000000031');
+    assert.equal(otherBrowser.balance, 26);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -93,7 +129,7 @@ test('owner bypass does not spend credits', async () => {
   try {
     const ledger = new CreditLedger(join(dir, 'ledger.json'));
     const walletId = 'wallet000000000003';
-    await ledger.balance(walletId);
+    await ledger.balance(walletId, networkKeyForIp('198.51.100.11'));
     const decision = prepareTurn({ owner: true, walletId, prompt: shortPrompt(), balance: 0 });
     assert.equal(decision.kind, 'owner');
     let calls = 0;
@@ -144,6 +180,7 @@ test('a credit pack can be bought once', async () => {
   try {
     const ledger = new CreditLedger(join(dir, 'ledger.json'));
     const walletId = 'wallet000000000004';
+    assert.equal(await ledger.balance(walletId, networkKeyForIp('198.51.100.12')), 30);
     const first = await ledger.grant(walletId, 'stripe:pi:pi_once', 600);
     const replay = await ledger.grant(walletId, 'stripe:pi:pi_once', 600);
     const yearlyGrant = await ledger.grant(walletId, 'stripe:in:in_once', 2400);
@@ -412,7 +449,8 @@ test('a paid action is refused unless stripe or the owner account confirms it', 
     const raw = JSON.stringify(event);
     const unsigned = await postWebhook(raw);
     assert.equal(unsigned.status, 400);
-    assert.deepEqual(await balanceOf(wallet), { owner: false, balance: 0 });
+    assert.equal((await balanceOf(wallet)).balance, 0);
+    assert.equal((await balanceOf(wallet)).owner, false);
 
     const stale = sign(event, Math.floor(Date.now() / 1000) - 600);
     const staleResponse = await postWebhook(stale.body, stale.header);
@@ -427,7 +465,7 @@ test('a paid action is refused unless stripe or the owner account confirms it', 
     const renamed = sign({ ...event, id: 'evt_replay' });
     const samePayment = await postWebhook(renamed.body, renamed.header);
     assert.equal(samePayment.body.granted, 0);
-    assert.deepEqual(await balanceOf(wallet), { owner: false, balance: 600 });
+    assert.equal((await balanceOf(wallet)).balance, 600);
 
     const cheap = sign(paidSession({ amount_total: 50, payment_intent: 'pi_cheap' }));
     const cheapResponse = await postWebhook(cheap.body, cheap.header);
@@ -459,12 +497,34 @@ test('a paid action is refused unless stripe or the owner account confirms it', 
     });
     const renewal = await postWebhook(renewalInvoice.body, renewalInvoice.header);
     assert.equal(renewal.body.granted, 0);
-    assert.deepEqual(await balanceOf(wallet), { owner: false, balance: 3000 });
+    assert.equal((await balanceOf(wallet)).balance, 3000);
+
+    const freshA = 'wallet000000000021';
+    const freshB = 'wallet000000000022';
+    const firstNet = await balanceOf(freshA);
+    assert.equal(firstNet.balance, FREE_CREDITS);
+    assert.equal(firstNet.allowance, 'granted');
+    assert.equal(firstNet.freeCredits, FREE_CREDITS);
+    const secondNet = await balanceOf(freshB);
+    assert.equal(secondNet.balance, 0);
+    assert.equal(secondNet.allowance, 'blocked');
+    assert.equal((await balanceOf(freshA)).balance, FREE_CREDITS);
+    const spoofed = await fetch(`http://127.0.0.1:${port}/api/credits`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': '203.0.113.50',
+      },
+      body: JSON.stringify({ walletId: 'wallet000000000023' }),
+    });
+    const spoofedBody = await spoofed.json();
+    assert.equal(spoofedBody.balance, 0);
+    assert.equal(spoofedBody.allowance, 'blocked');
 
     delete process.env.STRIPE_WEBHOOK_SECRET;
     const unconfigured = await postWebhook(signed.body, signed.header);
     assert.equal(unconfigured.status, 503);
-    assert.deepEqual(await balanceOf(wallet), { owner: false, balance: 3000 });
+    assert.equal((await balanceOf(wallet)).balance, 3000);
   } finally {
     globalThis.fetch = previous.fetch;
     if (previous.ledger === undefined) delete process.env.CREDIT_LEDGER_PATH;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CREDIT_PACKS, formatCompact, generatedPaletteCredits, palettesCovered, type CreditPackId } from '../services/credits';
+import { CREDIT_PACKS, formatCompact, FREE_CREDITS, generatedPaletteCredits, palettesCovered, type CreditPackId } from '../services/credits';
 import { CloseButton } from './FloatingDrawer';
 import { ModalFrame, MotionButton, useExit } from './uiMotion';
 
@@ -31,7 +31,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
         <div className="min-h-0 flex-auto overflow-y-auto p-6">
           <h2 className="text-xl font-medium">Credits</h2>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            A generated palette costs {paletteCost} credits. {coverage}. Manual edits do not use credits. The editor stays free.
+            A new visitor gets {FREE_CREDITS} free credits on a network, about {palettesCovered(FREE_CREDITS)} palettes. After that, an account can buy a pack. A generated palette costs about {paletteCost} credits. {coverage}. Manual edits do not use credits.
           </p>
           <div className="mt-4 flex flex-col gap-2">
             {CREDIT_PACKS.map((pack) => (
