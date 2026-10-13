@@ -5,7 +5,7 @@ const REST_RADIUS = 1.15;
 const PEAK_RADIUS = 1.7;
 const REACH = 156;
 const SHIFT = 9;
-const BASE_ALPHA = 0.22;
+const BASE_ALPHA = 0.09;
 const PEAK_ALPHA = 0.72;
 const SETTLE_MS = 90;
 
