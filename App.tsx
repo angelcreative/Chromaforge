@@ -18,7 +18,6 @@ import ComposerAttach from './components/ComposerAttach';
 import DescribeHeading from './components/DescribeHeading';
 import LogoMark from './components/LogoMark';
 import GradientList from './components/GradientList';
-import RampScaleControls from './components/RampScaleControls';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
@@ -949,6 +948,8 @@ const App: React.FC = () => {
           refineOpen={refineOpen}
           onRefine={() => { if (refineOpen) setRefineOpen(false); else openRefine(); }}
           onExportMarkdown={handleDownloadSkill}
+          curve={globalCurveConfig}
+          onCurve={setGlobalCurveConfig}
         />
       )}
 
@@ -1157,10 +1158,6 @@ const App: React.FC = () => {
               )}
 
               {showWork && hasPalette && previewMode === 'palette' && (viewMode === 'list' || viewMode === 'ramp') && (
-                <>
-                <motion.div {...enterMotion(reduce)}>
-                  <RampScaleControls curve={globalCurveConfig} onCurve={setGlobalCurveConfig} />
-                </motion.div>
                 <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
                   {activeColors.map((color, idx) => (
                     <motion.div
@@ -1181,7 +1178,6 @@ const App: React.FC = () => {
                     </motion.div>
                   ))}
                 </div>
-                </>
               )}
 
               {showWork && hasPalette && previewMode === 'palette' && viewMode === 'gradients' && (

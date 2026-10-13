@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
-import { Download, Library, PanelLeft, PanelLeftClose, Pipette, Plus, Settings } from 'lucide-react';
+import { Download, Library, PanelLeft, PanelLeftClose, Pipette, Plus, Settings, SlidersHorizontal } from 'lucide-react';
 import { THEME_OPTIONS, useThemePreference } from './ThemeToggle';
+import RampScaleControls from './RampScaleControls';
+import type { GlobalCurveConfig } from '../types';
 import { MotionButton, presenceFade, presencePop, presenceSlide, useReduced } from './uiMotion';
 
 export interface StudioSidebarProps {
@@ -13,6 +15,8 @@ export interface StudioSidebarProps {
   refineOpen: boolean;
   onRefine: () => void;
   onExportMarkdown: () => void;
+  curve: GlobalCurveConfig;
+  onCurve: (next: GlobalCurveConfig) => void;
 }
 
 const actionRow =
@@ -40,6 +44,8 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   refineOpen,
   onRefine,
   onExportMarkdown,
+  curve,
+  onCurve,
 }) => {
   const reduce = useReduced();
   const slide = presenceSlide(reduce, { y: '100%' });
@@ -47,19 +53,28 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   const menu = presencePop(reduce, 'left center');
   const { pref, choose } = useThemePreference();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) setSettingsOpen(false);
+    if (!open) {
+      setSettingsOpen(false);
+      setToolsOpen(false);
+    }
   }, [open]);
 
   useEffect(() => {
-    if (!settingsOpen) return;
+    if (!settingsOpen && !toolsOpen) return;
     const onPointer = (event: MouseEvent) => {
       if (!settingsRef.current?.contains(event.target as Node)) setSettingsOpen(false);
+      if (!toolsRef.current?.contains(event.target as Node)) setToolsOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSettingsOpen(false);
+      if (event.key === 'Escape') {
+        setSettingsOpen(false);
+        setToolsOpen(false);
+      }
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);
@@ -67,7 +82,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
       document.removeEventListener('mousedown', onPointer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [settingsOpen]);
+  }, [settingsOpen, toolsOpen]);
 
   return (
     <>
@@ -123,6 +138,37 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     </span>
                     <span className="pr-2 text-left">Export md</span>
                   </MotionButton>
+                  <div className="relative" ref={toolsRef}>
+                    <MotionButton
+                      type="button"
+                      onClick={() => {
+                        setToolsOpen((value) => !value);
+                        setSettingsOpen(false);
+                      }}
+                      aria-expanded={toolsOpen}
+                      aria-haspopup="dialog"
+                      className={`${actionRow} ${toolsOpen ? 'bg-accent' : ''}`}
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center">
+                        <SlidersHorizontal className="size-4" strokeWidth={1.5} aria-hidden />
+                      </span>
+                      <span className="pr-2 text-left">Tools</span>
+                    </MotionButton>
+                    <div className="absolute top-0 left-[calc(100%+0.875rem)] z-50 w-max max-w-[calc(100vw-100%-2.75rem)] max-sm:bottom-[calc(100%+0.5rem)] max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none">
+                      <AnimatePresence>
+                        {toolsOpen && (
+                          <motion.div
+                            role="dialog"
+                            aria-label="Tuning tools"
+                            className="w-60 max-w-full rounded-xl bg-card p-3 shadow-panel ring-1 ring-border max-sm:w-full"
+                            {...menu}
+                          >
+                            <RampScaleControls variant="stack" curve={curve} onCurve={onCurve} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
                   <GroupDivider />
                 </>
               )}
@@ -139,7 +185,10 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
               <div className="relative" ref={settingsRef}>
                 <MotionButton
                   type="button"
-                  onClick={() => setSettingsOpen((value) => !value)}
+                  onClick={() => {
+                    setSettingsOpen((value) => !value);
+                    setToolsOpen(false);
+                  }}
                   aria-expanded={settingsOpen}
                   aria-haspopup="menu"
                   className={`${actionRow} ${settingsOpen ? 'bg-accent' : ''}`}
