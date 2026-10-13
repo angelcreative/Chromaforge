@@ -337,13 +337,19 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                 <button
                   type="button"
                   onClick={() => setConfig({ ...config, useOkLCH: !config.useOkLCH })}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full ${config.useOkLCH ? 'bg-primary' : 'bg-[var(--switch)]'}`}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                    config.useOkLCH ? 'bg-primary ring-primary' : 'bg-[var(--switch)] ring-border'
+                  }`}
                   aria-pressed={!!config.useOkLCH}
                   aria-label="Perceptual brightness"
                 >
                   <motion.span
                     aria-hidden
-                    className="inline-block size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10"
+                    className={`inline-block size-4 rounded-full shadow-sm ring-1 ${
+                      config.useOkLCH
+                        ? 'bg-primary-foreground ring-primary-foreground/20'
+                        : 'bg-white ring-black/10'
+                    }`}
                     initial={false}
                     animate={{ x: config.useOkLCH ? 24 : 4 }}
                     transition={uiTransition(reduce, 0.16)}
