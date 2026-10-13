@@ -968,7 +968,11 @@ const App: React.FC = () => {
                 </motion.div>
                 <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
                   {activeColors.map((color, idx) => (
-                    <motion.div key={`${color.hex}-${idx}`} {...enterMotion(reduce, idx)} whileTap={reduce ? undefined : { scale: 0.99 }}>
+                    <motion.div
+                      key={`${activeTab}-${idx}`} // slot, not hex — a new hex would remount the card while the wheel is dragged
+                      {...enterMotion(reduce, idx)}
+                      whileTap={reduce ? undefined : { scale: 0.99 }}
+                    >
                     <PaletteCard
                       color={color}
                       onOpenGrid={setSelectedColorForGrid}
