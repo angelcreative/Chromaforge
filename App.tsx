@@ -71,6 +71,7 @@ const App: React.FC = () => {
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [checkoutPack, setCheckoutPack] = useState<CreditPackId | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [allowance, setAllowance] = useState<CreditAllowance>('unknown');
   const [accountPrompt, setAccountPrompt] = useState({ signal: 0, mode: 'signin' as 'signin' | 'signup' });
@@ -698,6 +699,7 @@ const App: React.FC = () => {
       }
       setIsCheckoutLoading(true);
       setCheckoutPack(packId);
+      setCheckoutError(null);
       showToast('Opening secure checkout…');
       try {
           if (isDemoMode) {
@@ -708,7 +710,9 @@ const App: React.FC = () => {
           await fetchCreditBalance(token);
           await createCheckoutSession(user.uid, packId, getCreditWalletId());
       } catch (error) {
-          showToast(error instanceof Error && error.message ? error.message : 'Payments are unavailable right now.');
+          const message = error instanceof Error && error.message ? error.message : 'Payments are unavailable right now.';
+          setCheckoutError(message);
+          showToast(message);
       } finally {
           setIsCheckoutLoading(false);
           setCheckoutPack(null);
@@ -1184,7 +1188,7 @@ const App: React.FC = () => {
         />
       )}
       {isLibraryOpen && <PaletteLibraryModal palettes={savedPalettes} isLoading={isLibraryLoading} onClose={() => setIsLibraryOpen(false)} onLoadPalette={handleLoadPalette} onDeletePalette={handleDeleteRequest} onRenamePalette={renameLibraryPalette} isPremium />}
-      {isPricingOpen && <PricingModal onClose={() => setIsPricingOpen(false)} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} limitType="ai" />}
+      {isPricingOpen && <PricingModal onClose={() => { setIsPricingOpen(false); setCheckoutError(null); }} onCheckout={handleUpgradeCheckout} isLoading={isCheckoutLoading} loadingPack={checkoutPack} error={checkoutError} limitType="ai" />}
       {paletteToDelete && <ConfirmModal title="Delete Palette?" message="This action cannot be undone." onConfirm={performDelete} onCancel={() => setPaletteToDelete(null)} confirmText="Delete" isDestructive={true} />}
     </div>
   );
