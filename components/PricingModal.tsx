@@ -10,11 +10,12 @@ interface PricingModalProps {
   onCheckout: (packId: CreditPackId) => void;
   isLoading: boolean;
   loadingPack?: CreditPackId | null;
+  error?: string | null;
   limitType?: LimitType;
   currentUsage?: number;
 }
 
-const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoading, loadingPack }) => {
+const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoading, loadingPack, error }) => {
   const { open, request, onExitComplete } = useExit(onClose);
   const paletteCost = generatedPaletteCredits();
   const coverage = CREDIT_PACKS.map((pack) => (
@@ -51,6 +52,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
           {isLoading && (
             <p className="mt-3 text-[13px] text-muted-foreground" role="status">
               Connecting to secure checkout… Do not close this window.
+            </p>
+          )}
+          {error && (
+            <p className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] leading-relaxed text-destructive" role="alert">
+              {error}
             </p>
           )}
         </div>
