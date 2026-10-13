@@ -42,7 +42,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onExportMarkdown,
 }) => {
   const reduce = useReduced();
-  const slide = presenceSlide(reduce, { x: '-100%' });
+  const slide = presenceSlide(reduce, { y: '100%' });
   const fade = presenceFade(reduce);
   const menu = presencePop(reduce, 'bottom left');
   const { pref, choose } = useThemePreference();
@@ -84,11 +84,12 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
         )}
       </AnimatePresence>
 
+      <div className="absolute bottom-5 left-4 z-40">
       <AnimatePresence>
         {open ? (
           <motion.aside
             key="panel"
-            className="absolute top-14 left-3 z-40 w-[min(260px,calc(100vw-4.5rem))] rounded-2xl bg-card shadow-panel ring-1 ring-border"
+            className="absolute bottom-0 left-0 w-[min(260px,calc(100vw-4.5rem))] origin-bottom-left rounded-2xl bg-card shadow-panel ring-1 ring-border"
             aria-label="Tools"
             {...slide}
           >
@@ -197,13 +198,14 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
             type="button"
             aria-label="Show tools"
             onClick={() => onOpenChange(true)}
-            className="absolute bottom-5 left-4 z-30 grid size-10 place-items-center rounded-full bg-card text-foreground shadow-panel ring-1 ring-border"
+            className="absolute bottom-0 left-0 grid size-10 place-items-center rounded-full bg-card text-foreground shadow-panel ring-1 ring-border"
             {...fade}
           >
             <PanelLeft className="size-4" strokeWidth={1.5} />
           </motion.button>
         )}
       </AnimatePresence>
+      </div>
     </>
   );
 };
