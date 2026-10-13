@@ -268,7 +268,7 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                   aria-label={`Step ${shade.level}`}
                 >
                   <span
-                    className={`oklch-swatch block h-8 rounded-md ${selected ? 'ring-1 ring-foreground' : 'group-focus-visible:ring-1 group-focus-visible:ring-foreground'}`}
+                    className={`oklch-swatch block h-8 rounded-md ${selected ? 'ring-1 ring-foreground ring-offset-1 ring-offset-card' : 'group-focus-visible:ring-1 group-focus-visible:ring-foreground group-focus-visible:ring-offset-1 group-focus-visible:ring-offset-card'}`}
                     style={{ backgroundColor: shade.hex }}
                   />
                   <span className="mt-1 block text-center font-mono text-[10px] text-muted-foreground">{shade.level}</span>
