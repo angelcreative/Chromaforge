@@ -1,4 +1,4 @@
-import { getOwnerAccessCode } from "./ownerAccess";
+import { auth, isDemoMode } from "../firebaseConfig";
 import { getCreditWalletId } from "./creditWallet";
 
 interface UIGenerationRequest {
@@ -36,15 +36,21 @@ export const generateUIFromPrompt = async (
 ): Promise<UIGenerationResponse> => {
   try {
     const apiUrl = '/api/ui-design';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (!isDemoMode && auth?.currentUser) {
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        if (idToken) headers.Authorization = `Bearer ${idToken}`;
+      } catch {
+        /* the server treats a missing token as a normal credit balance */
+      }
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         ...request,
-        ownerAccess: getOwnerAccessCode() || undefined,
         walletId: getCreditWalletId(),
       })
     });

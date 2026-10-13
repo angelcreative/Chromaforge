@@ -26,7 +26,6 @@ import { User } from 'firebase/auth';
 import { subscribeToAuth, ensureBillingUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, SavedPalette } from './services/storageService';
-import { captureOwnerAccessFromUrl, clearOwnerAccess, confirmOwnerAccess, hasOwnerFlag, markOwnerUnlocked } from './services/ownerAccess';
 import { claimCreditPacks, fetchCreditBalance } from './services/creditClient';
 import { formatCompact, type CreditPackId } from './services/credits';
 import { getCreditWalletId } from './services/creditWallet';
@@ -157,25 +156,6 @@ const App: React.FC = () => {
     getUserPalettes('local').then(setSavedPalettes);
   }, []);
 
-  // Owner code in ?access= is checked on the server, then kept for later visits.
-  useEffect(() => {
-    let cancelled = false;
-    const code = captureOwnerAccessFromUrl();
-    if (hasOwnerFlag() && code) setIsOwner(true);
-    if (!code) return;
-    confirmOwnerAccess(code).then((result) => {
-      if (cancelled) return;
-      if (result === 'yes') {
-        markOwnerUnlocked();
-        setIsOwner(true);
-      } else if (result === 'no') {
-        clearOwnerAccess();
-        setIsOwner(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, []);
-
   useEffect(() => {
     const unsubscribe = subscribeToAuth((currentUser) => {
         setUser(currentUser);
@@ -185,19 +165,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    fetchCreditBalance().then((snapshot) => {
-      if (cancelled || !snapshot || snapshot.owner || typeof snapshot.balance !== 'number') return;
-      setCredits(snapshot.balance);
-    });
+    const sync = async () => {
+      let token: string | null = null;
+      try {
+        token = user ? await user.getIdToken() : null;
+      } catch {
+        token = null;
+      }
+      const snapshot = await fetchCreditBalance(token);
+      if (cancelled || !snapshot) return;
+      setIsOwner(snapshot.owner === true);
+      if (!snapshot.owner && typeof snapshot.balance === 'number') setCredits(snapshot.balance);
+    };
+    void sync();
     return () => { cancelled = true; };
-  }, [isOwner]);
+  }, [user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('checkout') === 'success') pendingClaim.current = true;
-    if (!params.get('checkout')) return;
+    if (!params.has('checkout') && !params.has('pack') && !params.has('access')) return;
     params.delete('checkout');
     params.delete('pack');
+    params.delete('access');
     const qs = params.toString();
     window.history.replaceState({}, document.title, `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
   }, []);
@@ -206,6 +196,7 @@ const App: React.FC = () => {
     if (!pendingClaim.current) return;
     let stopped = false;
     let tries = 0;
+    let baseline: number | undefined;
     const tick = async () => {
       if (stopped || !pendingClaim.current) return;
       let token: string | null = null;
@@ -216,8 +207,15 @@ const App: React.FC = () => {
       }
       const snapshot = await claimCreditPacks(token);
       if (stopped || !snapshot) return;
-      if (!snapshot.owner && typeof snapshot.balance === 'number') setCredits(snapshot.balance);
-      if ((snapshot.added ?? 0) > 0 || tries >= 4) {
+      if (!snapshot.owner && typeof snapshot.balance === 'number') {
+        setCredits(snapshot.balance);
+        if (baseline === undefined) baseline = snapshot.balance;
+        else if (snapshot.balance > baseline) {
+          pendingClaim.current = false;
+          return;
+        }
+      }
+      if (tries >= 8) {
         pendingClaim.current = false;
         return;
       }

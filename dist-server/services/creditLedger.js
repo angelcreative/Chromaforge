@@ -7,14 +7,19 @@ export class CreditLedger {
     filePath;
     chain = Promise.resolve();
     cache = null;
+    cachePath = null;
     constructor(filePath) {
         this.filePath = filePath;
     }
+    location() {
+        return process.env.CREDIT_LEDGER_PATH || this.filePath;
+    }
     async read() {
-        if (this.cache)
+        const filePath = this.location();
+        if (this.cache && this.cachePath === filePath)
             return this.cache;
         try {
-            const raw = await readFile(this.filePath, 'utf8');
+            const raw = await readFile(filePath, 'utf8');
             const parsed = JSON.parse(raw);
             this.cache = {
                 accounts: parsed.accounts && typeof parsed.accounts === 'object' ? parsed.accounts : {},
@@ -24,14 +29,17 @@ export class CreditLedger {
         catch {
             this.cache = emptyLedger();
         }
+        this.cachePath = filePath;
         return this.cache;
     }
     async write(data) {
-        await mkdir(dirname(this.filePath), { recursive: true });
-        const tmp = `${this.filePath}.${process.pid}.tmp`;
+        const filePath = this.location();
+        await mkdir(dirname(filePath), { recursive: true });
+        const tmp = `${filePath}.${process.pid}.tmp`;
         await writeFile(tmp, JSON.stringify(data));
-        await rename(tmp, this.filePath);
+        await rename(tmp, filePath);
         this.cache = data;
+        this.cachePath = filePath;
     }
     lock(fn) {
         const run = this.chain.then(fn, fn);

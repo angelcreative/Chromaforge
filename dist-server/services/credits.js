@@ -12,7 +12,6 @@ export const TOKENS_PER_CREDIT = 150;
 export const PALETTE_RESERVED_OUTPUT_TOKENS = 220;
 export const DESIGN_RESERVED_OUTPUT_TOKENS = 800;
 export const PALETTE_SYSTEM = 'You are a color engine. You act as a JSON API. You strictly modify existing arrays when requested.';
-export const LEGACY_YEARLY_PRICE_ID = 'price_1SkCflABAexLjmUyVPnaKjtq';
 export const CREDIT_PACKS = [
     {
         id: 'pack_600',
@@ -133,6 +132,16 @@ export const buildCheckoutSession = (packId, input) => {
         client_reference_id: input.walletId,
         allow_promotion_codes: false,
     };
+    const purchaseMetadata = {
+        pack: pack.id,
+        walletId: input.walletId,
+    };
+    if (pack.mode === 'subscription') {
+        session.subscription_data = { metadata: purchaseMetadata };
+    }
+    else {
+        session.payment_intent_data = { metadata: purchaseMetadata };
+    }
     if (input.priceId) {
         session.price = input.priceId;
         session.quantity = 1;
@@ -209,82 +218,4 @@ export const tokensFromUsage = (usage, fallback) => {
         inputTokens: estimateTokens(fallback.prompt),
         outputTokens: Math.max(1, estimateTokens(fallback.output)),
     };
-};
-const docId = (doc) => {
-    const name = doc.name || '';
-    const slash = name.lastIndexOf('/');
-    return slash >= 0 ? name.slice(slash + 1) : name;
-};
-const fieldString = (field) => {
-    if (!field)
-        return undefined;
-    if (typeof field.stringValue === 'string')
-        return field.stringValue;
-    if (typeof field.integerValue === 'string')
-        return field.integerValue;
-    return undefined;
-};
-const collectText = (field, into) => {
-    if (!field)
-        return;
-    if (typeof field.stringValue === 'string')
-        into.push(field.stringValue);
-    if (typeof field.integerValue === 'string')
-        into.push(field.integerValue);
-    if (typeof field.referenceValue === 'string')
-        into.push(field.referenceValue);
-    if (field.mapValue?.fields) {
-        for (const child of Object.values(field.mapValue.fields))
-            collectText(child, into);
-    }
-    if (field.arrayValue?.values) {
-        for (const child of field.arrayValue.values)
-            collectText(child, into);
-    }
-};
-const creditsFromTexts = (texts) => {
-    if (texts.includes('pack_2400'))
-        return 2400;
-    if (texts.includes('pack_600'))
-        return 600;
-    if (texts.some((text) => text.includes(LEGACY_YEARLY_PRICE_ID)))
-        return 2400;
-    if (texts.includes('3900'))
-        return 2400;
-    if (texts.includes('999'))
-        return 600;
-    return 0;
-};
-/** Paid Stripe documents already written by the Firebase extension. */
-export const grantsFromCustomerDocuments = (payments = [], subscriptions = []) => {
-    const grants = [];
-    for (const doc of payments) {
-        const status = fieldString(doc.fields?.status);
-        if (status !== 'succeeded')
-            continue;
-        const texts = [];
-        if (doc.fields) {
-            for (const field of Object.values(doc.fields))
-                collectText(field, texts);
-        }
-        const credits = creditsFromTexts(texts);
-        const id = docId(doc);
-        if (credits > 0 && id)
-            grants.push({ id: `pay:${id}`, credits });
-    }
-    for (const doc of subscriptions) {
-        const status = fieldString(doc.fields?.status);
-        if (status !== 'active' && status !== 'trialing')
-            continue;
-        const texts = [];
-        if (doc.fields) {
-            for (const field of Object.values(doc.fields))
-                collectText(field, texts);
-        }
-        const credits = creditsFromTexts(texts);
-        const id = docId(doc);
-        if (credits > 0 && id)
-            grants.push({ id: `sub:${id}`, credits });
-    }
-    return grants;
 };
