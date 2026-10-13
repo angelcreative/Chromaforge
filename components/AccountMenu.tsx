@@ -34,7 +34,7 @@ export interface AccountMenuProps {
   openMode?: 'signin' | 'signup';
 }
 
-type AuthMode = 'signin' | 'signup';
+type AuthMode = 'signin' | 'signup' | 'forgot';
 
 const authError = (error: unknown, mode: AuthMode): string => {
   const code = (error as { code?: string })?.code;
@@ -51,6 +51,7 @@ const authError = (error: unknown, mode: AuthMode): string => {
   if (code === 'auth/operation-not-allowed') return 'Google sign-in is disabled in Firebase. Enable the Google provider, then try again.';
   if (code === 'auth/account-exists-with-different-credential') return 'That email already uses another sign-in method. Sign in with email instead.';
   if (code === 'auth/network-request-failed') return 'Network error. Check your connection and try again.';
+  if (mode === 'forgot') return 'Could not send the reset link. Check the email and try again.';
   return mode === 'signup' ? 'Could not create the account.' : 'Could not sign in.';
 };
 
@@ -176,6 +177,10 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 
   const submitAuth = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (mode === 'forgot') {
+      await sendResetLink();
+      return;
+    }
     if (submitting) return;
     setSubmitting(true);
     setAuthErrorText('');
@@ -216,9 +221,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 
   const sendResetLink = async () => {
     const address = emailInput.trim();
-    if (resetting) return;
+    if (resetting || submitting) return;
     if (!address) {
-      setAuthErrorText('Enter your email first, then ask for the reset link.');
+      setAuthErrorText('Enter your email to receive the reset link.');
       return;
     }
     setResetting(true);
@@ -226,9 +231,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     setAuthNotice('');
     try {
       await resetPassword(address);
-      setAuthNotice('Reset link sent. Check your email.');
+      setAuthNotice('Reset link sent. Check your email, including spam.');
     } catch (error: unknown) {
-      setAuthErrorText(authError(error, mode));
+      setAuthErrorText(authError(error, 'forgot'));
     } finally {
       setResetting(false);
     }
@@ -340,6 +345,46 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                     Log out
                   </button>
                 </>
+              ) : mode === 'forgot' ? (
+                <div className="p-2.5">
+                  <p className="text-[13px] font-medium text-foreground">Reset your password</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                    Enter the email of your account. We will send you a link to choose a new password.
+                  </p>
+                  <form onSubmit={(event) => { void submitAuth(event); }}>
+                    <label className="mt-3 block text-[13px] text-muted-foreground">
+                      Email
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={emailInput}
+                        onChange={(event) => setEmailInput(event.target.value)}
+                        className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                      />
+                    </label>
+                    {authErrorText && (
+                      <p className="mt-2 text-[13px] text-destructive" role="alert">{authErrorText}</p>
+                    )}
+                    {authNotice && (
+                      <p className="mt-2 text-[13px] text-foreground" role="status">{authNotice}</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={resetting}
+                      className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-foreground text-[13px] text-background disabled:opacity-40"
+                    >
+                      {resetting ? 'Sending…' : 'Send reset link'}
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    className="mt-2 text-[13px] text-foreground hover:underline"
+                    onClick={() => switchMode('signin')}
+                  >
+                    Back to sign in
+                  </button>
+                </div>
               ) : (
                 <div className="p-2.5">
                   <p className="text-[13px] leading-relaxed text-muted-foreground">{copy.detail}</p>
@@ -370,11 +415,10 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                         {mode === 'signin' && (
                           <button
                             type="button"
-                            disabled={resetting}
-                            className="text-foreground hover:underline disabled:opacity-40"
-                            onClick={() => { void sendResetLink(); }}
+                            className="text-foreground hover:underline"
+                            onClick={() => switchMode('forgot')}
                           >
-                            {resetting ? 'Sending…' : 'Forgot password?'}
+                            Forgot password?
                           </button>
                         )}
                       </div>
