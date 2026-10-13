@@ -29,7 +29,8 @@ const postCredits = async (path: string, idToken?: string | null): Promise<Credi
   }
 };
 
-export const fetchCreditBalance = (): Promise<CreditSnapshot | null> => postCredits('/api/credits');
+export const fetchCreditBalance = (idToken?: string | null): Promise<CreditSnapshot | null> =>
+  postCredits('/api/credits', idToken);
 
 export const claimCreditPacks = (idToken?: string | null): Promise<CreditSnapshot | null> =>
   postCredits('/api/credits/claim', idToken);
