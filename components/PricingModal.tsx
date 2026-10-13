@@ -1,5 +1,5 @@
 import React from 'react';
-import { CREDIT_PACKS, formatCompact, type CreditPackId } from '../services/credits';
+import { CREDIT_PACKS, formatCompact, generatedPaletteCredits, palettesCovered, type CreditPackId } from '../services/credits';
 import { CloseButton } from './FloatingDrawer';
 import { ModalFrame, MotionButton, useExit } from './uiMotion';
 
@@ -16,6 +16,10 @@ interface PricingModalProps {
 
 const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoading, loadingPack }) => {
   const { open, request, onExitComplete } = useExit(onClose);
+  const paletteCost = generatedPaletteCredits();
+  const coverage = CREDIT_PACKS.map((pack) => (
+    `${formatCompact(pack.credits)} credits cover about ${palettesCovered(pack.credits)} palettes`
+  )).join('. ');
   return (
     <ModalFrame
       open={open}
@@ -26,7 +30,9 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onCheckout, isLoad
         <CloseButton onClick={() => request()} className="absolute top-3 right-3 z-20" />
         <div className="min-h-0 flex-auto overflow-y-auto p-6">
           <h2 className="text-xl font-medium">Credits</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">The editor stays free.</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+            A generated palette costs {paletteCost} credits. {coverage}. Manual edits do not use credits. The editor stays free.
+          </p>
           <div className="mt-4 flex flex-col gap-2">
             {CREDIT_PACKS.map((pack) => (
               <MotionButton

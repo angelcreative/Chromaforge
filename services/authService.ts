@@ -11,6 +11,7 @@ import {
     AuthError
 } from "firebase/auth";
 import { auth, provider, isDemoMode } from "../firebaseConfig";
+import { shouldCreateAccount } from "../utils/accountAuth";
 
 // --- Mock User Interface ---
 // Mimics the Firebase User object structure for the UI
@@ -51,6 +52,28 @@ export const subscribeToAuth = (callback: (user: User | null) => void) => {
             const index = mockListeners.indexOf(callback as any);
             if (index > -1) mockListeners.splice(index, 1);
         };
+    }
+};
+
+/** Sign in an existing account. An unknown email creates the account instead. */
+export const signInOrCreateAccount = async (email: string, pass: string) => {
+    const trimmed = email.trim();
+    try {
+        return await loginUser(trimmed, pass);
+    } catch (error: unknown) {
+        const code = (error as { code?: string })?.code;
+        if (!shouldCreateAccount(code)) throw error;
+        try {
+            return await registerUser(trimmed, pass, trimmed.split('@')[0]);
+        } catch (createError: unknown) {
+            const createCode = (createError as { code?: string })?.code;
+            if (createCode === 'auth/email-already-in-use') {
+                const wrongPassword = new Error('That password does not match this account.') as Error & { code: string };
+                wrongPassword.code = 'auth/wrong-password';
+                throw wrongPassword;
+            }
+            throw createError;
+        }
     }
 };
 
