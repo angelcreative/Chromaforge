@@ -2,7 +2,7 @@
 import { motion } from 'motion/react';
 import { ArrowUp, Heart, Plus, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MotionButton, SelectionMark, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
+import { MotionButton, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex, collectPaletteColors, colorsFromPaletteText } from './utils/colorUtils';
 import RefineDrawer from './components/RefineDrawer';
@@ -1088,8 +1088,8 @@ const App: React.FC = () => {
                 </div>
               )}
               {showWork && hasPalette && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette view">
+                <div className="flex w-full flex-nowrap items-center gap-1 rounded-lg border border-border bg-card p-0.5" role="toolbar" aria-label="Palette view controls">
+                  <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 overflow-x-auto" role="group" aria-label="Palette view">
                     {([
                       ['list', 'List'],
                       ['ramp', 'Ramp'],
@@ -1102,15 +1102,15 @@ const App: React.FC = () => {
                         type="button"
                         aria-pressed={selected}
                         onClick={() => { setStudioPane('composer'); setPreviewMode('palette'); setViewMode(id); }}
-                        className={`relative h-8 rounded-md px-3 text-[13px] ${selected ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        transition={{ duration: 0 }}
+                        className={`relative h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${selected ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                       >
-                        <SelectionMark active={selected} layoutId="palette-view" />
+                        {selected && <span aria-hidden className="absolute inset-0 rounded-md bg-primary" />}
                         <span className="relative z-10">{label}</span>
                       </MotionButton>
                       );
                     })}
-                  </div>
-                  <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Palette group">
+                    <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0" style={{ backgroundColor: 'var(--border)' }} />
                     {([
                       ['brand', 'Brand'],
                       ['neutrals', 'Neutrals'],
@@ -1121,31 +1121,36 @@ const App: React.FC = () => {
                           type="button"
                           aria-pressed={activeTab === id}
                           onClick={() => setActiveTab(id)}
-                          className={`relative h-8 rounded-md px-3 text-[13px] ${activeTab === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                          transition={{ duration: 0 }}
+                          className={`relative h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${activeTab === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                         >
-                          <SelectionMark active={activeTab === id} layoutId="palette-group" />
+                          {activeTab === id && <span aria-hidden className="absolute inset-0 rounded-md bg-primary" />}
                           <span className="relative z-10">{label}</span>
                         </MotionButton>
                     ))}
                   </div>
-                  <div className="ml-auto flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-1">
                     <MotionButton
                       type="button"
                       onClick={addColorToOpenPalette}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground hover:bg-accent"
+                      title="Add a color"
+                      aria-label="Add a color"
+                      transition={{ duration: 0 }}
+                      className="grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent"
                     >
                       <Plus className="size-4" strokeWidth={1.5} aria-hidden />
-                      Add a color
                     </MotionButton>
                     <MotionButton
                       type="button"
                       onClick={handleSavePalette}
                       disabled={isSaving}
+                      title="Save palette"
+                      aria-label="Save palette"
                       aria-pressed={isSaved}
-                      className={`inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
+                      transition={{ duration: 0 }}
+                      className={`grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
                     >
                       <Heart className="size-4" strokeWidth={1.5} aria-hidden />
-                      Save palette
                     </MotionButton>
                   </div>
                 </div>
