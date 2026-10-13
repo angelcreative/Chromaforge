@@ -16,6 +16,7 @@ import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
 import ComposerAttach from './components/ComposerAttach';
 import DescribeHeading from './components/DescribeHeading';
+import LogoMark from './components/LogoMark';
 import GradientList from './components/GradientList';
 import RampScaleControls from './components/RampScaleControls';
 import { ntc } from './utils/ntc';
@@ -660,8 +661,6 @@ const App: React.FC = () => {
     setViewMode('ramp');
     setStudioPane('composer');
   };
-  const pendingRequest = [...messages].reverse().find((message) => message.role === 'user')?.text ?? '';
-
   const openColors = () => {
     if (creationMode === 'generator') {
       const seed = palette.length > 0 ? palette.map((color) => ({ ...color })) : [createColorData('#5A7396', undefined, 'Primary')];
@@ -733,42 +732,6 @@ const App: React.FC = () => {
       </div>
   );
 
-  const renderPromptForm = () => (
-      <motion.form
-          className="shrink-0 border-t border-border bg-background px-4 py-3"
-          onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
-          {...enterMotion(reduce)}
-      >
-          <div className={`mx-auto flex w-full max-w-3xl flex-col gap-1 ${shellOpen ? '' : 'pl-12 md:pl-0'}`}>
-              {!isOwner && <div className="px-1">{renderCreditMeter()}</div>}
-              <div className="flex items-end gap-2">
-              <textarea
-                  rows={2}
-                  className="max-h-40 min-h-[3.25rem] flex-1 resize-none rounded-2xl border border-border bg-card px-3 py-2 text-[15px] text-foreground shadow-panel placeholder:text-muted-foreground focus:outline-none"
-                  placeholder="Describe a brand or mood"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleChatSubmit();
-                      }
-                  }}
-                  aria-label="Palette prompt"
-              />
-              <MotionButton
-                  type="submit"
-                  disabled={isChatLoading || !chatInput.trim()}
-                  className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
-                  aria-label="Send"
-              >
-                  <Send className="size-4" strokeWidth={1.5} />
-              </MotionButton>
-              </div>
-          </div>
-      </motion.form>
-  );
-
   const updateListedColor = (tab: PaletteTab, index: number, updatedColor: ColorData) => {
     if (tab === 'neutrals') {
       setNeutralPalette(prev => prev.map((color, i) => i === index ? updatedColor : color));
@@ -803,7 +766,7 @@ const App: React.FC = () => {
 
       <StudioTopBar
           onHome={goHome}
-          markMotion={isChatLoading ? 'loading' : 'enter'}
+          markMotion="enter"
       />
 
       <StudioSidebar
@@ -853,22 +816,17 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : showLoader ? (
-        <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div
-              className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-16 text-center"
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              {pendingRequest && (
-                <p className="max-w-md text-2xl font-medium tracking-tight text-foreground">{pendingRequest}</p>
-              )}
-              <p className={`text-[15px] text-muted-foreground ${pendingRequest ? 'mt-4' : ''}`}>Making a palette</p>
-            </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div
+            className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center bg-transparent px-4 py-16"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Generating palette"
+          >
+            <LogoMark motion="enter" className="block size-[46px] max-h-[46px] max-w-[46px] bg-transparent text-foreground" />
           </div>
-          {renderPromptForm()}
-        </>
+        </div>
       ) : showHome ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-24 pt-8">
           <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-8">
