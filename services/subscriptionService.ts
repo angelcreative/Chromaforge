@@ -56,7 +56,9 @@ export const createCheckoutSession = async (userId: string, packId: CreditPackId
         return;
     }
 
-    if (!db) return;
+    if (!db) {
+        throw new Error('Payments are not connected right now. Try again in a moment.');
+    }
 
     try {
         const session = buildCheckoutSession(packId, {

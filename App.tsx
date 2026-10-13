@@ -698,6 +698,7 @@ const App: React.FC = () => {
       }
       setIsCheckoutLoading(true);
       setCheckoutPack(packId);
+      showToast('Opening secure checkout…');
       try {
           if (isDemoMode) {
               await createCheckoutSession('demo', packId, getCreditWalletId());
@@ -706,8 +707,8 @@ const App: React.FC = () => {
           const token = await user.getIdToken();
           await fetchCreditBalance(token);
           await createCheckoutSession(user.uid, packId, getCreditWalletId());
-      } catch {
-          showToast('Payments are unavailable right now.');
+      } catch (error) {
+          showToast(error instanceof Error && error.message ? error.message : 'Payments are unavailable right now.');
       } finally {
           setIsCheckoutLoading(false);
           setCheckoutPack(null);
