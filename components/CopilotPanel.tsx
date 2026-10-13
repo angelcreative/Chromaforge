@@ -22,6 +22,7 @@ export interface CopilotPanelProps {
   loading: boolean;
   balanceLabel: string;
   balanceTitle: string;
+  balanceDetail?: string;
   onCredits?: () => void;
 }
 
@@ -36,6 +37,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   loading,
   balanceLabel,
   balanceTitle,
+  balanceDetail,
   onCredits,
 }) => {
   const reduce = useReduced();
@@ -82,7 +84,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
               <div className={`max-w-[90%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground ring-1 ring-border'}`}>
                 {message.text}
                 {message.role === 'model' && typeof message.creditsSpent === 'number' && (
-                  <p className="mt-1 text-[12px] text-muted-foreground" title={`${message.creditsSpent} credits`}>{formatCompact(message.creditsSpent)} credits</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground" title={`This reply used ${message.creditsSpent} credits.`}>Used {formatCompact(message.creditsSpent)} credits</p>
                 )}
               </div>
             </motion.div>
@@ -104,6 +106,9 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
             ) : (
               <span className="text-[13px] text-muted-foreground" title={balanceTitle}>{balanceLabel}</span>
             )}
+            {balanceDetail ? (
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{balanceDetail}</p>
+            ) : null}
           </div>
         ) : null}
         <div className="flex items-end gap-2">

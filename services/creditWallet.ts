@@ -17,6 +17,11 @@ const safeSet = (key: string, value: string) => {
   }
 };
 
+/** Keeps purchased credits when a signed-in account already has a wallet. */
+export const adoptCreditWalletId = (id: string): void => {
+  if (WALLET_PATTERN.test(id)) safeSet(WALLET_KEY, id);
+};
+
 /** Stable anonymous id for this browser's free credits and purchased packs. */
 export const getCreditWalletId = (): string => {
   const existing = safeGet(WALLET_KEY);

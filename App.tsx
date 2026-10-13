@@ -19,16 +19,15 @@ import DescribeHeading from './components/DescribeHeading';
 import LogoMark from './components/LogoMark';
 import GradientList from './components/GradientList';
 import RampScaleControls from './components/RampScaleControls';
-import ComponentsPreview from './components/ComponentsPreview';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
 import { User } from 'firebase/auth'; 
-import { subscribeToAuth, ensureBillingUser, logoutUser, signInOrCreateAccount } from './services/authService';
+import { subscribeToAuth, loginUser, loginWithGoogle, logoutUser, registerUser } from './services/authService';
 import { isDemoMode } from './firebaseConfig';
 import { savePaletteToFirestore, getUserPalettes, deletePaletteFromFirestore, renamePaletteInFirestore, SavedPalette } from './services/storageService';
-import { claimCreditPacks, fetchCreditBalance } from './services/creditClient';
-import { identityFromAccount } from './utils/accountMenu';
-import { formatCompact, type CreditPackId } from './services/credits';
+import { claimCreditPacks, fetchCreditBalance, type CreditAllowance, type CreditSnapshot } from './services/creditClient';
+import { creditStatusCopy, identityFromAccount, isUnlimitedAccount } from './utils/accountMenu';
+import { type CreditPackId } from './services/credits';
 import { getCreditWalletId } from './services/creditWallet';
 import { buildStudioColorSkill } from './utils/colorSkill';
 import StudioSidebar from './components/StudioSidebar';
@@ -73,6 +72,9 @@ const App: React.FC = () => {
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [checkoutPack, setCheckoutPack] = useState<CreditPackId | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
+  const [allowance, setAllowance] = useState<CreditAllowance>('unknown');
+  const [accountPrompt, setAccountPrompt] = useState({ signal: 0, mode: 'signin' as 'signin' | 'signup' });
+  const buyAfterAuth = useRef(false);
   // App State
   const [creationMode, setCreationMode] = useState<CreationMode>('generator');
   const [baseColor, setBaseColor] = useState<ColorHSL>({ h: 215, s: 25, l: 47 });
@@ -179,6 +181,29 @@ const App: React.FC = () => {
     return () => window.clearInterval(timer);
   }, [user]);
 
+  const applyCreditSnapshot = (snapshot: CreditSnapshot) => {
+    const emailOwner = Boolean(user && !user.isAnonymous && isUnlimitedAccount(identityFromAccount(user).email));
+    const owner = snapshot.owner === true || emailOwner;
+    setIsOwner(owner);
+    if (owner) return;
+    if (typeof snapshot.balance === 'number') setCredits(snapshot.balance);
+    setAllowance(snapshot.allowance);
+  };
+
+  const askAccount = (mode: 'signin' | 'signup') => {
+    setAccountPrompt((prev) => ({ signal: prev.signal + 1, mode }));
+  };
+
+  useEffect(() => {
+    if (previewMode === 'components') setPreviewMode('palette');
+  }, [previewMode]);
+
+  useEffect(() => {
+    if (!buyAfterAuth.current || !user || user.isAnonymous) return;
+    buyAfterAuth.current = false;
+    setIsPricingOpen(true);
+  }, [user]);
+
   useEffect(() => {
     let cancelled = false;
     const sync = async () => {
@@ -190,8 +215,7 @@ const App: React.FC = () => {
       }
       const snapshot = await fetchCreditBalance(token);
       if (cancelled || !snapshot) return;
-      setIsOwner(snapshot.owner === true);
-      if (!snapshot.owner && typeof snapshot.balance === 'number') setCredits(snapshot.balance);
+      applyCreditSnapshot(snapshot);
     };
     void sync();
     return () => { cancelled = true; };
@@ -223,8 +247,8 @@ const App: React.FC = () => {
       }
       const snapshot = await claimCreditPacks(token);
       if (stopped || !snapshot) return;
+      applyCreditSnapshot(snapshot);
       if (!snapshot.owner && typeof snapshot.balance === 'number') {
-        setCredits(snapshot.balance);
         if (baseline === undefined) baseline = snapshot.balance;
         else if (snapshot.balance > baseline) {
           pendingClaim.current = false;
@@ -472,9 +496,13 @@ const App: React.FC = () => {
     if (typeof result.creditsRemaining === 'number') setCredits(result.creditsRemaining);
 
     if (result.paymentRequired) {
-      setIsPricingOpen(true);
       setCopilotOpen(true);
       setMessages(prev => [...prev, { role: 'model', text: result.description || 'Not enough credits.' }]);
+      if (user && !user.isAnonymous) setIsPricingOpen(true);
+      else {
+        buyAfterAuth.current = true;
+        askAccount('signup');
+      }
       return;
     }
 
@@ -662,6 +690,12 @@ const App: React.FC = () => {
   };
 
   const handleUpgradeCheckout = async (packId: CreditPackId) => {
+      if (!user || user.isAnonymous) {
+          buyAfterAuth.current = true;
+          askAccount('signup');
+          setIsPricingOpen(false);
+          return;
+      }
       setIsCheckoutLoading(true);
       setCheckoutPack(packId);
       try {
@@ -669,9 +703,9 @@ const App: React.FC = () => {
               await createCheckoutSession('demo', packId, getCreditWalletId());
               return;
           }
-          const billingUser = user ?? await ensureBillingUser();
-          setUser(billingUser);
-          await createCheckoutSession(billingUser.uid, packId, getCreditWalletId());
+          const token = await user.getIdToken();
+          await fetchCreditBalance(token);
+          await createCheckoutSession(user.uid, packId, getCreditWalletId());
       } catch {
           showToast('Payments are unavailable right now.');
       } finally {
@@ -681,12 +715,22 @@ const App: React.FC = () => {
   };
 
   const studioSignedIn = Boolean(user && !user.isAnonymous);
-  const creditLabel = credits === null ? 'Credits' : `${formatCompact(credits)} credits`;
-  const creditExact = credits === null ? 'Credits' : `${credits} credits`;
+  const ownerView = isOwner || (studioSignedIn && isUnlimitedAccount(identityFromAccount(user).email));
+  const creditCopy = creditStatusCopy({
+    balance: credits,
+    allowance,
+    signedIn: studioSignedIn,
+    unlimited: ownerView,
+  });
+  const openCredits = () => {
+    if (ownerView) return;
+    if (studioSignedIn) setIsPricingOpen(true);
+    else askAccount('signin');
+  };
   const renderCreditMeter = () => (
-      !studioSignedIn || isOwner ? null : (
-          <button type="button" onClick={() => setIsPricingOpen(true)} className="text-[13px] text-muted-foreground hover:text-foreground" title={creditExact} aria-label={creditExact}>
-              {creditLabel}
+      ownerView ? null : (
+          <button type="button" onClick={openCredits} className="text-[13px] text-muted-foreground hover:text-foreground" title={creditCopy.detail} aria-label={creditCopy.detail}>
+              {creditCopy.meter}
           </button>
       )
   );
@@ -816,16 +860,21 @@ const App: React.FC = () => {
           email={accountIdentity.email}
           name={accountIdentity.name}
           accountId={user && !user.isAnonymous ? user.uid : null}
-          signedIn={Boolean(user && !user.isAnonymous)}
-          ownerSession={isOwner}
+          signedIn={studioSignedIn}
+          ownerSession={ownerView}
           balance={credits}
+          allowance={allowance}
+          openSignal={accountPrompt.signal}
+          openMode={accountPrompt.mode}
           onLogout={async () => {
             await logoutUser();
             setUser(null);
             setIsOwner(false);
           }}
           onBuyMore={() => setIsPricingOpen(true)}
-          onSignIn={signInOrCreateAccount}
+          onSignIn={loginUser}
+          onSignUp={(email, password) => registerUser(email, password, email.split('@')[0])}
+          onGoogle={loginWithGoogle}
       />
 
       {!isPricingOpen && (
@@ -898,6 +947,11 @@ const App: React.FC = () => {
             <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-muted-foreground">
               The limit is your imagination.
             </p>
+            {!ownerView && (
+              <p className="mx-auto mt-3 max-w-md text-center text-[13px] leading-relaxed text-muted-foreground">
+                {creditCopy.detail}
+              </p>
+            )}
             <motion.form className="mt-8" onSubmit={(e) => { e.preventDefault(); submitHomeComposer(); }} {...enterMotion(reduce)}>
               <div className="rounded-2xl border border-border bg-card p-3 shadow-panel">
                 <textarea
@@ -1010,17 +1064,6 @@ const App: React.FC = () => {
                         </MotionButton>
                     ))}
                   </div>
-                  <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Component preview">
-                    <MotionButton
-                      type="button"
-                      aria-pressed={previewMode === 'components'}
-                      onClick={() => { setStudioPane('composer'); setPreviewMode('components'); }}
-                      className={`relative h-8 whitespace-nowrap rounded-md px-3 text-[13px] ${previewMode === 'components' ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
-                    >
-                      <SelectionMark active={previewMode === 'components'} layoutId="component-preview" />
-                      <span className="relative z-10">Components</span>
-                    </MotionButton>
-                  </div>
                   <div className="ml-auto flex items-center gap-2">
                     <MotionButton
                       type="button"
@@ -1042,17 +1085,6 @@ const App: React.FC = () => {
                     </MotionButton>
                   </div>
                 </div>
-              )}
-
-              {showWork && hasPalette && previewMode === 'components' && (
-                <ComponentsPreview
-                  brandPalette={activeColors}
-                  neutralPalette={neutralPalette}
-                  semanticPalette={semanticPalette}
-                  config={playgroundConfig}
-                  onConfigChange={setPlaygroundConfig}
-                  globalConfig={globalCurveConfig}
-                />
               )}
 
               {showWork && hasPalette && previewMode === 'palette' && (viewMode === 'list' || viewMode === 'ramp') && (
@@ -1120,9 +1152,10 @@ const App: React.FC = () => {
           onInput={setChatInput}
           onSubmit={(text) => { void handleChatSubmit(undefined, text); }}
           loading={isChatLoading}
-          balanceLabel={isOwner ? '' : creditLabel}
-          balanceTitle={isOwner ? '' : creditExact}
-          onCredits={isOwner ? undefined : () => setIsPricingOpen(true)}
+          balanceLabel={ownerView ? '' : creditCopy.meter}
+          balanceTitle={ownerView ? '' : creditCopy.detail}
+          balanceDetail={ownerView ? '' : creditCopy.detail}
+          onCredits={ownerView ? undefined : openCredits}
         />
       )}
 

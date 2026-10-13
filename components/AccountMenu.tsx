@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useId, useRef, useState } from 'react';
+import type { CreditAllowance } from '../services/creditClient';
 import {
   AVATAR_GROUPS,
   avatarAccountKey,
@@ -9,9 +10,9 @@ import {
   writeAccountAvatar,
 } from '../utils/accountAvatar';
 import {
-  creditsMenuCopy,
+  creditStatusCopy,
   fetchDisplayedBalance,
-  isUnlimitedAccount,
+  showsUnlimited,
 } from '../utils/accountMenu';
 import { MotionButton, presencePop, useReduced } from './uiMotion';
 
@@ -22,10 +23,32 @@ export interface AccountMenuProps {
   signedIn: boolean;
   ownerSession: boolean;
   balance: number | null;
+  allowance: CreditAllowance;
   onLogout: () => void | Promise<void>;
   onBuyMore: () => void;
   onSignIn: (email: string, password: string) => void | Promise<void>;
+  onSignUp: (email: string, password: string) => void | Promise<void>;
+  onGoogle: () => void | Promise<void>;
+  openSignal?: number;
+  openMode?: 'signin' | 'signup';
 }
+
+type AuthMode = 'signin' | 'signup';
+
+const authError = (error: unknown, mode: AuthMode): string => {
+  const code = (error as { code?: string })?.code;
+  if (code === 'auth/email-already-in-use') return 'That email already has an account. Sign in.';
+  if (code === 'auth/user-not-found') return 'No account for that email yet. Create one.';
+  if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
+    return 'That email or password does not match. Create an account if you are new here.';
+  }
+  if (code === 'auth/invalid-email') return 'Enter a valid email.';
+  if (code === 'auth/weak-password') return 'Use at least 6 characters.';
+  if (code === 'auth/popup-closed-by-user') return 'Google sign-in was cancelled.';
+  if (code === 'auth/popup-blocked') return 'Allow popups to continue with Google.';
+  if (code === 'auth/unauthorized-domain') return 'Google sign-in is not available on this domain yet.';
+  return mode === 'signup' ? 'Could not create the account.' : 'Could not sign in.';
+};
 
 const AccountMenu: React.FC<AccountMenuProps> = ({
   email,
@@ -34,28 +57,36 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   signedIn,
   ownerSession,
   balance,
+  allowance,
   onLogout,
   onBuyMore,
   onSignIn,
+  onSignUp,
+  onGoogle,
+  openSignal = 0,
+  openMode = 'signin',
 }) => {
   const [open, setOpen] = useState(false);
-  const [signingIn, setSigningIn] = useState(false);
+  const [mode, setMode] = useState<AuthMode>('signin');
   const [choosingAvatar, setChoosingAvatar] = useState(false);
   const [avatarMemory, setAvatarMemory] = useState<{ key: string; id: string | null }>({ key: '', id: null });
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
-  const [signInError, setSignInError] = useState('');
+  const [authErrorText, setAuthErrorText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [shownBalance, setShownBalance] = useState<number | null>(balance);
+  const [shownAllowance, setShownAllowance] = useState<CreditAllowance>(allowance);
   const rootRef = useRef<HTMLDivElement>(null);
+  const seenSignal = useRef(0);
   const reduce = useReduced();
   const menu = presencePop(reduce, 'top right');
   const menuId = useId();
-  const unlimited = signedIn && ownerSession && isUnlimitedAccount(email);
-  const copy = creditsMenuCopy({
-    email,
-    ownerSession: unlimited,
+  const unlimited = showsUnlimited({ signedIn, email, ownerSession });
+  const copy = creditStatusCopy({
     balance: unlimited ? null : shownBalance,
+    allowance: shownAllowance,
+    signedIn,
+    unlimited,
   });
   const accountKey = signedIn ? avatarAccountKey(email, accountId) : '';
   if (avatarMemory.key !== accountKey) {
@@ -66,21 +97,35 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   }
   const avatarId = avatarMemory.key === accountKey ? avatarMemory.id : null;
   const face = signedIn ? avatarById(displayedAvatarId(avatarId)) : null;
+  const showMeter = !unlimited && typeof shownBalance === 'number';
 
   useEffect(() => {
     setShownBalance(balance);
   }, [balance]);
 
   useEffect(() => {
+    setShownAllowance(allowance);
+  }, [allowance]);
+
+  useEffect(() => {
     if (unlimited || typeof balance === 'number') return;
     let cancelled = false;
     fetchDisplayedBalance().then((value) => {
-      if (!cancelled && typeof value === 'number') setShownBalance(value);
+      if (cancelled) return;
+      if (typeof value.balance === 'number') setShownBalance(value.balance);
+      if (value.allowance !== 'unknown') setShownAllowance(value.allowance);
     });
     return () => {
       cancelled = true;
     };
   }, [unlimited, balance, email]);
+
+  useEffect(() => {
+    if (!openSignal || openSignal === seenSignal.current) return;
+    seenSignal.current = openSignal;
+    setOpen(true);
+    if (!signedIn) setMode(openMode);
+  }, [openSignal, openMode, signedIn]);
 
   useEffect(() => {
     if (!open) return;
@@ -99,19 +144,18 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   }, [open]);
 
   useEffect(() => {
-    if (signedIn) {
-      setSigningIn(false);
-      setSignInError('');
-      setPasswordInput('');
+    if (!signedIn) {
+      setChoosingAvatar(false);
       return;
     }
-    setChoosingAvatar(false);
+    setOpen(false);
+    setAuthErrorText('');
+    setPasswordInput('');
   }, [signedIn]);
 
   useEffect(() => {
     if (open) return;
-    setSigningIn(false);
-    setSignInError('');
+    setAuthErrorText('');
     setChoosingAvatar(false);
   }, [open]);
 
@@ -120,26 +164,30 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     void onLogout();
   };
 
-  const submitSignIn = async (event: React.FormEvent) => {
+  const submitAuth = async (event: React.FormEvent) => {
     event.preventDefault();
     if (submitting) return;
     setSubmitting(true);
-    setSignInError('');
+    setAuthErrorText('');
     try {
-      await onSignIn(emailInput, passwordInput);
+      if (mode === 'signup') await onSignUp(emailInput.trim(), passwordInput);
+      else await onSignIn(emailInput.trim(), passwordInput);
       setPasswordInput('');
-      setSigningIn(false);
     } catch (error: unknown) {
-      const code = (error as { code?: string })?.code;
-      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        setSignInError('That password does not match this account.');
-      } else if (code === 'auth/invalid-email') {
-        setSignInError('Enter a valid email.');
-      } else if (code === 'auth/weak-password') {
-        setSignInError('Use at least 6 characters.');
-      } else {
-        setSignInError('Could not sign in.');
-      }
+      setAuthErrorText(authError(error, mode));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const continueWithGoogle = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setAuthErrorText('');
+    try {
+      await onGoogle();
+    } catch (error: unknown) {
+      setAuthErrorText(authError(error, mode));
     } finally {
       setSubmitting(false);
     }
@@ -150,6 +198,11 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     onBuyMore();
   };
 
+  const switchMode = (next: AuthMode) => {
+    setMode(next);
+    setAuthErrorText('');
+  };
+
   const chooseAvatar = (id: string) => {
     if (!accountKey || !writeAccountAvatar(accountKey, id)) return;
     setAvatarMemory({ key: accountKey, id });
@@ -158,45 +211,58 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   return (
     <div ref={rootRef} className="pointer-events-none absolute top-0 right-0 z-50 bg-transparent">
       <div className="pointer-events-auto relative mr-3 mt-2">
-        <MotionButton
-          type="button"
-          className={
-            face
-              ? 'account-avatar-disk grid size-10 place-items-center overflow-hidden rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]'
-              : 'grid size-10 place-items-center rounded-full bg-transparent text-foreground ring-1 ring-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]'
-          }
-          aria-label={signedIn ? (name || email || 'Account') : 'Account'}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-controls={open ? menuId : undefined}
-          onClick={() => setOpen((value) => !value)}
-        >
-          {face && (
-            <img src={face.src} alt="" draggable={false} className="h-[82%] w-[82%] object-contain" />
-          )}
-        </MotionButton>
+        {signedIn ? (
+          <MotionButton
+            type="button"
+            className="account-avatar-disk grid size-10 place-items-center overflow-hidden rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+            aria-label={email || name || 'Account'}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? menuId : undefined}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {face && (
+              <img src={face.src} alt="" draggable={false} className="h-[82%] w-[82%] object-contain" />
+            )}
+          </MotionButton>
+        ) : (
+          <MotionButton
+            type="button"
+            className="flex h-9 items-center gap-2 rounded-full bg-card px-3 text-[13px] text-foreground ring-1 ring-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+            aria-label={showMeter ? `${copy.meter}. Sign in` : 'Sign in'}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? menuId : undefined}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {showMeter && <span className="text-muted-foreground">{copy.meter}</span>}
+            <span>Sign in</span>
+          </MotionButton>
+        )}
         <AnimatePresence>
           {open && (
             <motion.div
               id={menuId}
               role="menu"
               aria-label="Account"
-              className="absolute right-0 top-full z-50 mt-1 w-max min-w-44 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
+              className="absolute right-0 top-full z-50 mt-1 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
               {...menu}
             >
               {signedIn ? (
                 <>
-                  <div className="flex items-center gap-3 px-2.5 py-2">
-                    <p className="text-[13px] text-foreground" title={copy.title} aria-label={copy.title}>
-                      {copy.text}
-                    </p>
-                    <button
-                      type="button"
-                      className="text-[13px] text-foreground hover:underline"
-                      onClick={buyMore}
-                    >
-                      Buy more
-                    </button>
+                  <div className="px-2.5 py-2">
+                    {email && <p className="truncate text-[13px] text-foreground" title={email}>{email}</p>}
+                    <p className="mt-1 text-[13px] text-foreground" title={copy.detail}>{copy.meter}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{copy.detail}</p>
+                    {!unlimited && (
+                      <button
+                        type="button"
+                        className="mt-2 text-[13px] text-foreground hover:underline"
+                        onClick={buyMore}
+                      >
+                        Buy more
+                      </button>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -243,50 +309,71 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                     Log out
                   </button>
                 </>
-              ) : signingIn ? (
-                <form className="w-56 p-1.5" onSubmit={(event) => { void submitSignIn(event); }}>
-                  <label className="block text-[13px] text-muted-foreground">
-                    Email
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={emailInput}
-                      onChange={(event) => setEmailInput(event.target.value)}
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                    />
-                  </label>
-                  <label className="mt-2 block text-[13px] text-muted-foreground">
-                    Password
-                    <input
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      value={passwordInput}
-                      onChange={(event) => setPasswordInput(event.target.value)}
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                    />
-                  </label>
-                  {signInError && (
-                    <p className="mt-2 px-0.5 text-[13px] text-destructive" role="alert">{signInError}</p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-foreground text-[13px] text-background disabled:opacity-40"
-                  >
-                    {submitting ? 'Signing in' : 'Sign in'}
-                  </button>
-                </form>
               ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="flex h-9 w-full items-center rounded-lg px-2.5 text-left text-[13px] text-foreground hover:bg-accent"
-                  onClick={() => setSigningIn(true)}
-                >
-                  Sign in
-                </button>
+                <div className="p-2.5">
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">{copy.detail}</p>
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    className="mt-3 flex h-9 w-full items-center justify-center rounded-lg bg-foreground text-[13px] text-background disabled:opacity-40"
+                    onClick={() => { void continueWithGoogle(); }}
+                  >
+                    {submitting ? 'Please wait' : 'Continue with Google'}
+                  </button>
+                  <p className="my-3 text-center text-[12px] text-muted-foreground">or use email</p>
+                  <form onSubmit={(event) => { void submitAuth(event); }}>
+                    <label className="block text-[13px] text-muted-foreground">
+                      Email
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={emailInput}
+                        onChange={(event) => setEmailInput(event.target.value)}
+                        className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                      />
+                    </label>
+                    <label className="mt-2 block text-[13px] text-muted-foreground">
+                      Password
+                      <input
+                        type="password"
+                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                        minLength={6}
+                        required
+                        value={passwordInput}
+                        onChange={(event) => setPasswordInput(event.target.value)}
+                        className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                      />
+                    </label>
+                    {authErrorText && (
+                      <p className="mt-2 text-[13px] text-destructive" role="alert">{authErrorText}</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-foreground text-[13px] text-background disabled:opacity-40"
+                    >
+                      {submitting ? 'Please wait' : mode === 'signup' ? 'Create account' : 'Sign in'}
+                    </button>
+                  </form>
+                  {mode === 'signin' ? (
+                    <button
+                      type="button"
+                      className="mt-2 text-[13px] text-foreground hover:underline"
+                      onClick={() => switchMode('signup')}
+                    >
+                      New here? Create account
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mt-2 text-[13px] text-foreground hover:underline"
+                      onClick={() => switchMode('signin')}
+                    >
+                      Already have an account? Sign in
+                    </button>
+                  )}
+                </div>
               )}
             </motion.div>
           )}
