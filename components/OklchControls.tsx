@@ -33,6 +33,9 @@ export const OklchEditor: React.FC<{
   onChangeRef.current = onChange;
   const rgb = hexToRgb(hex);
   const oklch = rgbToOklch(rgb.r, rgb.g, rgb.b);
+  // Chroma beyond the sRGB gamut for this lightness and hue cannot change the
+  // color, so the slider spans only the reachable range.
+  const chromaMax = Math.max(maxOklchChroma(oklch.l, oklch.h), 0.005);
 
   useEffect(() => {
     if (!hexFocused.current) setHexDraft(hex.toUpperCase());
@@ -74,9 +77,9 @@ export const OklchEditor: React.FC<{
         />
         <ChannelRow
           label="Chroma"
-          value={oklch.c}
+          value={Math.min(oklch.c, chromaMax)}
           min={0}
-          max={0.4}
+          max={chromaMax}
           step={0.001}
           digits={3}
           track={(t) => colorHex(oklch.l, t, oklch.h)}
