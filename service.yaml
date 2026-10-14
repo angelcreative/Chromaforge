@@ -44,7 +44,10 @@ spec:
       containers:
       - env:
         - name: API_KEY
-          value: AIzaSyBWH-RAx1qSTW3yHHnlXY1KkrJDoJy4A6A
+          valueFrom:
+            secretKeyRef:
+              name: gemini-api-key
+              key: latest
         image: us-west1-docker.pkg.dev/gen-lang-client-0594101039/cloud-run-source-deploy/chromaforge@sha256:13e0855dfc4b09b25d6915a2668590ecef391b73a0dafeccad143833b5509277
         ports:
         - containerPort: 8080
