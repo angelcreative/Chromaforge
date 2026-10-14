@@ -17,6 +17,12 @@ interface ScaleEditorModalProps {
   isPremium?: boolean;
 }
 
+const LINEAR_CHANNELS = [
+  { key: 'l', label: 'Lightness', min: 0, max: 100, step: 1, format: (v: number) => `${Math.round(v)}` },
+  { key: 'c', label: 'Chroma', min: 0, max: 0.4, step: 0.005, format: (v: number) => v.toFixed(3) },
+  { key: 'h', label: 'Hue', min: 0, max: 360, step: 1, format: (v: number) => `${Math.round(v)}°` },
+] as const;
+
 const SIZE = 320;
 const CENTER = SIZE / 2;
 const RADIUS = 142;
@@ -304,27 +310,29 @@ const ScaleEditorModal: React.FC<ScaleEditorModalProps> = ({ color, globalConfig
                 Linear blend draws a straight path between a light color and a dark color.
               </p>
               {(['start', 'end'] as const).map((end) => (
-                <div key={end} className="space-y-2">
+                <div key={end} className="space-y-3">
                   <p className="text-[13px] text-foreground">{end === 'start' ? 'Light end' : 'Dark end'}</p>
-                  {([
-                    ['l', 'Lightness'],
-                    ['c', 'Chroma'],
-                    ['h', 'Hue'],
-                  ] as const).map(([key, label]) => (
-                    <label key={`${end}-${key}`} className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
-                      <span className="w-20 text-[13px] text-muted-foreground">{label}</span>
-                      <input
-                        type="number"
-                        step={key === 'c' ? 0.01 : 1}
-                        min={0}
-                        max={key === 'h' ? 360 : key === 'c' ? 0.4 : 100}
-                        value={key === 'l' ? Math.round(config.linearConfig![end].l * 100) : key === 'h' ? Math.round(config.linearConfig![end].h) : config.linearConfig![end].c}
-                        onChange={(e) => setChannel(end, key, Number(e.target.value))}
-                        className="w-full bg-transparent font-mono text-[13px] text-foreground focus:outline-none"
-                        aria-label={`${end === 'start' ? 'Light' : 'Dark'} ${label}`}
-                      />
-                    </label>
-                  ))}
+                  {LINEAR_CHANNELS.map(({ key, label, min, max, step, format }) => {
+                    const stored = config.linearConfig![end][key];
+                    const value = key === 'l' ? stored * 100 : stored;
+                    return (
+                      <label key={`${end}-${key}`} className="block text-[13px] text-muted-foreground">
+                        {label}
+                        <span className="float-right font-mono text-foreground">{format(value)}</span>
+                        <input
+                          type="range"
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={value}
+                          onChange={(e) => setChannel(end, key, Number(e.target.value))}
+                          className="scale-slider mt-1 w-full"
+                          style={rangeFill(Math.min(max, Math.max(min, value)), min, max)}
+                          aria-label={`${end === 'start' ? 'Light' : 'Dark'} ${label}`}
+                        />
+                      </label>
+                    );
+                  })}
                 </div>
               ))}
             </div>
