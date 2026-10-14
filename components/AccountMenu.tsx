@@ -16,6 +16,7 @@ import {
 } from '../utils/accountMenu';
 import { resetPassword } from '../services/authService';
 import { MotionButton, presencePop, useReduced } from './uiMotion';
+import { Hint } from './Hint';
 
 export interface AccountMenuProps {
   email: string | null;
@@ -248,19 +249,21 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     <div ref={rootRef} className="pointer-events-none absolute top-0 right-0 z-50 bg-transparent">
       <div className="pointer-events-auto relative mr-3 mt-2">
         {signedIn ? (
-          <MotionButton
-            type="button"
-            className="account-avatar-disk grid size-10 place-items-center overflow-hidden rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
-            aria-label={email || name || 'Account'}
-            aria-haspopup="menu"
-            aria-expanded={open}
-            aria-controls={open ? menuId : undefined}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {face && (
-              <img src={face.src} alt="" draggable={false} className="h-[82%] w-[82%] object-contain" />
-            )}
-          </MotionButton>
+          <Hint label="Account" side="left" disabled={open}>
+            <MotionButton
+              type="button"
+              className="account-avatar-disk grid size-10 place-items-center overflow-hidden rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+              aria-label={email || name || 'Account'}
+              aria-haspopup="menu"
+              aria-expanded={open}
+              aria-controls={open ? menuId : undefined}
+              onClick={() => setOpen((value) => !value)}
+            >
+              {face && (
+                <img src={face.src} alt="" draggable={false} className="h-[82%] w-[82%] object-contain" />
+              )}
+            </MotionButton>
+          </Hint>
         ) : (
           <MotionButton
             type="button"
@@ -339,7 +342,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                   <button
                     type="button"
                     role="menuitem"
-                    className="flex h-9 w-full items-center rounded-lg px-2.5 text-left text-[13px] text-foreground hover:bg-accent"
+                    className="flex h-9 w-full items-center rounded-lg px-2.5 text-left text-[13px] text-destructive hover:bg-accent"
                     onClick={signOut}
                   >
                     Log out

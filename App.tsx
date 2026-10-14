@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowUp, Heart, Plus, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MotionButton, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
+import { Hint } from './components/Hint';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex, collectPaletteColors, colorsFromPaletteText } from './utils/colorUtils';
 import RefineDrawer from './components/RefineDrawer';
@@ -1129,28 +1130,30 @@ const App: React.FC = () => {
                     ))}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    <MotionButton
-                      type="button"
-                      onClick={addColorToOpenPalette}
-                      title="Add a color"
-                      aria-label="Add a color"
-                      transition={{ duration: 0 }}
-                      className="grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent"
-                    >
-                      <Plus className="size-4" strokeWidth={1.5} aria-hidden />
-                    </MotionButton>
-                    <MotionButton
-                      type="button"
-                      onClick={handleSavePalette}
-                      disabled={isSaving}
-                      title="Save palette"
-                      aria-label="Save palette"
-                      aria-pressed={isSaved}
-                      transition={{ duration: 0 }}
-                      className={`grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
-                    >
-                      <Heart className="size-4" strokeWidth={1.5} aria-hidden />
-                    </MotionButton>
+                    <Hint label="Add a color">
+                      <MotionButton
+                        type="button"
+                        onClick={addColorToOpenPalette}
+                        aria-label="Add a color"
+                        transition={{ duration: 0 }}
+                        className="grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent"
+                      >
+                        <Plus className="size-4" strokeWidth={1.5} aria-hidden />
+                      </MotionButton>
+                    </Hint>
+                    <Hint label={isSaved ? 'Saved' : 'Save palette'}>
+                      <MotionButton
+                        type="button"
+                        onClick={handleSavePalette}
+                        disabled={isSaving}
+                        aria-label="Save palette"
+                        aria-pressed={isSaved}
+                        transition={{ duration: 0 }}
+                        className={`grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
+                      >
+                        <Heart className="size-4" strokeWidth={1.5} aria-hidden />
+                      </MotionButton>
+                    </Hint>
                   </div>
                 </div>
               )}
