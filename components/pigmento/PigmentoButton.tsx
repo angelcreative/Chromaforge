@@ -63,7 +63,7 @@ const PigmentoButton: React.FC<PigmentoButtonProps> = ({ open, onActivate, atten
     <Hint label={open ? 'Close Pigmento' : 'Ask Pigmento'} side="left">
       <div
         ref={hostRef}
-        className={`fixed bottom-4 right-4 z-50 size-[46px] overflow-hidden rounded-full bg-card shadow-panel focus-within:outline focus-within:outline-2 focus-within:outline-offset-[3px] focus-within:outline-[var(--ring)]${bouncing ? ' pigmento-dock-bounce' : ''}`}
+        className={`fixed bottom-4 right-4 z-50 size-16 overflow-hidden rounded-full bg-card shadow-panel focus-within:outline focus-within:outline-2 focus-within:outline-offset-[3px] focus-within:outline-[var(--ring)]${bouncing ? ' pigmento-dock-bounce' : ''}`}
       />
     </Hint>
   );

@@ -4,12 +4,20 @@ import { ArrowUp } from 'lucide-react';
 import { CloseButton } from './FloatingDrawer';
 import { ChatMessage } from '../types';
 import { formatCompact } from '../services/credits';
+import LogoMark from './LogoMark';
 import PigmentoButton from './pigmento/PigmentoButton';
 import { MotionButton, enterMotion, presencePop, useReduced } from './uiMotion';
 
-const PIGMENTO_GREETING = "Hi! I'm Pigmento, your AI assistant. I can modify your palette, add colors, and more.";
+const PIGMENTO_GREETING = "Hi, I'm Pigmento. Tell me how this palette should feel, or start with one of these.";
+const PIGMENTO_STARTERS = [
+  'Make it more accessible',
+  'Warmer and softer',
+  'Add a bold accent',
+  'Darker and moodier',
+  'Fewer, calmer colors',
+] as const;
 const PIGMENTO_STATUSES = ['Thinking', 'Working', 'Painting'] as const;
-const STATUS_STEP_MS = 1000;
+const STATUS_STEP_MS = 1400;
 
 export interface CopilotPanelProps {
   open: boolean;
@@ -53,7 +61,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
     }
     setStatusIndex(0);
     const timer = window.setInterval(() => {
-      setStatusIndex((current) => Math.min(current + 1, PIGMENTO_STATUSES.length - 1));
+      setStatusIndex((current) => (current + 1) % PIGMENTO_STATUSES.length);
     }, STATUS_STEP_MS);
     return () => window.clearInterval(timer);
   }, [loading]);
@@ -64,7 +72,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
     {open && (
       <motion.form
         key="assistant"
-        className="fixed bottom-[calc(46px+2.25rem)] right-4 z-50 flex max-h-[min(28rem,calc(100dvh-9rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
+        className="fixed bottom-[calc(64px+2.25rem)] right-4 z-50 flex max-h-[min(28rem,calc(100dvh-9rem))] w-[min(24rem,calc(100vw-2rem))] flex-col rounded-2xl bg-card p-3 text-foreground shadow-panel ring-1 ring-border"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -81,6 +89,20 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
               {PIGMENTO_GREETING}
             </div>
           </div>
+          {messages.length === 0 && !loading && (
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Suggestions">
+              {PIGMENTO_STARTERS.map((starter) => (
+                <MotionButton
+                  key={starter}
+                  type="button"
+                  onClick={() => onSubmit(starter)}
+                  className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] text-foreground hover:bg-accent"
+                >
+                  {starter}
+                </MotionButton>
+              ))}
+            </div>
+          )}
           {messages.map((message, index) => (
             <motion.div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`} {...enterMotion(reduce, index)}>
               <div className={`max-w-[90%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground ring-1 ring-border'}`}>
@@ -93,8 +115,12 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
           ))}
           {loading && (
             <div className="flex justify-start" role="status" aria-live="polite">
-              <div className="rounded-2xl bg-background px-3 py-2 text-[13px] text-muted-foreground ring-1 ring-border">
-                {PIGMENTO_STATUSES[statusIndex]}
+              <div className="flex items-center gap-2 rounded-2xl bg-background px-3 py-2 text-[13px] text-muted-foreground ring-1 ring-border">
+                <LogoMark motion="loading" className="size-5 shrink-0 text-foreground" />
+                <span>
+                  {PIGMENTO_STATUSES[statusIndex]}
+                  <span className="pigmento-dots" aria-hidden><span>.</span><span>.</span><span>.</span></span>
+                </span>
               </div>
             </div>
           )}
