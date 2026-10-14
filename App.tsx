@@ -1104,10 +1104,9 @@ const App: React.FC = () => {
                         aria-pressed={selected}
                         onClick={() => { setStudioPane('composer'); setPreviewMode('palette'); setViewMode(id); }}
                         transition={{ duration: 0 }}
-                        className={`relative h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${selected ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        className={`h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${selected ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                       >
-                        {selected && <span aria-hidden className="absolute inset-0 rounded-md bg-primary" />}
-                        <span className="relative z-10">{label}</span>
+                        {label}
                       </MotionButton>
                       );
                     })}
@@ -1123,10 +1122,9 @@ const App: React.FC = () => {
                           aria-pressed={activeTab === id}
                           onClick={() => setActiveTab(id)}
                           transition={{ duration: 0 }}
-                          className={`relative h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${activeTab === id ? 'text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                          className={`h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${activeTab === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
                         >
-                          {activeTab === id && <span aria-hidden className="absolute inset-0 rounded-md bg-primary" />}
-                          <span className="relative z-10">{label}</span>
+                          {label}
                         </MotionButton>
                     ))}
                   </div>
