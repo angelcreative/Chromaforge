@@ -5,6 +5,7 @@ import { THEME_OPTIONS, useThemePreference } from './ThemeToggle';
 import RampScaleControls from './RampScaleControls';
 import type { GlobalCurveConfig } from '../types';
 import { MotionButton, presenceFade, presencePop, presenceSlide, useReduced } from './uiMotion';
+import { Hint } from './Hint';
 
 export interface StudioSidebarProps {
   open: boolean;
@@ -244,16 +245,17 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
             </div>
           </motion.aside>
         ) : (
-          <motion.button
-            key="launcher"
-            type="button"
-            aria-label="Show tools"
-            onClick={() => onOpenChange(true)}
-            className="absolute bottom-0 left-0 grid size-10 place-items-center rounded-full bg-card text-foreground shadow-panel ring-1 ring-border"
-            {...fade}
-          >
-            <PanelLeft className="size-4" strokeWidth={1.5} />
-          </motion.button>
+          <Hint key="launcher" label="Show tools" side="right">
+            <motion.button
+              type="button"
+              aria-label="Show tools"
+              onClick={() => onOpenChange(true)}
+              className="absolute bottom-0 left-0 grid size-10 place-items-center rounded-full bg-card text-foreground shadow-panel ring-1 ring-border"
+              {...fade}
+            >
+              <PanelLeft className="size-4" strokeWidth={1.5} />
+            </motion.button>
+          </Hint>
         )}
       </AnimatePresence>
       </div>

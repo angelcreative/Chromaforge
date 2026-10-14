@@ -4,6 +4,7 @@ import { Eye, Info, Lock, SlidersHorizontal } from 'lucide-react';
 import { ColorData, ColorRGB, GlobalCurveConfig } from '../types';
 import { generateShades, hexToRgb, rgbToCmyk } from '../utils/colorUtils';
 import ColorInfo, { stepRef } from './ColorInfo';
+import { Hint } from './Hint';
 
 interface OpenInfo {
   id: string;
@@ -154,29 +155,35 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ color, onOpenGrid, onEditScal
                         </div>
                     </div>
                     <div className="flex gap-1">
-                        <button 
-                            onClick={() => onEditScale(color)}
-                            className={`p-2 rounded-lg transition-colors ${color.scaleConfig && (color.scaleConfig.hueShift !== 0 || color.scaleConfig.saturationBoost !== 0 || color.scaleConfig.useOkLCH) ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
-                            aria-label="Edit scale"
-                        >
-                             <SlidersHorizontal className="size-5" strokeWidth={1.5} />
-                        </button>
-                        <button 
-                            onClick={() => onOpenGrid(color)}
-                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                            aria-label="Contrast"
-                        >
-                            <Eye className="size-5" strokeWidth={1.5} />
-                        </button>
-                        <button 
-                            type="button"
-                            data-color-info-trigger
-                            onClick={(event) => openInfo(event.currentTarget, { id: 'base', hex: color.hex, rgb: color.rgb })}
-                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                            aria-label="Color details"
-                        >
-                            <Info className="size-5" strokeWidth={1.5} />
-                        </button>
+                        <Hint label="Edit scale">
+                            <button 
+                                onClick={() => onEditScale(color)}
+                                className={`p-2 rounded-lg transition-colors ${color.scaleConfig && (color.scaleConfig.hueShift !== 0 || color.scaleConfig.saturationBoost !== 0 || color.scaleConfig.useOkLCH) ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+                                aria-label="Edit scale"
+                            >
+                                 <SlidersHorizontal className="size-5" strokeWidth={1.5} />
+                            </button>
+                        </Hint>
+                        <Hint label="Contrast">
+                            <button 
+                                onClick={() => onOpenGrid(color)}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                                aria-label="Contrast"
+                            >
+                                <Eye className="size-5" strokeWidth={1.5} />
+                            </button>
+                        </Hint>
+                        <Hint label="Color details">
+                            <button 
+                                type="button"
+                                data-color-info-trigger
+                                onClick={(event) => openInfo(event.currentTarget, { id: 'base', hex: color.hex, rgb: color.rgb })}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                                aria-label="Color details"
+                            >
+                                <Info className="size-5" strokeWidth={1.5} />
+                            </button>
+                        </Hint>
                     </div>
                 </div>
 

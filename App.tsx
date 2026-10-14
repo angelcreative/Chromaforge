@@ -1,8 +1,10 @@
 
 import { motion } from 'motion/react';
-import { ArrowUp, Heart, Plus, Upload } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ArrowUp, Check, ChevronDown, Heart, Plus, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MotionButton, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
+import { Hint } from './components/Hint';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex, collectPaletteColors, colorsFromPaletteText } from './utils/colorUtils';
 import RefineDrawer from './components/RefineDrawer';
@@ -59,6 +61,11 @@ import { showToast, ToastHost } from './components/Toast';
 
 type MobileTab = 'canvas' | 'editor';
 type ViewMode = 'list' | 'ramp' | 'gradients';
+const PALETTE_TABS = [
+  ['brand', 'Brand'],
+  ['neutrals', 'Neutrals'],
+  ['system', 'Semantic'],
+] as const;
 type PreviewMode = 'palette' | 'components';
 type CreationMode = 'generator' | 'manual';
 
@@ -121,6 +128,11 @@ const App: React.FC = () => {
   const [refineIndex, setRefineIndex] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('ramp');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('palette');
+  const showPaletteView = (mode?: ViewMode) => {
+    setStudioPane('composer');
+    setPreviewMode('palette');
+    if (mode) setViewMode(mode);
+  };
   const [copilotOpen, setCopilotOpen] = useState(false); 
   const [fabAttention, setFabAttention] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1091,66 +1103,129 @@ const App: React.FC = () => {
               {showWork && hasPalette && (
                 <div className="flex w-full flex-nowrap items-center gap-1 rounded-lg border border-border bg-card p-0.5" role="toolbar" aria-label="Palette view controls">
                   <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 overflow-x-auto" role="group" aria-label="Palette view">
-                    {([
-                      ['list', 'List'],
-                      ['ramp', 'Ramp'],
-                      ['gradients', 'Gradients'],
-                    ] as const).map(([id, label]) => {
-                      const selected = previewMode === 'palette' && viewMode === id;
-                      return (
+                    <div className={`flex h-8 shrink-0 items-stretch rounded-md ${previewMode === 'palette' ? 'bg-primary text-primary-foreground' : 'text-foreground'}`}>
                       <MotionButton
-                        key={id}
                         type="button"
-                        aria-pressed={selected}
-                        onClick={() => { setStudioPane('composer'); setPreviewMode('palette'); setViewMode(id); }}
+                        aria-pressed={previewMode === 'palette'}
+                        onClick={() => showPaletteView()}
                         transition={{ duration: 0 }}
-                        className={`h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${selected ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                        className={`whitespace-nowrap rounded-l-md pl-3 pr-2 text-[13px] ${previewMode === 'palette' ? '' : 'hover:bg-accent'}`}
                       >
-                        {label}
+                        Palette
                       </MotionButton>
-                      );
-                    })}
+                      <span aria-hidden className="my-2 w-px bg-current opacity-25" />
+                      <DropdownMenu.Root>
+                        <Hint label="View options">
+                          <DropdownMenu.Trigger asChild>
+                            <MotionButton
+                              type="button"
+                              aria-label="View options"
+                              transition={{ duration: 0 }}
+                              className={`grid w-7 place-items-center rounded-r-md ${previewMode === 'palette' ? '' : 'hover:bg-accent'}`}
+                            >
+                              <ChevronDown className="size-3.5" strokeWidth={1.5} aria-hidden />
+                            </MotionButton>
+                          </DropdownMenu.Trigger>
+                        </Hint>
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.Content
+                            align="start"
+                            sideOffset={6}
+                            collisionPadding={8}
+                            className="z-50 min-w-44 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
+                          >
+                            <DropdownMenu.RadioGroup
+                              value={previewMode === 'palette' ? viewMode : ''}
+                              onValueChange={(value) => showPaletteView(value as ViewMode)}
+                            >
+                              {([
+                                ['ramp', 'Show as cards'],
+                                ['list', 'Show as list'],
+                                ['gradients', 'Show gradients'],
+                              ] as const).map(([id, label]) => (
+                                <DropdownMenu.RadioItem
+                                  key={id}
+                                  value={id}
+                                  className="flex h-9 cursor-default select-none items-center gap-2 rounded-lg px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent"
+                                >
+                                  <span className="grid size-4 place-items-center">
+                                    <DropdownMenu.ItemIndicator>
+                                      <Check className="size-3.5" strokeWidth={1.5} aria-hidden />
+                                    </DropdownMenu.ItemIndicator>
+                                  </span>
+                                  {label}
+                                </DropdownMenu.RadioItem>
+                              ))}
+                            </DropdownMenu.RadioGroup>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Root>
+                    </div>
                     <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0" style={{ backgroundColor: 'var(--border)' }} />
-                    {([
-                      ['brand', 'Brand'],
-                      ['neutrals', 'Neutrals'],
-                      ['system', 'Semantic'],
-                    ] as const).map(([id, label]) => (
+                    <DropdownMenu.Root>
+                      <DropdownMenu.Trigger asChild>
                         <MotionButton
-                          key={id}
                           type="button"
-                          aria-pressed={activeTab === id}
-                          onClick={() => setActiveTab(id)}
+                          aria-label={`Color set: ${PALETTE_TABS.find(([id]) => id === activeTab)?.[1]}`}
                           transition={{ duration: 0 }}
-                          className={`h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] ${activeTab === id ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+                          className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md pl-3 pr-2 text-[13px] text-foreground hover:bg-accent data-[state=open]:bg-accent"
                         >
-                          {label}
+                          {PALETTE_TABS.find(([id]) => id === activeTab)?.[1]}
+                          <ChevronDown className="size-3.5" strokeWidth={1.5} aria-hidden />
                         </MotionButton>
-                    ))}
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Portal>
+                        <DropdownMenu.Content
+                          align="start"
+                          sideOffset={6}
+                          collisionPadding={8}
+                          className="z-50 min-w-40 rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"
+                        >
+                          <DropdownMenu.RadioGroup value={activeTab} onValueChange={(value) => setActiveTab(value as PaletteTab)}>
+                            {PALETTE_TABS.map(([id, label]) => (
+                              <DropdownMenu.RadioItem
+                                key={id}
+                                value={id}
+                                className="flex h-9 cursor-default select-none items-center gap-2 rounded-lg px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent"
+                              >
+                                <span className="grid size-4 place-items-center">
+                                  <DropdownMenu.ItemIndicator>
+                                    <Check className="size-3.5" strokeWidth={1.5} aria-hidden />
+                                  </DropdownMenu.ItemIndicator>
+                                </span>
+                                {label}
+                              </DropdownMenu.RadioItem>
+                            ))}
+                          </DropdownMenu.RadioGroup>
+                        </DropdownMenu.Content>
+                      </DropdownMenu.Portal>
+                    </DropdownMenu.Root>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    <MotionButton
-                      type="button"
-                      onClick={addColorToOpenPalette}
-                      title="Add a color"
-                      aria-label="Add a color"
-                      transition={{ duration: 0 }}
-                      className="grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent"
-                    >
-                      <Plus className="size-4" strokeWidth={1.5} aria-hidden />
-                    </MotionButton>
-                    <MotionButton
-                      type="button"
-                      onClick={handleSavePalette}
-                      disabled={isSaving}
-                      title="Save palette"
-                      aria-label="Save palette"
-                      aria-pressed={isSaved}
-                      transition={{ duration: 0 }}
-                      className={`grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
-                    >
-                      <Heart className="size-4" strokeWidth={1.5} aria-hidden />
-                    </MotionButton>
+                    <Hint label="Add a color">
+                      <MotionButton
+                        type="button"
+                        onClick={addColorToOpenPalette}
+                        aria-label="Add a color"
+                        transition={{ duration: 0 }}
+                        className="grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent"
+                      >
+                        <Plus className="size-4" strokeWidth={1.5} aria-hidden />
+                      </MotionButton>
+                    </Hint>
+                    <Hint label={isSaved ? 'Saved' : 'Save palette'}>
+                      <MotionButton
+                        type="button"
+                        onClick={handleSavePalette}
+                        disabled={isSaving}
+                        aria-label="Save palette"
+                        aria-pressed={isSaved}
+                        transition={{ duration: 0 }}
+                        className={`grid size-8 shrink-0 place-items-center rounded-md text-foreground hover:bg-accent disabled:opacity-40 ${isSaved ? 'bg-accent' : ''}`}
+                      >
+                        <Heart className="size-4" strokeWidth={1.5} aria-hidden />
+                      </MotionButton>
+                    </Hint>
                   </div>
                 </div>
               )}
