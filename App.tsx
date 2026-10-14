@@ -8,6 +8,8 @@ import { Hint } from './components/Hint';
 import { ColorHSL, ColorData, HarmonyType, ChatMessage, ScaleConfiguration, InputMode, PaletteTab, PlaygroundConfig, GlobalCurveConfig } from './types';
 import { generateHarmonies, createColorDataFromHSL, hexToHsl, deduplicateColorNames, generateNeutrals, generateSemantics, createColorData, hslToRgb, rgbToHex, collectPaletteColors, colorsFromPaletteText } from './utils/colorUtils';
 import RefineDrawer from './components/RefineDrawer';
+import BuildPalette from './components/BuildPalette';
+import { hexFromOklch } from './components/OklchControls';
 import { generatePaletteFromPrompt } from './services/geminiService';
 import ContrastGrid from './components/ContrastGrid';
 import PaletteCard from './components/PaletteCard';
@@ -128,6 +130,20 @@ const App: React.FC = () => {
   const [refineIndex, setRefineIndex] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('ramp');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('palette');
+  const [route, setRoute] = useState<'home' | 'build'>(() => (window.location.pathname === '/build' ? 'build' : 'home'));
+  const navigate = (next: 'home' | 'build') => {
+    const path = next === 'build' ? '/build' : '/';
+    if (window.location.pathname !== path) window.history.pushState(null, '', path);
+    setRoute(next);
+  };
+  useEffect(() => {
+    if (route === 'build' && (creationMode !== 'manual' || customColors.length === 0)) seedBuild();
+  }, [route]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const onPop = () => setRoute(window.location.pathname === '/build' ? 'build' : 'home');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const showPaletteView = (mode?: ViewMode) => {
     setStudioPane('composer');
     setPreviewMode('palette');
@@ -179,7 +195,8 @@ const App: React.FC = () => {
 
   // Initialize Custom Colors with default
   useEffect(() => {
-     if (customColors.length === 0) {
+     // /build seeds its own first color.
+     if (customColors.length === 0 && window.location.pathname !== '/build') {
          setCustomColors([createColorData('#5A7396', undefined, 'Primary')]);
      }
   }, []);
@@ -371,6 +388,7 @@ const App: React.FC = () => {
   }, [isChatLoading, messages.length, showWork]);
 
   const goHome = () => {
+    navigate('home');
     setStudioPane('composer');
     setViewMode('ramp');
     setPreviewMode('palette');
@@ -383,6 +401,33 @@ const App: React.FC = () => {
     setSelectedColorForEdit(null);
     setSelectedColorForGrid(null);
     setRefineOpen(false);
+  };
+
+  const seedBuild = () => {
+    const seed = hexFromOklch(0.55, 0.12, Math.random() * 360);
+    setCreationMode('manual');
+    setCustomColors([createColorData(seed)]);
+    setActiveSavedId(null);
+    setIsSaved(false);
+  };
+
+  const openBuild = () => {
+    seedBuild();
+    setStudioPane('composer');
+    setShellOpen(false);
+    setRefineOpen(false);
+    setSelectedColorForGrid(null);
+    navigate('build');
+  };
+
+  const openBuildInStudio = () => {
+    navigate('home');
+    setStudioPane('composer');
+    setPreviewMode('palette');
+    setViewMode('ramp');
+    setActiveTab('brand');
+    setShowWork(true);
+    openPaletteShell();
   };
 
   const handleGlobalReset = () => {
@@ -514,7 +559,7 @@ const App: React.FC = () => {
       setIsSaved(false);
       if (!showWork) setViewMode('ramp');
       setShowWork(true);
-      openPaletteShell();
+      if (route !== 'build') openPaletteShell();
       setActiveSavedId(null);
       setSelectedColorForGrid(null);
   };
@@ -525,7 +570,7 @@ const App: React.FC = () => {
     if (!text || isChatLoading) return;
 
     const userMsg: ChatMessage = { role: 'user', text };
-    const fromHome = !showWork && messages.length === 0;
+    const fromHome = route !== 'build' && !showWork && messages.length === 0;
     setGeneratingName(text);
     setMessages(prev => [...prev, userMsg]); setChatInput(''); setIsChatLoading(true); setIsChatOpen(true);
     
@@ -668,25 +713,29 @@ const App: React.FC = () => {
   };
 
   // --- Storage Handlers ---
-  const handleSavePalette = async () => {
+  const handleSavePalette = async (nameOverride?: string): Promise<boolean> => {
+      const name = nameOverride ?? paletteName;
+      if (nameOverride) setPaletteName(nameOverride);
       setIsSaving(true);
+      let ok = false;
       try {
           const colorsToSave = creationMode === 'manual' ? customColors : palette;
-          const newId = await savePaletteToFirestore(paletteOwnerId, paletteName, colorsToSave);
+          const newId = await savePaletteToFirestore(paletteOwnerId, name, colorsToSave);
           
           setIsSaved(true);
           
           const newPaletteEntry: SavedPalette = {
              id: newId,
              userId: paletteOwnerId,
-             name: paletteName,
+             name,
              colors: colorsToSave,
              createdAt: { seconds: Date.now() / 1000 } 
           };
           setSavedPalettes(prev => [newPaletteEntry, ...prev]);
           setActiveSavedId(newId);
-          setShellOpen(true);
+          if (route !== 'build') setShellOpen(true);
           showToast(paletteOwnerId === 'local' ? 'Saved on this browser' : 'Saved to your account');
+          ok = true;
       } catch (error) {
           if (error instanceof PaletteLimitError) {
             setIsLibraryOpen(true);
@@ -696,6 +745,7 @@ const App: React.FC = () => {
           }
       }
       setIsSaving(false);
+      return ok;
   };
 
   const handleOpenLibrary = async () => {
@@ -907,9 +957,13 @@ const App: React.FC = () => {
   const accountIdentity = useMemo(() => identityFromAccount(user), [user, profileTick]);
   const reduce = useReduced();
   const showLoader = isChatLoading && !showWork;
-  const paletteOpen = showWork && hasPalette && !showHome;
+  const inBuild = route === 'build';
+  const paletteOpen = showWork && hasPalette && !showHome && !inBuild;
+  const buildName = paletteName && paletteName !== 'Design Tokens' ? paletteName : `${customColors[0]?.name ?? 'My'} palette`;
 
-  const viewKey = selectedColorForGrid
+  const viewKey = inBuild
+    ? 'build'
+    : selectedColorForGrid
     ? 'contrast'
     : studioPane !== 'composer'
       ? studioPane
@@ -967,7 +1021,21 @@ const App: React.FC = () => {
 
       <div className={`flex min-h-0 flex-1 flex-col pt-14 ${(selectedColorForEdit || refinePad) ? 'lg:pr-[400px]' : ''}`}>
       <motion.div key={viewKey} className="flex min-h-0 flex-1 flex-col" {...fadeEnter(reduce)}>
-      {selectedColorForGrid ? (
+      {inBuild ? (
+        <BuildPalette
+          colors={customColors}
+          onColorsChange={(next) => { setCustomColors(next); setActiveSavedId(null); }}
+          globalConfig={globalCurveConfig}
+          suggestedName={buildName}
+          saving={isSaving}
+          saved={isSaved}
+          onSave={(name) => handleSavePalette(name)}
+          onOpenStudio={openBuildInStudio}
+          onBack={() => navigate('home')}
+          onAskPigmento={() => setCopilotOpen(true)}
+          pigmentoBusy={isChatLoading}
+        />
+      ) : selectedColorForGrid ? (
         <ContrastGrid color={selectedColorForGrid} globalConfig={globalCurveConfig} onClose={() => setSelectedColorForGrid(null)} />
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
@@ -1064,7 +1132,16 @@ const App: React.FC = () => {
                 </div>
               </div>
             </motion.form>
-            <div className="mt-10">
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={openBuild}
+                className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                or build your palette manually →
+              </button>
+            </div>
+            <div className="mt-8">
               <p className="mb-3 text-[13px] text-muted-foreground">Try a demo</p>
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {DEMO_PALETTES.filter((demo) => demo.name !== 'Clay').map((demo, index) => (
@@ -1216,7 +1293,7 @@ const App: React.FC = () => {
                     <Hint label={isSaved ? 'Saved' : 'Save palette'}>
                       <MotionButton
                         type="button"
-                        onClick={handleSavePalette}
+                        onClick={() => { void handleSavePalette(); }}
                         disabled={isSaving}
                         aria-label="Save palette"
                         aria-pressed={isSaved}
@@ -1280,7 +1357,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {paletteOpen && (
+      {(paletteOpen || (inBuild && customColors.length > 0)) && (
         <CopilotPanel
           open={copilotOpen}
           onToggle={() => setCopilotOpen((value) => !value)}
