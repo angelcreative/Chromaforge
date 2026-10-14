@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Download, Library, PanelLeft, PanelLeftClose, Pipette, Plus, Settings, SlidersHorizontal } from 'lucide-react';
 import { THEME_OPTIONS, useThemePreference } from './ThemeToggle';
 import RampScaleControls from './RampScaleControls';
@@ -36,6 +36,58 @@ function GroupDivider() {
   return <div className="mx-2 my-1 h-px bg-border" role="separator" />;
 }
 
+const VIEWPORT_MARGIN = 12;
+
+/**
+ * Keeps a flyout inside the viewport: when its natural spot would run past
+ * the bottom edge it moves up, never past the top edge.
+ */
+const useViewportShift = (open: boolean) => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const shiftRef = useRef(0);
+
+  useLayoutEffect(() => {
+    const apply = (value: number) => {
+      shiftRef.current = value;
+      if (wrapRef.current) wrapRef.current.style.transform = value ? `translateY(${value}px)` : '';
+    };
+    if (!open) {
+      apply(0);
+      return;
+    }
+    const measure = () => {
+      const wrap = wrapRef.current;
+      const panel = panelRef.current;
+      if (!wrap || !panel) return;
+      // offsetTop ignores the panel's entrance scale; the wrapper is its offset parent.
+      const natural = wrap.getBoundingClientRect().top - shiftRef.current + panel.offsetTop;
+      const height = Math.min(panel.offsetHeight, window.innerHeight - VIEWPORT_MARGIN * 2);
+      let next = Math.min(0, window.innerHeight - VIEWPORT_MARGIN - (natural + height));
+      if (natural + next < VIEWPORT_MARGIN) next = VIEWPORT_MARGIN - natural;
+      apply(next);
+    };
+    // The panel mounts with this render but its content settles a frame
+    // later, so measure again then and whenever it resizes.
+    measure();
+    const frame = window.requestAnimationFrame(measure);
+    const observer = new ResizeObserver(measure);
+    if (panelRef.current) observer.observe(panelRef.current);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [open]);
+
+  return {
+    wrapRef,
+    panelRef,
+    panelStyle: { maxHeight: `calc(100dvh - ${VIEWPORT_MARGIN * 2}px)`, overflowY: 'auto' } as React.CSSProperties,
+  };
+};
+
 const StudioSidebar: React.FC<StudioSidebarProps> = ({
   open,
   onOpenChange,
@@ -57,6 +109,8 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   const [toolsOpen, setToolsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const toolsFit = useViewportShift(toolsOpen);
+  const settingsFit = useViewportShift(settingsOpen);
 
   useEffect(() => {
     if (!open) {
@@ -155,10 +209,12 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                       </span>
                       <span className="pr-2 text-left">Tools</span>
                     </MotionButton>
-                    <div className="absolute top-0 left-[calc(100%+0.875rem)] z-50 w-max max-w-[calc(100vw-100%-2.75rem)] max-sm:bottom-[calc(100%+0.5rem)] max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none">
+                    <div ref={toolsFit.wrapRef} className="absolute top-0 left-[calc(100%+0.875rem)] z-50 w-max max-w-[calc(100vw-100%-2.75rem)] max-sm:bottom-[calc(100%+0.5rem)] max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none">
                       <AnimatePresence>
                         {toolsOpen && (
                           <motion.div
+                            ref={toolsFit.panelRef}
+                            style={toolsFit.panelStyle}
                             role="dialog"
                             aria-label="Tuning tools"
                             className="w-60 max-w-full rounded-xl bg-card p-3 shadow-panel ring-1 ring-border max-sm:w-full"
@@ -199,10 +255,12 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   </span>
                   <span className="pr-2 text-left">Settings</span>
                 </MotionButton>
-                <div className="absolute top-0 left-[calc(100%+0.875rem)] z-50 flex h-9 w-max max-w-[calc(100vw-100%-2.75rem)] items-center max-sm:items-end">
+                <div ref={settingsFit.wrapRef} className="absolute top-0 left-[calc(100%+0.875rem)] z-50 flex h-9 w-max max-w-[calc(100vw-100%-2.75rem)] items-center max-sm:items-end">
                   <AnimatePresence>
                     {settingsOpen && (
                       <motion.div
+                        ref={settingsFit.panelRef}
+                        style={settingsFit.panelStyle}
                         role="menu"
                         aria-label="Color theme"
                         className="w-max max-w-full rounded-xl bg-card p-1 shadow-panel ring-1 ring-border"

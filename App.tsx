@@ -193,6 +193,25 @@ const App: React.FC = () => {
   const pendingClaim = useRef(false);
   const paletteOwnerId = user && !user.isAnonymous ? user.uid : 'local';
 
+  // Only one drawer at a time: opening Pigmento, Refine color or the scale
+  // editor closes the others, each with its own exit motion.
+  useEffect(() => {
+    if (!copilotOpen) return;
+    setRefineOpen(false);
+    setSelectedColorForEdit(null);
+  }, [copilotOpen]);
+  useEffect(() => {
+    if (!refineOpen) return;
+    setCopilotOpen(false);
+    setSelectedColorForEdit(null);
+  }, [refineOpen]);
+  const editingColor = selectedColorForEdit !== null;
+  useEffect(() => {
+    if (!editingColor) return;
+    setCopilotOpen(false);
+    setRefineOpen(false);
+  }, [editingColor]);
+
   // Initialize Custom Colors with default
   useEffect(() => {
      // /build seeds its own first color.
