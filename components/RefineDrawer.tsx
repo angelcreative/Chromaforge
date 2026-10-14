@@ -5,6 +5,8 @@ import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades, maxOklchChroma, oklchToRgb, rgbToHex, rgbToOklch } from '../utils/colorUtils';
 
 const WHEEL = 232;
+// The hue/chroma wheel is hidden for now; the channel sliders cover refining.
+const SHOW_WHEEL = false;
 
 interface RefineDrawerProps {
   open: boolean;
@@ -142,21 +144,16 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
           })}
         </div>
 
-        <div className="mt-5 flex justify-center">
-          <OklchWheel
-            lightness={oklch.l}
-            chroma={oklch.c}
-            hue={oklch.h}
-            onChange={(l, c, h) => onChangeRef.current(hexFromOklch(l, c, h))}
-          />
-        </div>
-
-        <LightnessStrip
-          lightness={oklch.l}
-          chroma={oklch.c}
-          hue={oklch.h}
-          onChange={(l) => onChangeRef.current(hexFromOklch(l, oklch.c, oklch.h))}
-        />
+        {SHOW_WHEEL && (
+          <div className="mt-5 flex justify-center">
+            <OklchWheel
+              lightness={oklch.l}
+              chroma={oklch.c}
+              hue={oklch.h}
+              onChange={(l, c, h) => onChangeRef.current(hexFromOklch(l, c, h))}
+            />
+          </div>
+        )}
 
         <div className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5">
           <span className="size-7 shrink-0 rounded-md ring-1 ring-border" style={{ backgroundColor: color.hex }} />
@@ -172,7 +169,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
           />
         </div>
 
-        <div className="mt-2">
+        <div className="mt-3">
           <ChannelRow
             label="Lightness"
             value={oklch.l}
@@ -180,6 +177,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
             max={1}
             step={0.01}
             digits={2}
+            track={(t) => colorHex(t, oklch.c, oklch.h)}
             onCommit={(value) => onChangeRef.current(hexFromOklch(value, oklch.c, oklch.h))}
           />
           <ChannelRow
@@ -189,6 +187,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
             max={0.4}
             step={0.001}
             digits={3}
+            track={(t) => colorHex(oklch.l, t, oklch.h)}
             onCommit={(value) => onChangeRef.current(hexFromOklch(oklch.l, value, oklch.h))}
           />
           <ChannelRow
@@ -199,6 +198,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
             step={1}
             digits={1}
             suffix="°"
+            track={(t) => colorHex(oklch.l, Math.max(oklch.c, 0.04), t)}
             onCommit={(value) => onChangeRef.current(hexFromOklch(oklch.l, oklch.c, value))}
           />
         </div>
@@ -215,8 +215,10 @@ const ChannelRow: React.FC<{
   step: number;
   digits: number;
   suffix?: string;
+  /** Color at a channel value, used to paint the slider track. */
+  track: (value: number) => string;
   onCommit: (value: number) => void;
-}> = ({ label, value, min, max, step, digits, suffix, onCommit }) => {
+}> = ({ label, value, min, max, step, digits, suffix, track, onCommit }) => {
   const [text, setText] = useState(value.toFixed(digits));
   const [focused, setFocused] = useState(false);
 
@@ -231,28 +233,40 @@ const ChannelRow: React.FC<{
   };
 
   return (
-    <label className="flex h-8 items-center justify-between gap-3 border-b border-border">
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      <span className="flex items-center">
-        <input
-          type="number"
-          inputMode="decimal"
-          min={min}
-          max={max}
-          step={step}
-          value={focused ? text : value.toFixed(digits)}
-          aria-label={label}
-          onFocus={() => { setFocused(true); setText(value.toFixed(digits)); }}
-          onBlur={() => { setFocused(false); commit(text); }}
-          onChange={(event) => {
-            setText(event.target.value);
-            if (event.target.value !== '' && !event.target.value.endsWith('.')) commit(event.target.value);
-          }}
-          className="w-16 bg-transparent text-right font-mono text-[13px] text-foreground focus:outline-none"
-        />
-        {suffix && <span className="font-mono text-[13px] text-foreground">{suffix}</span>}
-      </span>
-    </label>
+    <div className="border-b border-border pb-3">
+      <label className="flex h-8 items-center justify-between gap-3">
+        <span className="text-[13px] text-muted-foreground">{label}</span>
+        <span className="flex items-center">
+          <input
+            type="number"
+            inputMode="decimal"
+            min={min}
+            max={max}
+            step={step}
+            value={focused ? text : value.toFixed(digits)}
+            aria-label={label}
+            onFocus={() => { setFocused(true); setText(value.toFixed(digits)); }}
+            onBlur={() => { setFocused(false); commit(text); }}
+            onChange={(event) => {
+              setText(event.target.value);
+              if (event.target.value !== '' && !event.target.value.endsWith('.')) commit(event.target.value);
+            }}
+            className="w-16 bg-transparent text-right font-mono text-[13px] text-foreground focus:outline-none"
+          />
+          {suffix && <span className="font-mono text-[13px] text-foreground">{suffix}</span>}
+        </span>
+      </label>
+      <ChannelSlider
+        label={label}
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        digits={digits}
+        track={track}
+        onChange={(next) => onCommit(clamp(next, min, max))}
+      />
+    </div>
   );
 };
 
@@ -357,33 +371,53 @@ const OklchWheel: React.FC<{
   );
 };
 
-const LightnessStrip: React.FC<{
-  lightness: number;
-  chroma: number;
-  hue: number;
-  onChange: (lightness: number) => void;
-}> = ({ lightness, chroma, hue, onChange }) => {
+const ChannelSlider: React.FC<{
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  digits: number;
+  track: (value: number) => string;
+  onChange: (value: number) => void;
+}> = ({ label, value, min, max, step, digits, track, onChange }) => {
   const ref = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const stops = Array.from({ length: 17 }, (_, index) => {
-    const l = index / 16;
-    const rgb = oklchToRgb(l, Math.min(chroma, maxOklchChroma(l, hue)), hue);
-    return rgbToHex(rgb.r, rgb.g, rgb.b);
-  });
+  const span = max - min;
+  const stops = Array.from({ length: 17 }, (_, index) => track(min + (span * index) / 16));
+  const t = clamp((value - min) / span, 0, 1);
 
   const pick = (clientX: number) => {
     const rect = ref.current?.getBoundingClientRect();
     if (!rect || rect.width === 0) return;
-    const t = clamp((clientX - rect.left) / rect.width, 0, 1);
-    onChangeRef.current(t);
+    onChangeRef.current(min + clamp((clientX - rect.left) / rect.width, 0, 1) * span);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    const big = step * 10;
+    const next = {
+      ArrowRight: value + step,
+      ArrowUp: value + step,
+      ArrowLeft: value - step,
+      ArrowDown: value - step,
+      PageUp: value + big,
+      PageDown: value - big,
+      Home: min,
+      End: max,
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    onChangeRef.current(clamp(next, min, max));
   };
 
   return (
     <div
       ref={ref}
-      className="relative mt-4 h-8 cursor-pointer rounded-lg ring-1 ring-border"
+      className="relative h-6 cursor-pointer rounded-md ring-1 ring-border outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
       style={{ background: `linear-gradient(to right, ${stops.join(', ')})`, touchAction: 'none' }}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture(event.pointerId);
         pick(event.clientX);
@@ -393,15 +427,15 @@ const LightnessStrip: React.FC<{
         pick(event.clientX);
       }}
       role="slider"
-      aria-label="Lightness"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(lightness * 100)}
-      aria-valuetext={`Lightness ${lightness.toFixed(2)}`}
+      aria-label={`${label} slider`}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={Number(value.toFixed(digits))}
+      aria-valuetext={`${label} ${value.toFixed(digits)}`}
     >
       <span
         className="pointer-events-none absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white"
-        style={{ left: `${lightness * 100}%`, ...thumbStyle(stops[Math.round(lightness * 16)] ?? colorHex(lightness, chroma, hue)) }}
+        style={{ left: `${t * 100}%`, ...thumbStyle(stops[Math.round(t * 16)]) }}
       />
     </div>
   );
