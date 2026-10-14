@@ -2,8 +2,10 @@ import { motion, type HTMLMotionProps } from 'motion/react';
 import React from 'react';
 import { X } from 'lucide-react';
 
+// Drawers end above the Pigmento launcher (bottom-4 + 64px) with a 12px gap,
+// so the launcher and its chat never cover them.
 export const FLOATING_DRAWER_CLASS =
-  'absolute top-14 right-3 bottom-4 z-40 flex w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl bg-card text-foreground shadow-panel ring-1 ring-border';
+  'absolute top-14 right-3 bottom-[calc(1rem+64px+0.75rem)] z-40 flex w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl bg-card text-foreground shadow-panel ring-1 ring-border';
 
 export function CloseButton({
   onClick,
