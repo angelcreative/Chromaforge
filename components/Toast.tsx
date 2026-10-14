@@ -51,7 +51,7 @@ export const ToastHost: React.FC = () => {
   };
 
   return (
-    <div className="toast-stack pointer-events-none fixed bottom-[5.75rem] left-1/2 z-[170] flex w-max -translate-x-1/2 flex-col items-center gap-2" aria-live="polite" aria-relevant="additions">
+    <div className="toast-stack pointer-events-none fixed top-16 left-1/2 z-[170] flex w-max -translate-x-1/2 flex-col items-center gap-2" aria-live="polite" aria-relevant="additions">
       {toasts.map((toast) => (
         <ToastCard
           key={toast.id}
