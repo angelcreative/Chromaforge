@@ -302,6 +302,9 @@ app.post('/api/palette', async (req, res) => {
             if (error.message.includes('API key not valid') || error.message.includes('400')) {
                 userMessage = "Configuration Error (400): The API Key is invalid. Check Google Cloud Console.";
             }
+            else if (error.message.toLowerCase().includes('leaked')) {
+                userMessage = "Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.";
+            }
             else if (error.message.includes('403') || error.message.includes('permission denied')) {
                 userMessage = "Access Denied (403). Please enable 'Generative Language API' in Google Cloud Console for this API Key.";
             }
@@ -618,6 +621,9 @@ app.post('/api/ui-design', async (req, res) => {
         if (error.message) {
             if (error.message.includes('API key not valid') || error.message.includes('400')) {
                 userMessage = "Configuration Error (400): The API Key is invalid. Check Google Cloud Console.";
+            }
+            else if (error.message.toLowerCase().includes('leaked')) {
+                userMessage = "Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.";
             }
             else if (error.message.includes('403') || error.message.includes('permission denied')) {
                 userMessage = "Access Denied (403). Please enable 'Generative Language API' in Google Cloud Console for this API Key.";
