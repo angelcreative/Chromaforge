@@ -3,7 +3,7 @@ import { ColorData } from '../types';
 import { hexToRgb, maxOklchChroma, rgbToOklch } from '../utils/colorUtils';
 import { clamp, hexFromOklch, paintOklchWheel } from './OklchControls';
 
-const SIZE = 240;
+const SIZE = 192;
 const HIT = 16;
 
 interface Node {
