@@ -1,9 +1,10 @@
 import * as Popover from '@radix-ui/react-popover';
-import { ArrowLeft, Plus, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { ColorData, GlobalCurveConfig } from '../types';
 import { createColorData, deduplicateColorNames, generateShades, hexToRgb, rgbToOklch } from '../utils/colorUtils';
 import HarmonyWheel from './HarmonyWheel';
+import LogoMark from './LogoMark';
 import { Hint } from './Hint';
 import { OklchEditor, hexFromOklch } from './OklchControls';
 import { MotionButton } from './uiMotion';
@@ -198,7 +199,7 @@ const BuildPalette: React.FC<BuildPaletteProps> = ({
               onClick={onAskPigmento}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent"
             >
-              <Sparkles className="size-4" strokeWidth={1.5} aria-hidden />
+              <LogoMark motion="loading" className="size-4 shrink-0 text-foreground" />
               Improve with Pigmento
             </MotionButton>
             <Popover.Root open={saveOpen} onOpenChange={setSaveOpen}>

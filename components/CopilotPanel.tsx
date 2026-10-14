@@ -166,7 +166,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
       </motion.form>
     )}
     </AnimatePresence>
-    <PigmentoButton open={open} onActivate={onToggle} attention={attention} />
+    <PigmentoButton open={open} onActivate={onToggle} attention={attention} busy={loading} />
   </>
   );
 };
