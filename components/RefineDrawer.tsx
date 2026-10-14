@@ -3,7 +3,7 @@ import { FloatingDrawer } from './FloatingDrawer';
 import { slideMotion, useReduced } from './uiMotion';
 import { ColorData, GlobalCurveConfig } from '../types';
 import { generateShades, maxOklchChroma, oklchToRgb, rgbToHex, rgbToOklch } from '../utils/colorUtils';
-import { OklchEditor, clamp, hexFromOklch, thumbStyle } from './OklchControls';
+import { OklchEditor, clamp, hexFromOklch, paintOklchWheel, thumbStyle } from './OklchControls';
 
 const WHEEL = 232;
 // The hue/chroma wheel is hidden for now; the channel sliders cover refining.
@@ -146,40 +146,7 @@ const OklchWheel: React.FC<{
   const thumbY = radius + Math.sin(rad) * reach * radius;
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = WHEEL * dpr;
-    canvas.height = WHEEL * dpr;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, WHEEL, WHEEL);
-    ctx.beginPath();
-    ctx.arc(radius, radius, radius - 0.5, 0, Math.PI * 2);
-    ctx.clip();
-    const neutral = oklchToRgb(lightness, 0, 0);
-    ctx.fillStyle = rgbToHex(neutral.r, neutral.g, neutral.b);
-    ctx.fillRect(0, 0, WHEEL, WHEEL);
-    const limits = new Float64Array(360);
-    for (let h = 0; h < 360; h++) limits[h] = maxOklchChroma(lightness, h);
-    for (let h = 0; h < 360; h++) {
-      const start = ((h - 90.6) * Math.PI) / 180;
-      const end = ((h - 89.4) * Math.PI) / 180;
-      ctx.beginPath();
-      ctx.moveTo(radius, radius);
-      ctx.arc(radius, radius, radius, start, end);
-      ctx.closePath();
-      const grad = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
-      const limit = limits[h];
-      for (let stop = 0; stop <= 6; stop++) {
-        const t = stop / 6;
-        const rgb = oklchToRgb(lightness, limit * t, h);
-        grad.addColorStop(t, rgbToHex(rgb.r, rgb.g, rgb.b));
-      }
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
+    if (canvasRef.current) paintOklchWheel(canvasRef.current, WHEEL, lightness);
   }, [lightness, radius]);
 
   const pick = (clientX: number, clientY: number, target: HTMLElement) => {

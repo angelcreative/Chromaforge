@@ -2,7 +2,8 @@ import * as Popover from '@radix-ui/react-popover';
 import { ArrowLeft, Plus, Sparkles, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { ColorData, GlobalCurveConfig } from '../types';
-import { createColorData, deduplicateColorNames, generateHarmonies, generateShades, hexToRgb, rgbToOklch } from '../utils/colorUtils';
+import { createColorData, deduplicateColorNames, generateShades, hexToRgb, rgbToOklch } from '../utils/colorUtils';
+import HarmonyWheel from './HarmonyWheel';
 import { Hint } from './Hint';
 import { OklchEditor, hexFromOklch } from './OklchControls';
 import { MotionButton } from './uiMotion';
@@ -30,10 +31,28 @@ const HARMONIES: readonly (readonly [BuildHarmony, string])[] = [
 
 const MAX_COLORS = 12;
 
-/** Colors for a harmony, keeping the seed exactly as the person set it. */
+/** Offsets from the seed in OKLCH: hue turn, chroma scale, lightness shift. */
+const HARMONY_STEPS: Record<Exclude<BuildHarmony, 'custom'>, [number, number, number][]> = {
+  monochromatic: [[0, 0.9, 0.22], [0, 1, -0.18], [0, 0.8, -0.34], [0, 0.45, 0.34]],
+  duotone: [[180, 0.35, 0]],
+  analogous: [[-30, 1, 0], [30, 1, 0]],
+  complementary: [[180, 1, 0]],
+  'split-complementary': [[150, 1, 0], [210, 1, 0]],
+  triadic: [[120, 1, 0], [240, 1, 0]],
+  square: [[90, 1, 0], [180, 1, 0], [270, 1, 0]],
+};
+
+/**
+ * Colors for a harmony, keeping the seed exactly as the person set it. Hues
+ * turn in OKLCH so the nodes sit at the exact angles on the harmony wheel.
+ */
 export const harmonyFromSeed = (seed: ColorData, harmony: BuildHarmony): ColorData[] => {
   if (harmony === 'custom') return [seed];
-  const [, ...rest] = generateHarmonies(seed.hsl, harmony);
+  const rgb = hexToRgb(seed.hex);
+  const { l, c, h } = rgbToOklch(rgb.r, rgb.g, rgb.b);
+  const rest = HARMONY_STEPS[harmony].map(([turn, chroma, shift]) =>
+    createColorData(hexFromOklch(Math.min(0.97, Math.max(0.08, l + shift)), c * chroma, h + turn)),
+  );
   return deduplicateColorNames([seed, ...rest]);
 };
 
@@ -118,16 +137,18 @@ const BuildPalette: React.FC<BuildPaletteProps> = ({
     }
   };
 
-  const editSelected = (hex: string) => {
-    if (!current) return;
-    const edited = createColorData(hex, current.scaleConfig, current.name);
-    if (seeded && selected === 0) {
+  const editAt = (target: number, hex: string) => {
+    const source = colors[target];
+    if (!source) return;
+    const edited = createColorData(hex, source.scaleConfig, source.name);
+    if (seeded && target === 0) {
       write(harmonyFromSeed(edited, harmony));
       return;
     }
     if (seeded) setHarmony('custom');
-    write(colors.map((color, index) => (index === selected ? edited : color)));
+    write(colors.map((color, index) => (index === target ? edited : color)));
   };
+  const editSelected = (hex: string) => editAt(selected, hex);
 
   const addColor = () => {
     if (!current || colors.length >= MAX_COLORS) return;
@@ -270,9 +291,19 @@ const BuildPalette: React.FC<BuildPaletteProps> = ({
             </div>
             <p className="mt-2 text-[12px] text-muted-foreground">
               {seeded
-                ? 'The first color is the seed. Changing it updates the rest. Editing another color switches to Custom.'
-                : 'Every color is yours to edit. Pick a harmony to build from the first color.'}
+                ? 'The first color is the seed. Drag it on the wheel or edit it below and the rest follow. Moving another color switches to Custom.'
+                : 'Every color is yours to move. Pick a harmony to build from the first color.'}
             </p>
+
+            <div className="mt-5">
+              <HarmonyWheel
+                colors={colors}
+                selected={selected}
+                linked={seeded}
+                onSelect={setSelected}
+                onMove={editAt}
+              />
+            </div>
 
             {current && (
               <>
