@@ -90,7 +90,7 @@ const RefineDrawer: React.FC<RefineDrawerProps> = ({
       ) : null}
       {...slideMotion(reduce, !shown, { x: '100%' })}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="flex h-12 overflow-hidden rounded-lg ring-1 ring-border" role="group" aria-label="Ramp steps">
           {shades.map((shade) => {
             const ink = shade.contrastWhite < 4.5 ? '#171717' : '#fafafa';
