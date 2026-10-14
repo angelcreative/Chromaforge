@@ -21,6 +21,43 @@ export const thumbStyle = (hex: string): React.CSSProperties => ({
   boxShadow: '0 0 0 1px rgba(0,0,0,0.7)',
 });
 
+/** Paints a hue (angle) by chroma (radius) disc at one lightness; 0° points up. */
+export const paintOklchWheel = (canvas: HTMLCanvasElement, size: number, lightness: number) => {
+  const radius = size / 2;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 0.5, 0, Math.PI * 2);
+  ctx.clip();
+  const neutral = oklchToRgb(lightness, 0, 0);
+  ctx.fillStyle = rgbToHex(neutral.r, neutral.g, neutral.b);
+  ctx.fillRect(0, 0, size, size);
+  for (let h = 0; h < 360; h++) {
+    const start = ((h - 90.6) * Math.PI) / 180;
+    const end = ((h - 89.4) * Math.PI) / 180;
+    ctx.beginPath();
+    ctx.moveTo(radius, radius);
+    ctx.arc(radius, radius, radius, start, end);
+    ctx.closePath();
+    const grad = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
+    const limit = maxOklchChroma(lightness, h);
+    for (let stop = 0; stop <= 6; stop++) {
+      const t = stop / 6;
+      const rgb = oklchToRgb(lightness, limit * t, h);
+      grad.addColorStop(t, rgbToHex(rgb.r, rgb.g, rgb.b));
+    }
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
 /** Hex field plus Lightness, Chroma and Hue rows, each with a gradient slider. */
 export const OklchEditor: React.FC<{
   hex: string;

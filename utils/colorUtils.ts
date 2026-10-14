@@ -403,7 +403,6 @@ export const generateHarmonies = (base: ColorHSL, type: string): ColorData[] => 
 
   switch (type) {
     case 'complementary': addColor(180); break;
-    case 'duotone': addColor(180, 0.35); break;
     case 'analogous': addColor(-30); addColor(30); break;
     case 'split-complementary': addColor(150); addColor(210); break;
     case 'triadic': addColor(120); addColor(240); break;
