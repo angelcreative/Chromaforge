@@ -5,7 +5,8 @@
 .pg *{box-sizing:border-box}
 .pg button,.pg input,.pg select,.pg textarea{font:inherit;color:inherit}
 .pg .masonry{columns:300px;column-gap:16px}
-.pg .masonry > .card{break-inside:avoid;margin:0 0 16px}
+/* inline-block makes each card atomic: Chrome can otherwise slice a card across columns and clip it. */
+.pg .masonry > .card{break-inside:avoid;display:inline-block;width:100%;vertical-align:top;margin:0 0 16px}
 .pg .cat-h{column-span:all;color:var(--text-2);font-size:13px;font-weight:600;margin:6px 2px 12px;display:flex;gap:8px;align-items:center}
 .pg .cat-h::after{content:"";flex:1;height:1px;background:var(--border)}
 .pg .cat-h:first-child{margin-top:0}
