@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
 import { PIGMENTO_CARD_SYSTEM, cardRetryPrompt, validateCardHtml } from './services/pigmentoCards.js';
-import { fillPhotoSlots, findStockPhoto, PhotoOrientation } from './services/stockPhotos.js';
+import { fillPhotoSlots, findStockPhoto, lastPhotoIssue, PhotoOrientation, stockPhotosEnabled } from './services/stockPhotos.js';
 import { CreditLedger, networkKeyForIp } from './services/creditLedger.js';
 import { isOwnerAccount } from './services/ownerGate.js';
 import { grantFromStripeEvent, verifyStripeSignature } from './services/stripeFulfillment.js';
@@ -398,7 +398,9 @@ app.get('/api/photo', async (req, res) => {
 
   const photo = await findStockPhoto(q, orientation);
   res.set('Cache-Control', photo ? 'public, max-age=86400' : 'no-store');
-  return res.json({ photo });
+  if (photo) return res.json({ photo });
+  // Say why there is no photo (missing key, rejected key…) without exposing the key.
+  return res.json({ photo: null, reason: stockPhotosEnabled() ? (lastPhotoIssue || 'no_results') : 'no_key' });
 });
 
 app.post('/api/ui-design', async (req, res) => {

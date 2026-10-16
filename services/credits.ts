@@ -17,6 +17,13 @@ export const PALETTE_RESERVED_OUTPUT_TOKENS = 220;
 
 export const DESIGN_RESERVED_OUTPUT_TOKENS = 800;
 
+/**
+ * What one Pigmento card usually costs, for user-facing copy. The card
+ * instructions are ~1.3K input tokens and a card is 600-1,300 output tokens,
+ * which lands between 25 and 45 credits; the exact charge is shown per reply.
+ */
+export const CARD_CREDITS_ESTIMATE = 30;
+
 export const PALETTE_SYSTEM =
   'You are a color engine. You act as a JSON API. You strictly modify existing arrays when requested.';
 

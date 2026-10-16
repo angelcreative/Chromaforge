@@ -1,6 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Moon, Sun, X } from 'lucide-react';
 import PigmentoMark from '../pigmento/PigmentoMark';
+import LogoMark from '../LogoMark';
 import { MotionButton } from '../uiMotion';
 import './playground.css';
 import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
@@ -9,7 +10,7 @@ import { CARD_CATEGORIES, CardCategory, PLAYGROUND_CARDS } from './cards';
 import { GeneratedCardView } from './GeneratedCard';
 import { showToast } from '../Toast';
 import {
-  GeneratedCard, MAX_GENERATED_CARDS, generateCard, listGeneratedCards, removeGeneratedCard, saveGeneratedCard,
+  CARD_CREDITS_ESTIMATE, GeneratedCard, MAX_GENERATED_CARDS, generateCard, listGeneratedCards, removeGeneratedCard, saveGeneratedCard,
 } from '../../services/pigmentoCardsService';
 
 export interface PlaygroundProps {
@@ -23,9 +24,6 @@ export interface PlaygroundProps {
   onCreditsChange?: (remaining: number) => void;
   /** Opens the Pigmento chat in card mode. */
   onCreateWithPigmento: () => void;
-  /** Floating panels currently covering the left / right edge on desktop. */
-  insetLeft?: boolean;
-  insetRight?: boolean;
 }
 
 export interface CardOutcome {
@@ -42,13 +40,19 @@ export interface PlaygroundHandle {
 type Filter = 'All' | CardCategory | 'Pigmento';
 const GENERATED = 'Created with Pigmento';
 
+// Cards dissolve over the first 40px of the scroller rather than hitting a hard edge.
+const SCROLL_FADE: React.CSSProperties = {
+  maskImage: 'linear-gradient(to bottom, transparent 0, #000 40px)',
+  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 40px)',
+};
+
 const chip = 'rounded-full border px-3 py-1 text-[13px] transition-colors';
 const seg = 'inline-flex rounded-lg bg-accent p-0.5';
 const segBtn = (on: boolean) => `rounded-md px-2.5 py-1 text-[13px] ${on ? 'bg-card text-foreground shadow-panel' : 'text-muted-foreground hover:text-foreground'}`;
 
 const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   brandPalette, neutralPalette, semanticPalette, config, onConfigChange, globalConfig, userId, onCreditsChange,
-  onCreateWithPigmento, insetLeft, insetRight,
+  onCreateWithPigmento,
 }, ref) => {
   const [radius, setRadius] = useState(12);
   const [filter, setFilter] = useState<Filter>('All');
@@ -128,10 +132,12 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className={`mx-auto w-full max-w-[1240px] px-4 pb-28 transition-[padding] duration-300 ${insetLeft ? 'lg:pl-[292px]' : ''} ${insetRight ? 'lg:pr-[416px]' : ''}`}>
-        {/* Controls stay in view while the cards scroll underneath. */}
-        <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 pt-5" style={{ background: 'var(--canvas)' }}>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Same centred column as the palette view; the sidebar and Pigmento float over it.
+          The controls sit outside the scroller with no background, so the dot grid runs
+          through them, and the cards fade out at the scroller's top edge instead of
+          sliding underneath. */}
+      <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pb-1 pt-5">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <div className="mr-auto">
             <h2 className="text-2xl font-medium tracking-tight">Playground</h2>
@@ -157,8 +163,11 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             <button type="button" className={segBtn(config.textMode === 'base')} aria-pressed={config.textMode === 'base'} onClick={() => onConfigChange({ ...config, textMode: 'base' })}>Pure</button>
           </div>
 
-          <label className="flex items-center gap-2 text-[13px] text-muted-foreground">Radius
-            <input type="range" min={0} max={20} value={radius} onChange={e => setRadius(Number(e.target.value))} aria-label="Corner radius" className="w-20 accent-foreground" />
+          {/* Same slider as the Scale panel in the sidebar. */}
+          <label className="flex items-center gap-3 text-[13px] text-muted-foreground">Radius
+            <input type="range" min={0} max={20} step={1} value={radius} onChange={e => setRadius(Number(e.target.value))} aria-label="Corner radius"
+              className="scale-slider w-28" style={{ '--range-fill': `${(radius / 20) * 100}%` } as React.CSSProperties} />
+            <span className="w-9 text-right font-mono text-foreground">{radius}px</span>
           </label>
 
           <button type="button" onClick={() => setAuditOpen(v => !v)} aria-expanded={auditOpen}
@@ -167,7 +176,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             {tokens.failures ? <><b>{tokens.failures}</b>&nbsp;contrast {tokens.failures === 1 ? 'issue' : 'issues'}</> : <><b>{tokens.audit.length}/{tokens.audit.length}</b>&nbsp;contrast checks pass</>}
           </button>
 
-          <MotionButton type="button" onClick={onCreateWithPigmento}
+          <MotionButton type="button" onClick={onCreateWithPigmento} title={`Each card uses about ${CARD_CREDITS_ESTIMATE} credits. You can keep up to ${MAX_GENERATED_CARDS}.`}
             className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
             <PigmentoMark className="size-6 -my-1" />
             Create with Pigmento
@@ -188,8 +197,10 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             </button>
           ))}
         </div>
-        </div>
+      </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto" style={SCROLL_FADE}>
+      <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5">
         {/* Audit */}
         {auditOpen && (
           <section className="mt-2 rounded-2xl border border-border bg-card p-4" aria-label="Contrast audit">
@@ -213,20 +224,20 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
         )}
 
         {/* Stage */}
-        <section ref={stageRef} className="pg mt-2 scroll-mt-56 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
+        <section ref={stageRef} className="pg mt-2 scroll-mt-6 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
           <div className="masonry">
             {categories.map(cat => (
               <React.Fragment key={cat}>
                 <div className="cat-h">{cat === 'Pigmento' ? GENERATED : cat}</div>
                 {cat === 'Pigmento' && busyId === 'new' && (
                   <div className="card" role="status" aria-live="polite">
-                    <div className="row"><div className="spin" aria-hidden /><div><h3 style={{ fontSize: 14 }}>Pigmento is building your card</h3><p className="xs muted">{pendingPrompt}</p></div></div>
+                    <div className="row"><span aria-hidden style={{ display: 'grid', width: 28, height: 28, flex: 'none', color: 'var(--text)' }}><LogoMark motion="loading" className="size-7" /></span><div><h3 style={{ fontSize: 14 }}>Pigmento is building your card</h3><p className="xs muted">{pendingPrompt}</p></div></div>
                     <div className="col mt" aria-hidden><div className="skel" style={{ height: 90 }} /><div className="skel" style={{ width: '70%' }} /><div className="skel" style={{ width: '45%' }} /></div>
                   </div>
                 )}
                 {cat === 'Pigmento'
                   ? (generated.length === 0 && busyId !== 'new'
-                    ? <div className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Use “Create with Pigmento” to build one from a sentence. It appears here, themed like the rest.</p><button type="button" className="btn soft mt" onClick={onCreateWithPigmento}>Create with Pigmento</button></div>
+                    ? <div className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Describe a card in a sentence and Pigmento builds it with your tokens, status colors and photos. It appears here, themed like the rest.</p><p className="xs faint mt-s">Each card uses about {CARD_CREDITS_ESTIMATE} credits from your balance. You can keep up to {MAX_GENERATED_CARDS}.</p><button type="button" className="btn soft mt" onClick={onCreateWithPigmento}>Create with Pigmento</button></div>
                     : generated.map(card => (
                       <GeneratedCardView key={card.id} card={card} tokensCss={tokensCss} busy={busyId === card.id} onRegenerate={regenerate} onDelete={remove} />
                     )))
@@ -237,6 +248,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             ))}
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

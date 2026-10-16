@@ -28,6 +28,7 @@ export interface GenerateCardResult {
 
 const LOCAL_KEY = 'chromaforge_generated_cards';
 export const MAX_GENERATED_CARDS = 20;
+export { CARD_CREDITS_ESTIMATE } from './credits';
 
 const readLocal = (): GeneratedCard[] => {
   try { const v = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }

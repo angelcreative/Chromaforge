@@ -18,6 +18,8 @@ const apiKey = () => {
     return key;
 };
 export const stockPhotosEnabled = () => apiKey().length > 10;
+/** Why the most recent lookup came back empty, for /api/photo diagnostics. */
+export let lastPhotoIssue = null;
 export async function findStockPhoto(rawQuery, orientation = 'landscape') {
     const query = clean(rawQuery);
     const key = apiKey();
@@ -43,9 +45,11 @@ export async function findStockPhoto(rawQuery, orientation = 'landscape') {
                     link: typeof p.url === 'string' ? p.url : 'https://www.pexels.com',
                 };
             }
+            lastPhotoIssue = photo ? null : 'no_results';
         }
         else {
             console.warn(`[Pexels] ${response.status} for "${query}"`);
+            lastPhotoIssue = `pexels_${response.status}`;
             // Don't cache rate limits or outages for a whole day.
             if (response.status === 429 || response.status >= 500)
                 return null;
@@ -53,6 +57,7 @@ export async function findStockPhoto(rawQuery, orientation = 'landscape') {
     }
     catch (error) {
         console.warn('[Pexels] lookup failed:', error?.message || error);
+        lastPhotoIssue = 'network_error';
         return null;
     }
     if (cache.size >= CACHE_LIMIT)
