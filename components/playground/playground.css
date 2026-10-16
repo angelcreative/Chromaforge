@@ -136,7 +136,7 @@
 .pg .vc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .pg .vc > div{aspect-ratio:4/3;border-radius:var(--r-md);display:grid;place-items:center;background:var(--n-800);color:var(--n-100);position:relative}
 .pg .vc > div.talk{outline:2px solid var(--accent)}
-.pg .vc span{position:absolute;left:6px;bottom:6px;font-size:11px;background:color-mix(in oklab,var(--n-950) 60%,transparent);color:var(--n-50);padding:1px 6px;border-radius:5px}
+.pg .vc .who{position:absolute;left:6px;bottom:6px;font-size:11px;background:color-mix(in oklab,var(--n-950) 60%,transparent);color:var(--n-50);padding:1px 6px;border-radius:5px}
 
 /* Pigmento-generated cards: same layer inside a sandboxed iframe */
 .pg .gen{position:relative}

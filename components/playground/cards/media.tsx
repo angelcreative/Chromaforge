@@ -76,7 +76,7 @@ export const VideoCallCard: React.FC = () => (
     <div className="row between"><h3>Design review</h3><Tag tone="danger">● 24:10</Tag></div>
     <div className="vc mt">
       {[['AM', 'Ana', true], ['JP', 'Jorge'], ['SL', 'Sara'], ['You', 'You']].map(([i, n, talk]) => (
-        <div key={n as string} className={talk ? 'talk' : undefined}><Avatar initials={i as string} /><span>{n}</span></div>
+        <div key={n as string} className={talk ? 'talk' : undefined}><Avatar initials={i as string} /><span className="who">{n}</span></div>
       ))}
     </div>
     <div className="row mt" style={{ justifyContent: 'center' }}>
