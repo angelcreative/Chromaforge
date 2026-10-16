@@ -37,7 +37,7 @@ Available CSS variables (use ONLY these for colour):
 --danger --danger-soft --on-danger-soft --danger-text  --info --info-soft --on-info-soft --info-text
 (--x-text is the readable status colour for text on --surface; --x is for fills, dots and icons)
 --disabled-bg --disabled-text --switch-off
---p-50 … --p-950 (accent ramp)  --s-50 … --s-950 (secondary ramp)  --n-50 … --n-950 (neutral ramp)
+--p-50 … --p-950 (accent ramp)  --s-50 … --s-950 (secondary ramp)  --d-50 … --d-950 (dominant ramp: large fills and image areas)  --n-50 … --n-950 (neutral ramp)
 --r-sm --r-md --r-lg (radius)
 `;
 const EXAMPLE_CARD = `<article class="card" aria-label="Boarding pass">

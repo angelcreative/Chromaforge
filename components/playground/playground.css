@@ -70,13 +70,13 @@
 .pg .divider{height:1px;background:var(--border);margin:14px 0}
 .pg .ico{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .pg .ico.s{width:15px;height:15px}
-.pg .hero{border-radius:var(--r-md);background:linear-gradient(135deg,var(--s-300),var(--s-700));position:relative;overflow:hidden}
+.pg .hero{border-radius:var(--r-md);background:linear-gradient(135deg,var(--d-300),var(--d-700));position:relative;overflow:hidden}
 .pg .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,rgba(255,255,255,.35),transparent 45%)}
 /* Stock photos (Pexels). The gradient stays underneath as the loading state and fallback. */
 .pg .hero > img,.pg .photo > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
 .pg .hero > img.ready,.pg .photo > img.ready{opacity:1}
 .pg .hero.has-photo::after{display:none}
-.pg .photo{display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:linear-gradient(135deg,var(--s-300),var(--s-700));position:relative;overflow:hidden;object-fit:cover}
+.pg .photo{display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:linear-gradient(135deg,var(--d-300),var(--d-700));position:relative;overflow:hidden;object-fit:cover}
 .pg img.photo{background:var(--surface-2)}
 .pg .mono{font-family:var(--mono);font-size:12.5px}
 .pg .kbd{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:5px;border:1px solid var(--border-strong);color:var(--text-2)}
@@ -103,7 +103,7 @@
 .pg .bubble{padding:8px 12px;border-radius:14px;max-width:80%;font-size:14px}
 .pg .bubble.in{background:var(--surface-2);border-bottom-left-radius:4px}
 .pg .bubble.out{background:var(--accent);color:var(--on-accent);margin-left:auto;border-bottom-right-radius:4px}
-.pg .cc{border-radius:var(--r-lg);padding:18px;color:var(--n-50);aspect-ratio:1.586;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--s-600),var(--s-900))}
+.pg .cc{border-radius:var(--r-lg);padding:18px;color:var(--n-50);aspect-ratio:1.586;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--d-600),var(--d-900))}
 .pg .dial{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--v)*1%),var(--surface-2) 0)}
 .pg .dial > div{width:76px;height:76px;border-radius:50%;background:var(--surface);display:grid;place-items:center}
 .pg .map{height:150px;border-radius:var(--r-md);background:

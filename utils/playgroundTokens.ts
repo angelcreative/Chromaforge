@@ -114,10 +114,12 @@ export function buildPlaygroundTokens(
   const t: Record<string, string> = {};
 
   // Surfaces
-  // The dominant (60) colour is the page background; cards stay neutral on top of it.
-  t.bg = dom ? (dark ? dom[950] : dom[100]) : (dark ? n[950] : s[100]);
+  // 60-30-10 only shapes what is inside the cards: the page background and the
+  // card surface stay neutral, and the dominant (60) colour takes the large
+  // areas inside a card (inner panels via --surface-2, image fills via --d-*).
+  t.bg = dark ? n[950] : s[100];
   t.surface = dark ? n[900] : '#FFFFFF';
-  t['surface-2'] = dark ? n[800] : s[50];
+  t['surface-2'] = dom ? (dark ? dom[800] : dom[100]) : (dark ? n[800] : s[50]);
   t.input = dark ? n[950] : '#FFFFFF';
   t.border = dark ? n[800] : n[200];
   // Control borders must reach 3:1 (WCAG 1.4.11), not just look subtle.
@@ -185,7 +187,7 @@ export function buildPlaygroundTokens(
   t['r-md'] = `${radius * 0.75}px`;
   t['r-lg'] = `${radius * 1.25}px`;
 
-  LEVELS.forEach(l => { t[`p-${l}`] = p[l]; t[`n-${l}`] = n[l]; t[`s-${l}`] = sec[l]; });
+  LEVELS.forEach(l => { t[`p-${l}`] = p[l]; t[`n-${l}`] = n[l]; t[`s-${l}`] = sec[l]; t[`d-${l}`] = (dom || p)[l]; });
 
   const pairs: [string, string, string, number][] = [
     ['Body text', 'text', 'surface', 4.5],
