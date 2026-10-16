@@ -105,7 +105,8 @@ export function buildPlaygroundTokens(
 
   const p = toMap(primarySource, globalConfig);
   const n = toMap(neutralSource, globalConfig);
-  const s = toMap(dominantSource || surfaceSource, globalConfig);
+  const s = toMap(surfaceSource, globalConfig);
+  const dom = dominantSource ? toMap(dominantSource, globalConfig) : null;
   const sec = secondarySource ? toMap(secondarySource, globalConfig) : p;
   const dark = config.isDarkMode;
   const brand = primarySource.hex;
@@ -113,19 +114,12 @@ export function buildPlaygroundTokens(
   const t: Record<string, string> = {};
 
   // Surfaces
-  if (dominantSource) {
-    t.bg = dark ? s[950] : s[100];
-    t.surface = dark ? s[900] : s[50];
-    t['surface-2'] = dark ? s[800] : s[100];
-    t.input = dark ? s[950] : '#FFFFFF';
-    t.border = dark ? s[800] : s[200];
-  } else {
-    t.bg = dark ? n[950] : s[100];
-    t.surface = dark ? n[900] : '#FFFFFF';
-    t['surface-2'] = dark ? n[800] : s[50];
-    t.input = dark ? n[950] : '#FFFFFF';
-    t.border = dark ? n[800] : n[200];
-  }
+  // The dominant (60) colour is the page background; cards stay neutral on top of it.
+  t.bg = dom ? (dark ? dom[950] : dom[100]) : (dark ? n[950] : s[100]);
+  t.surface = dark ? n[900] : '#FFFFFF';
+  t['surface-2'] = dark ? n[800] : s[50];
+  t.input = dark ? n[950] : '#FFFFFF';
+  t.border = dark ? n[800] : n[200];
   // Control borders must reach 3:1 (WCAG 1.4.11), not just look subtle.
   t['border-strong'] = dark ? pick(n, [500, 400, 300], t.surface, 3) : pick(n, [400, 500, 600], t.surface, 3);
 
