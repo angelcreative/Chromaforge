@@ -1116,8 +1116,6 @@ const App: React.FC = () => {
           onCreditsChange={setCredits}
           ref={playgroundRef}
           onCreateWithPigmento={() => { setPigmentoMode('card'); setCopilotOpen(true); }}
-          insetLeft={shellOpen}
-          insetRight={copilotOpen}
         />
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">

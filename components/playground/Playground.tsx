@@ -23,9 +23,6 @@ export interface PlaygroundProps {
   onCreditsChange?: (remaining: number) => void;
   /** Opens the Pigmento chat in card mode. */
   onCreateWithPigmento: () => void;
-  /** Floating panels currently covering the left / right edge on desktop. */
-  insetLeft?: boolean;
-  insetRight?: boolean;
 }
 
 export interface CardOutcome {
@@ -42,13 +39,19 @@ export interface PlaygroundHandle {
 type Filter = 'All' | CardCategory | 'Pigmento';
 const GENERATED = 'Created with Pigmento';
 
+// Cards dissolve over the first 40px of the scroller rather than hitting a hard edge.
+const SCROLL_FADE: React.CSSProperties = {
+  maskImage: 'linear-gradient(to bottom, transparent 0, #000 40px)',
+  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 40px)',
+};
+
 const chip = 'rounded-full border px-3 py-1 text-[13px] transition-colors';
 const seg = 'inline-flex rounded-lg bg-accent p-0.5';
 const segBtn = (on: boolean) => `rounded-md px-2.5 py-1 text-[13px] ${on ? 'bg-card text-foreground shadow-panel' : 'text-muted-foreground hover:text-foreground'}`;
 
 const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   brandPalette, neutralPalette, semanticPalette, config, onConfigChange, globalConfig, userId, onCreditsChange,
-  onCreateWithPigmento, insetLeft, insetRight,
+  onCreateWithPigmento,
 }, ref) => {
   const [radius, setRadius] = useState(12);
   const [filter, setFilter] = useState<Filter>('All');
@@ -128,10 +131,12 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className={`mx-auto w-full max-w-[1240px] px-4 pb-28 transition-[padding] duration-300 ${insetLeft ? 'lg:pl-[292px]' : ''} ${insetRight ? 'lg:pr-[416px]' : ''}`}>
-        {/* Controls stay in view while the cards scroll underneath. */}
-        <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 pt-5" style={{ background: 'var(--canvas)' }}>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Same centred column as the palette view; the sidebar and Pigmento float over it.
+          The controls sit outside the scroller with no background, so the dot grid runs
+          through them, and the cards fade out at the scroller's top edge instead of
+          sliding underneath. */}
+      <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pb-1 pt-5">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <div className="mr-auto">
             <h2 className="text-2xl font-medium tracking-tight">Playground</h2>
@@ -188,8 +193,10 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             </button>
           ))}
         </div>
-        </div>
+      </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto" style={SCROLL_FADE}>
+      <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5">
         {/* Audit */}
         {auditOpen && (
           <section className="mt-2 rounded-2xl border border-border bg-card p-4" aria-label="Contrast audit">
@@ -213,7 +220,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
         )}
 
         {/* Stage */}
-        <section ref={stageRef} className="pg mt-2 scroll-mt-56 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
+        <section ref={stageRef} className="pg mt-2 scroll-mt-6 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
           <div className="masonry">
             {categories.map(cat => (
               <React.Fragment key={cat}>
@@ -237,6 +244,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             ))}
           </div>
         </section>
+      </div>
       </div>
     </div>
   );
