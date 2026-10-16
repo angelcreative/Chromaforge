@@ -32,11 +32,12 @@ Available CSS variables (use ONLY these for colour):
 --bg --surface --surface-2 --input --border --border-strong
 --text --text-2 --text-3
 --accent --on-accent --accent-hover --accent-soft --on-accent-soft --accent-text --focus
+--secondary-soft --on-secondary-soft --secondary-text (the supporting 30% colour: chips, avatars, secondary fills; .tag and .av already use it)
 --success --success-soft --on-success-soft --success-text  --warning --warning-soft --on-warning-soft --warning-text
 --danger --danger-soft --on-danger-soft --danger-text  --info --info-soft --on-info-soft --info-text
 (--x-text is the readable status colour for text on --surface; --x is for fills, dots and icons)
 --disabled-bg --disabled-text --switch-off
---p-50 … --p-950 (brand ramp)  --n-50 … --n-950 (neutral ramp)
+--p-50 … --p-950 (accent ramp)  --s-50 … --s-950 (secondary ramp)  --n-50 … --n-950 (neutral ramp)
 --r-sm --r-md --r-lg (radius)
 `;
 const EXAMPLE_CARD = `<article class="card" aria-label="Boarding pass">

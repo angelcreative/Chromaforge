@@ -1116,6 +1116,8 @@ const App: React.FC = () => {
           onCreditsChange={setCredits}
           ref={playgroundRef}
           onCreateWithPigmento={() => { setPigmentoMode('card'); setCopilotOpen(true); }}
+          paletteName={paletteName && paletteName !== 'Design Tokens' ? paletteName : 'Your palette'}
+          onBack={() => setStudioPane('composer')}
         />
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">

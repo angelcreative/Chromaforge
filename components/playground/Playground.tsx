@@ -1,5 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Moon, Sun, X } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, X } from 'lucide-react';
+import { Hint } from '../Hint';
 import PigmentoMark from '../pigmento/PigmentoMark';
 import LogoMark from '../LogoMark';
 import { MotionButton } from '../uiMotion';
@@ -8,6 +9,7 @@ import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
 import { buildPlaygroundTokens, tokensToCss } from '../../utils/playgroundTokens';
 import { CARD_CATEGORIES, CardCategory, PLAYGROUND_CARDS } from './cards';
 import { GeneratedCardView } from './GeneratedCard';
+import RoleSwatches, { RoleBar } from './RoleSwatches';
 import { showToast } from '../Toast';
 import {
   CARD_CREDITS_ESTIMATE, GeneratedCard, MAX_GENERATED_CARDS, generateCard, listGeneratedCards, removeGeneratedCard, saveGeneratedCard,
@@ -24,6 +26,10 @@ export interface PlaygroundProps {
   onCreditsChange?: (remaining: number) => void;
   /** Opens the Pigmento chat in card mode. */
   onCreateWithPigmento: () => void;
+  /** Name of the palette the Playground is showing. */
+  paletteName: string;
+  /** Back to that palette. */
+  onBack: () => void;
 }
 
 export interface CardOutcome {
@@ -80,7 +86,7 @@ const segBtn = (on: boolean) => `rounded-md px-2.5 py-1 text-[13px] ${on ? 'bg-c
 
 const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   brandPalette, neutralPalette, semanticPalette, config, onConfigChange, globalConfig, userId, onCreditsChange,
-  onCreateWithPigmento,
+  onCreateWithPigmento, paletteName, onBack,
 }, ref) => {
   const [radius, setRadius] = useState(12);
   const [filter, setFilter] = useState<Filter>('All');
@@ -167,19 +173,20 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
           sliding underneath. */}
       <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pb-1 pt-5">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <div className="mr-auto">
-            <h2 className="text-2xl font-medium tracking-tight">Playground</h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">Your palette applied to {PLAYGROUND_CARDS.length} interfaces at once.</p>
+          <div className="mr-auto flex min-w-0 items-start gap-2">
+            <Hint label="See palette">
+              <MotionButton type="button" onClick={onBack} aria-label="See palette"
+                className="-ml-2 mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg text-foreground hover:bg-accent">
+                <ArrowLeft className="size-4" strokeWidth={1.5} aria-hidden />
+              </MotionButton>
+            </Hint>
+            <div className="min-w-0">
+              <h2 className="truncate text-2xl font-medium tracking-tight">{paletteName}</h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">Playground · your palette applied to {PLAYGROUND_CARDS.length} interfaces at once.</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Primary color">
-            {brandPalette.map((c, i) => (
-              <button key={`${c.hex}-${i}`} type="button" role="radio" aria-checked={i === selectedIndex} aria-label={`${c.name} as primary`}
-                onClick={() => onConfigChange({ ...config, primaryIndex: i })}
-                className={`size-6 rounded-full ring-2 ring-offset-2 ring-offset-background transition ${i === selectedIndex ? 'ring-foreground' : 'ring-transparent hover:ring-border'}`}
-                style={{ background: c.hex }} />
-            ))}
-          </div>
+          <RoleSwatches palette={brandPalette} config={config} onConfigChange={onConfigChange} />
 
           <div className={seg} role="group" aria-label="Appearance">
             <button type="button" className={segBtn(!config.isDarkMode)} aria-pressed={!config.isDarkMode} onClick={() => onConfigChange({ ...config, isDarkMode: false })}><Sun className="inline size-3.5" strokeWidth={1.5} aria-hidden /> Light</button>
@@ -211,10 +218,14 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
           </MotionButton>
         </div>
 
-        {/* Ramp strip */}
-        <div className="mt-4 grid h-2 grid-cols-11 overflow-hidden rounded-full" aria-hidden>
-          {Object.values(tokens.primary).map((hex, i) => <span key={i} style={{ background: hex }} />)}
-        </div>
+        {/* Ramp strip, or the 60/30/10 proportions while the rule is on */}
+        {config.ruleActive && brandPalette.length >= 3
+          ? <RoleBar palette={brandPalette} config={config} />
+          : (
+            <div className="mt-4 grid h-2 grid-cols-11 overflow-hidden rounded-full" aria-hidden>
+              {Object.values(tokens.primary).map((hex, i) => <span key={i} style={{ background: hex }} />)}
+            </div>
+          )}
 
         {/* Filters */}
         <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
