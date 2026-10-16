@@ -97,20 +97,35 @@ export function buildPlaygroundTokens(
     || createColorData('#6b7280', undefined, 'Neutral');
   const surfaceSource = config.surfaceMode === 'brand' ? primarySource : neutralSource;
 
+  // 60-30-10: the dominant colour replaces the surface ramp and the secondary
+  // gets its own family. With the rule off, secondary mirrors the accent.
+  const rule = !!config.ruleActive && brandPalette.length >= 3;
+  const dominantSource = rule ? brandPalette[config.dominantIndex ?? -1] : undefined;
+  const secondarySource = rule ? brandPalette[config.secondaryIndex ?? -1] : undefined;
+
   const p = toMap(primarySource, globalConfig);
   const n = toMap(neutralSource, globalConfig);
-  const s = toMap(surfaceSource, globalConfig);
+  const s = toMap(dominantSource || surfaceSource, globalConfig);
+  const sec = secondarySource ? toMap(secondarySource, globalConfig) : p;
   const dark = config.isDarkMode;
   const brand = primarySource.hex;
 
   const t: Record<string, string> = {};
 
   // Surfaces
-  t.bg = dark ? n[950] : s[100];
-  t.surface = dark ? n[900] : '#FFFFFF';
-  t['surface-2'] = dark ? n[800] : s[50];
-  t.input = dark ? n[950] : '#FFFFFF';
-  t.border = dark ? n[800] : n[200];
+  if (dominantSource) {
+    t.bg = dark ? s[950] : s[100];
+    t.surface = dark ? s[900] : s[50];
+    t['surface-2'] = dark ? s[800] : s[100];
+    t.input = dark ? s[950] : '#FFFFFF';
+    t.border = dark ? s[800] : s[200];
+  } else {
+    t.bg = dark ? n[950] : s[100];
+    t.surface = dark ? n[900] : '#FFFFFF';
+    t['surface-2'] = dark ? n[800] : s[50];
+    t.input = dark ? n[950] : '#FFFFFF';
+    t.border = dark ? n[800] : n[200];
+  }
   // Control borders must reach 3:1 (WCAG 1.4.11), not just look subtle.
   t['border-strong'] = dark ? pick(n, [500, 400, 300], t.surface, 3) : pick(n, [400, 500, 600], t.surface, 3);
 
@@ -145,6 +160,17 @@ export function buildPlaygroundTokens(
     t['accent-text'] = pick(p, [300, 200, 100], t.surface, 4.5);
   }
   t.focus = t.accent;
+
+  // Secondary (the 30%): supporting fills, chips, avatars, charts, image fills.
+  if (secondarySource) {
+    t['secondary-soft'] = dark ? sec[800] : sec[100];
+    t['on-secondary-soft'] = dark ? pick(sec, [100, 50, 200], sec[800], 4.5) : pick(sec, [800, 900, 950], sec[100], 4.5);
+    t['secondary-text'] = dark ? pick(sec, [300, 200, 100], t.surface, 4.5) : pick(sec, [700, 800, 900], t.surface, 4.5);
+  } else {
+    t['secondary-soft'] = t['accent-soft'];
+    t['on-secondary-soft'] = t['on-accent-soft'];
+    t['secondary-text'] = t['accent-text'];
+  }
   t['switch-off'] = dark ? pick(n, [500, 400], t.surface, 3) : pick(n, [400, 500], t.surface, 3);
   t['disabled-bg'] = dark ? n[800] : n[100];
   t['disabled-text'] = dark ? n[500] : n[400];
@@ -165,7 +191,7 @@ export function buildPlaygroundTokens(
   t['r-md'] = `${radius * 0.75}px`;
   t['r-lg'] = `${radius * 1.25}px`;
 
-  LEVELS.forEach(l => { t[`p-${l}`] = p[l]; t[`n-${l}`] = n[l]; });
+  LEVELS.forEach(l => { t[`p-${l}`] = p[l]; t[`n-${l}`] = n[l]; t[`s-${l}`] = sec[l]; });
 
   const pairs: [string, string, string, number][] = [
     ['Body text', 'text', 'surface', 4.5],
@@ -178,6 +204,7 @@ export function buildPlaygroundTokens(
     ['Warning tag', 'on-warning-soft', 'warning-soft', 4.5],
     ['Danger tag', 'on-danger-soft', 'danger-soft', 4.5],
     ['Info tag', 'on-info-soft', 'info-soft', 4.5],
+    ['Secondary chip', 'on-secondary-soft', 'secondary-soft', 4.5],
     ['Error text', 'danger-text', 'surface', 4.5],
     ['Field border', 'border-strong', 'surface', 3],
     ['Switch off', 'switch-off', 'surface', 3],

@@ -9,6 +9,7 @@ import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
 import { buildPlaygroundTokens, tokensToCss } from '../../utils/playgroundTokens';
 import { CARD_CATEGORIES, CardCategory, PLAYGROUND_CARDS } from './cards';
 import { GeneratedCardView } from './GeneratedCard';
+import RoleSwatches, { RoleBar } from './RoleSwatches';
 import { showToast } from '../Toast';
 import {
   CARD_CREDITS_ESTIMATE, GeneratedCard, MAX_GENERATED_CARDS, generateCard, listGeneratedCards, removeGeneratedCard, saveGeneratedCard,
@@ -185,14 +186,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Primary color">
-            {brandPalette.map((c, i) => (
-              <button key={`${c.hex}-${i}`} type="button" role="radio" aria-checked={i === selectedIndex} aria-label={`${c.name} as primary`}
-                onClick={() => onConfigChange({ ...config, primaryIndex: i })}
-                className={`size-6 rounded-full ring-2 ring-offset-2 ring-offset-background transition ${i === selectedIndex ? 'ring-foreground' : 'ring-transparent hover:ring-border'}`}
-                style={{ background: c.hex }} />
-            ))}
-          </div>
+          <RoleSwatches palette={brandPalette} config={config} onConfigChange={onConfigChange} />
 
           <div className={seg} role="group" aria-label="Appearance">
             <button type="button" className={segBtn(!config.isDarkMode)} aria-pressed={!config.isDarkMode} onClick={() => onConfigChange({ ...config, isDarkMode: false })}><Sun className="inline size-3.5" strokeWidth={1.5} aria-hidden /> Light</button>
@@ -224,10 +218,14 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
           </MotionButton>
         </div>
 
-        {/* Ramp strip */}
-        <div className="mt-4 grid h-2 grid-cols-11 overflow-hidden rounded-full" aria-hidden>
-          {Object.values(tokens.primary).map((hex, i) => <span key={i} style={{ background: hex }} />)}
-        </div>
+        {/* Ramp strip, or the 60/30/10 proportions while the rule is on */}
+        {config.ruleActive && brandPalette.length >= 3
+          ? <RoleBar palette={brandPalette} config={config} />
+          : (
+            <div className="mt-4 grid h-2 grid-cols-11 overflow-hidden rounded-full" aria-hidden>
+              {Object.values(tokens.primary).map((hex, i) => <span key={i} style={{ background: hex }} />)}
+            </div>
+          )}
 
         {/* Filters */}
         <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
