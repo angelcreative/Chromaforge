@@ -42,7 +42,7 @@
 .pg .up{color:var(--success-text)}.pg .down{color:var(--danger-text)}
 .pg .dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none;background:var(--accent)}
 .pg .dot.success{background:var(--success)}.pg .dot.warning{background:var(--warning)}.pg .dot.danger{background:var(--danger)}.pg .dot.info{background:var(--info)}
-.pg .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border-radius:var(--r-md);border:1px solid transparent;font-weight:600;font-size:14px;cursor:pointer;background:var(--accent);color:var(--on-accent);transition:background .15s,transform .1s}
+.pg .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;flex-shrink:0;height:38px;padding:0 14px;border-radius:var(--r-md);border:1px solid transparent;font-weight:600;font-size:14px;cursor:pointer;background:var(--accent);color:var(--on-accent);transition:background .15s,transform .1s}
 .pg .btn:hover{background:var(--accent-hover)}
 .pg .btn:active{transform:translateY(1px)}
 .pg .btn.ghost{background:var(--surface-2);color:var(--text)}

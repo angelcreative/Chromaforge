@@ -1,6 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Moon, Sun, X } from 'lucide-react';
 import PigmentoMark from '../pigmento/PigmentoMark';
+import LogoMark from '../LogoMark';
 import { MotionButton } from '../uiMotion';
 import './playground.css';
 import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
@@ -227,7 +228,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
                 <div className="cat-h">{cat === 'Pigmento' ? GENERATED : cat}</div>
                 {cat === 'Pigmento' && busyId === 'new' && (
                   <div className="card" role="status" aria-live="polite">
-                    <div className="row"><div className="spin" aria-hidden /><div><h3 style={{ fontSize: 14 }}>Pigmento is building your card</h3><p className="xs muted">{pendingPrompt}</p></div></div>
+                    <div className="row"><span aria-hidden style={{ display: 'grid', width: 28, height: 28, flex: 'none', color: 'var(--text)' }}><LogoMark motion="loading" className="size-7" /></span><div><h3 style={{ fontSize: 14 }}>Pigmento is building your card</h3><p className="xs muted">{pendingPrompt}</p></div></div>
                     <div className="col mt" aria-hidden><div className="skel" style={{ height: 90 }} /><div className="skel" style={{ width: '70%' }} /><div className="skel" style={{ width: '45%' }} /></div>
                   </div>
                 )}
