@@ -163,8 +163,11 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             <button type="button" className={segBtn(config.textMode === 'base')} aria-pressed={config.textMode === 'base'} onClick={() => onConfigChange({ ...config, textMode: 'base' })}>Pure</button>
           </div>
 
-          <label className="flex items-center gap-2 text-[13px] text-muted-foreground">Radius
-            <input type="range" min={0} max={20} value={radius} onChange={e => setRadius(Number(e.target.value))} aria-label="Corner radius" className="w-20 accent-foreground" />
+          {/* Same slider as the Scale panel in the sidebar. */}
+          <label className="flex items-center gap-3 text-[13px] text-muted-foreground">Radius
+            <input type="range" min={0} max={20} step={1} value={radius} onChange={e => setRadius(Number(e.target.value))} aria-label="Corner radius"
+              className="scale-slider w-28" style={{ '--range-fill': `${(radius / 20) * 100}%` } as React.CSSProperties} />
+            <span className="w-9 text-right font-mono text-foreground">{radius}px</span>
           </label>
 
           <button type="button" onClick={() => setAuditOpen(v => !v)} aria-expanded={auditOpen}

@@ -222,7 +222,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                       <span className="grid size-9 shrink-0 place-items-center">
                         <SlidersHorizontal className="size-4" strokeWidth={1.5} aria-hidden />
                       </span>
-                      <span className="pr-2 text-left">Tools</span>
+                      <span className="pr-2 text-left">Scale</span>
                     </MotionButton>
                     <div ref={toolsFit.wrapRef} className="absolute top-0 left-[calc(100%+0.875rem)] z-50 w-max max-w-[calc(100vw-100%-2.75rem)] max-sm:bottom-[calc(100%+0.5rem)] max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none">
                       <AnimatePresence>
@@ -231,7 +231,7 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                             ref={toolsFit.panelRef}
                             style={toolsFit.panelStyle}
                             role="dialog"
-                            aria-label="Tuning tools"
+                            aria-label="Scale settings"
                             className="w-60 max-w-full rounded-xl bg-card p-3 shadow-panel ring-1 ring-border max-sm:w-full"
                             {...menu}
                           >
