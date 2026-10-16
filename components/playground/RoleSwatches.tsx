@@ -12,15 +12,15 @@ import { useReduced } from '../uiMotion';
  *
  * Off: a swatch picks the primary (accent) colour, as before.
  * On: every swatch can hold one of three roles. 60 is the dominant colour
- * (backgrounds and surfaces), 30 the secondary (supporting elements) and 10
+ * (large areas inside cards), 30 the secondary (supporting elements) and 10
  * the accent (actions). The role badges slide between swatches when they move.
  */
 
 type Role = 60 | 30 | 10;
 
 const ROLES: { role: Role; name: string; use: string }[] = [
-  { role: 60, name: 'Dominant', use: 'Page background' },
-  { role: 30, name: 'Secondary', use: 'Chips, avatars, charts and images' },
+  { role: 60, name: 'Dominant', use: 'Large areas in cards: panels and images' },
+  { role: 30, name: 'Secondary', use: 'Chips, avatars and charts' },
   { role: 10, name: 'Accent', use: 'Buttons, links and active states' },
 ];
 

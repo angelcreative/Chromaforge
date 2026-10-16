@@ -83,7 +83,7 @@ export interface PlaygroundConfig {
     textMode: 'base' | 'tinted'; // Use Base Neutral or Tinted Neutral for text
     disabledMode: 'base' | 'tinted'; // Use Base Neutral or Tinted Neutral for disabled elements
     isDarkMode: boolean;
-    /** 60-30-10 rule: the dominant (60) colour tints backgrounds and surfaces,
+    /** 60-30-10 rule, applied inside the cards: the dominant (60) colour takes large areas (inner panels, images),
      *  the secondary (30) drives supporting elements, and primaryIndex is the 10% accent. */
     ruleActive?: boolean;
     dominantIndex?: number;
