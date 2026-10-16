@@ -4,10 +4,11 @@
 .pg{--font:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5}
 .pg *{box-sizing:border-box}
 .pg button,.pg input,.pg select,.pg textarea{font:inherit;color:inherit}
-.pg .masonry{columns:300px;column-gap:16px}
-/* inline-block makes each card atomic: Chrome can otherwise slice a card across columns and clip it. */
-.pg .masonry > .card{break-inside:avoid;display:inline-block;width:100%;vertical-align:top;margin:0 0 16px}
-.pg .cat-h{column-span:all;color:var(--text-2);font-size:13px;font-weight:600;margin:6px 2px 12px;display:flex;gap:8px;align-items:center}
+.pg .masonry{display:flex;gap:16px;align-items:flex-start;margin-bottom:20px}
+.pg .masonry:last-child{margin-bottom:0}
+.pg .masonry-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:16px}
+.pg .masonry-col > .card{margin:0}
+.pg .cat-h{color:var(--text-2);font-size:13px;font-weight:600;margin:6px 2px 12px;display:flex;gap:8px;align-items:center}
 .pg .cat-h::after{content:"";flex:1;height:1px;background:var(--border)}
 .pg .cat-h:first-child{margin-top:0}
 /* Cards are borderless: separation comes from --surface on --bg. */
