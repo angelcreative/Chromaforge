@@ -177,8 +177,26 @@ const App: React.FC = () => {
       surfaceMode: 'neutral',
       textMode: 'base',
       disabledMode: 'base',
-      isDarkMode: false
+      isDarkMode: document.documentElement.dataset.theme === 'dark'
   });
+  // The Playground starts in the app's theme and follows it when the app theme
+  // changes; its own Light/Dark switch still overrides it at any time.
+  useEffect(() => {
+    const root = document.documentElement;
+    let last: string | undefined = playgroundConfig.isDarkMode ? 'dark' : 'light';
+    const sync = () => {
+      // The theme is re-applied with the same value on some mounts; only a
+      // real change should reset the Playground's own choice.
+      if (root.dataset.theme === last) return;
+      last = root.dataset.theme;
+      const dark = last === 'dark';
+      setPlaygroundConfig(prev => (prev.isDarkMode === dark ? prev : { ...prev, isDarkMode: dark }));
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
   
   // Storage State
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
