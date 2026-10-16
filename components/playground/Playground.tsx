@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Moon, Sparkles, Sun, X } from 'lucide-react';
 import './playground.css';
 import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
@@ -19,24 +19,43 @@ export interface PlaygroundProps {
   globalConfig?: GlobalCurveConfig;
   userId: string;
   onCreditsChange?: (remaining: number) => void;
+  /** Opens the Pigmento chat in card mode. */
+  onCreateWithPigmento: () => void;
+  /** Floating panels currently covering the left / right edge on desktop. */
+  insetLeft?: boolean;
+  insetRight?: boolean;
+}
+
+export interface CardOutcome {
+  ok: boolean;
+  message: string;
+  creditsSpent?: number;
+  paymentRequired?: boolean;
+}
+
+export interface PlaygroundHandle {
+  createCard: (text: string) => Promise<CardOutcome>;
 }
 
 type Filter = 'All' | CardCategory | 'Pigmento';
 const GENERATED = 'Created with Pigmento';
-const SUGGESTIONS = ['Boarding pass with gate and seat', 'Smart thermostat control', 'Podcast episode with play button', 'Invoice summary with status', 'Habit tracker for a week'];
 
 const chip = 'rounded-full border px-3 py-1 text-[13px] transition-colors';
 const seg = 'inline-flex rounded-lg bg-accent p-0.5';
 const segBtn = (on: boolean) => `rounded-md px-2.5 py-1 text-[13px] ${on ? 'bg-card text-foreground shadow-panel' : 'text-muted-foreground hover:text-foreground'}`;
 
-const Playground: React.FC<PlaygroundProps> = ({ brandPalette, neutralPalette, semanticPalette, config, onConfigChange, globalConfig, userId, onCreditsChange }) => {
+const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
+  brandPalette, neutralPalette, semanticPalette, config, onConfigChange, globalConfig, userId, onCreditsChange,
+  onCreateWithPigmento, insetLeft, insetRight,
+}, ref) => {
   const [radius, setRadius] = useState(12);
   const [filter, setFilter] = useState<Filter>('All');
   const [auditOpen, setAuditOpen] = useState(false);
-  const [composerOpen, setComposerOpen] = useState(false);
-  const [prompt, setPrompt] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null); // 'new' or a card id
+  const [pendingPrompt, setPendingPrompt] = useState('');
   const [generated, setGenerated] = useState<GeneratedCard[]>([]);
+  const stageRef = useRef<HTMLElement>(null);
+  const busyRef = useRef(false);
 
   const selectedIndex = brandPalette.length ? Math.min(Math.max(config.primaryIndex, 0), brandPalette.length - 1) : 0;
   const tokens = useMemo(
@@ -52,49 +71,65 @@ const Playground: React.FC<PlaygroundProps> = ({ brandPalette, neutralPalette, s
     return () => { alive = false; };
   }, [userId]);
 
-  if (!tokens) {
-    return <p className="text-[13px] text-muted-foreground">Generate a palette first to activate the playground.</p>;
-  }
-
-  const create = async (text: string, replace?: GeneratedCard) => {
+  const create = async (text: string, replace?: GeneratedCard): Promise<CardOutcome> => {
     const clean = text.trim();
-    if (!clean || busyId) return;
+    if (!clean) return { ok: false, message: 'Describe the card you want in a few words.' };
+    if (busyRef.current) return { ok: false, message: 'I am still building the previous card. Give me a moment.' };
     if (!replace && generated.length >= MAX_GENERATED_CARDS) {
-      showToast(`You can keep up to ${MAX_GENERATED_CARDS} Pigmento cards. Delete one first.`);
-      return;
+      return { ok: false, message: `You can keep up to ${MAX_GENERATED_CARDS} Pigmento cards. Delete one in the Playground first.` };
     }
+    busyRef.current = true;
     setBusyId(replace ? replace.id : 'new');
-    const result = await generateCard(clean);
-    if (typeof result.creditsRemaining === 'number') onCreditsChange?.(result.creditsRemaining);
-    if (!result.html) {
-      showToast(result.description);
-      setBusyId(null);
-      return;
+    if (!replace) {
+      setPendingPrompt(clean);
+      setFilter(f => (f === 'All' || f === 'Pigmento' ? f : 'Pigmento'));
+      requestAnimationFrame(() => stageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
     try {
+      const result = await generateCard(clean);
+      if (typeof result.creditsRemaining === 'number') onCreditsChange?.(result.creditsRemaining);
+      if (!result.html) {
+        return { ok: false, message: result.description, creditsSpent: result.creditsSpent, paymentRequired: result.paymentRequired };
+      }
       if (replace) await removeGeneratedCard(userId, replace.id).catch(() => {});
       const saved = await saveGeneratedCard(userId, { title: result.title || 'Pigmento card', prompt: clean, html: result.html });
       setGenerated(prev => [saved, ...prev.filter(c => c.id !== replace?.id)]);
-      setFilter(f => (f === 'All' || f === 'Pigmento' ? f : 'Pigmento'));
-      if (!replace) setPrompt('');
+      return { ok: true, message: `Done. “${saved.title}” is in the Playground, themed with your palette.`, creditsSpent: result.creditsSpent };
     } catch (error: any) {
-      showToast(error?.message || 'Could not save the card.');
+      return { ok: false, message: error?.message || 'Could not save the card.' };
+    } finally {
+      busyRef.current = false;
+      setBusyId(null);
+      setPendingPrompt('');
     }
-    setBusyId(null);
   };
+
+  useImperativeHandle(ref, () => ({ createCard: (text: string) => create(text) }));
+
+  if (!tokens) {
+    return <p className="text-[13px] text-muted-foreground">Generate a palette first to activate the playground.</p>;
+  }
 
   const remove = async (card: GeneratedCard) => {
     setGenerated(prev => prev.filter(c => c.id !== card.id));
     try { await removeGeneratedCard(userId, card.id); } catch { showToast('Could not delete the card.'); }
   };
 
-  const categories: Filter[] = filter === 'All' ? [...CARD_CATEGORIES, 'Pigmento'] : [filter];
+  // Your own Pigmento cards lead once there are any.
+  const hasOwn = generated.length > 0 || busyId === 'new';
+  const categories: Filter[] = filter === 'All' ? (hasOwn ? ['Pigmento', ...CARD_CATEGORIES] : [...CARD_CATEGORIES, 'Pigmento']) : [filter];
   const count = (c: Filter) => (c === 'All' ? PLAYGROUND_CARDS.length + generated.length : c === 'Pigmento' ? generated.length : PLAYGROUND_CARDS.filter(k => k.category === c).length);
+
+  const regenerate = async (card: GeneratedCard) => {
+    const outcome = await create(card.prompt, card);
+    if (!outcome.ok) showToast(outcome.message);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1480px] px-4 pb-24 pt-6">
-        {/* Controls */}
+      <div className={`mx-auto w-full max-w-[1240px] px-4 pb-28 transition-[padding] duration-300 ${insetLeft ? 'lg:pl-[292px]' : ''} ${insetRight ? 'lg:pr-[416px]' : ''}`}>
+        {/* Controls stay in view while the cards scroll underneath. */}
+        <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 pt-5" style={{ background: 'var(--canvas)' }}>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <div className="mr-auto">
             <h2 className="text-2xl font-medium tracking-tight">Playground</h2>
@@ -126,11 +161,11 @@ const Playground: React.FC<PlaygroundProps> = ({ brandPalette, neutralPalette, s
 
           <button type="button" onClick={() => setAuditOpen(v => !v)} aria-expanded={auditOpen}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] hover:bg-accent">
-            <span className="size-2 rounded-full" style={{ background: tokens.failures ? '#d64545' : '#1f9d55' }} aria-hidden />
-            {tokens.failures ? <><b>{tokens.failures}</b>&nbsp;contrast issues</> : <><b>{tokens.audit.length}/{tokens.audit.length}</b>&nbsp;contrast checks pass</>}
+            <span className="size-2 rounded-full" style={{ background: tokens.failures ? tokens.vars['--danger'] : tokens.vars['--success'] }} aria-hidden />
+            {tokens.failures ? <><b>{tokens.failures}</b>&nbsp;contrast {tokens.failures === 1 ? 'issue' : 'issues'}</> : <><b>{tokens.audit.length}/{tokens.audit.length}</b>&nbsp;contrast checks pass</>}
           </button>
 
-          <button type="button" onClick={() => setComposerOpen(v => !v)} aria-expanded={composerOpen}
+          <button type="button" onClick={onCreateWithPigmento}
             className="flex items-center gap-2 rounded-lg bg-foreground px-3 py-1.5 text-[13px] font-medium text-background hover:opacity-90">
             <Sparkles className="size-4" strokeWidth={1.5} aria-hidden /> Create with Pigmento
           </button>
@@ -141,9 +176,20 @@ const Playground: React.FC<PlaygroundProps> = ({ brandPalette, neutralPalette, s
           {Object.values(tokens.primary).map((hex, i) => <span key={i} style={{ background: hex }} />)}
         </div>
 
+        {/* Filters */}
+        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
+          {(['All', ...CARD_CATEGORIES, 'Pigmento'] as Filter[]).map(c => (
+            <button key={c} type="button" aria-pressed={filter === c} onClick={() => setFilter(c)}
+              className={`${chip} ${filter === c ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              {c === 'Pigmento' ? GENERATED : c}<span className="ml-1 opacity-60">{count(c)}</span>
+            </button>
+          ))}
+        </div>
+        </div>
+
         {/* Audit */}
         {auditOpen && (
-          <section className="mt-4 rounded-2xl border border-border bg-card p-4" aria-label="Contrast audit">
+          <section className="mt-2 rounded-2xl border border-border bg-card p-4" aria-label="Contrast audit">
             <div className="flex items-start justify-between gap-3">
               <div><h3 className="text-[15px] font-medium">Contrast audit</h3><p className="text-[13px] text-muted-foreground">Every token pair the cards use, measured with WCAG 2.1. Text needs 4.5:1; borders and icons 3:1.</p></div>
               <button type="button" className="rounded-md p-1 hover:bg-accent" onClick={() => setAuditOpen(false)} aria-label="Close audit"><X className="size-4" strokeWidth={1.5} /></button>
@@ -163,47 +209,23 @@ const Playground: React.FC<PlaygroundProps> = ({ brandPalette, neutralPalette, s
           </section>
         )}
 
-        {/* Composer */}
-        {composerOpen && (
-          <section className="mt-4 rounded-2xl border border-border bg-card p-4" aria-label="Create a card with Pigmento">
-            <div className="flex items-start justify-between gap-3">
-              <div><h3 className="text-[15px] font-medium">Create a card with Pigmento</h3><p className="text-[13px] text-muted-foreground">Describe one card. It uses your tokens, so it re-themes with everything else.</p></div>
-              <button type="button" className="rounded-md p-1 hover:bg-accent" onClick={() => setComposerOpen(false)} aria-label="Close"><X className="size-4" strokeWidth={1.5} /></button>
-            </div>
-            <form className="mt-3 flex flex-col gap-3" onSubmit={e => { e.preventDefault(); create(prompt); }}>
-              <textarea rows={3} value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="A parking ticket with the time left and a button to extend it" aria-label="Card description"
-                className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-foreground" />
-              <div className="flex flex-wrap items-center gap-2">
-                {SUGGESTIONS.map(s => <button key={s} type="button" onClick={() => setPrompt(s)} className={`${chip} border-border text-muted-foreground hover:text-foreground`}>{s}</button>)}
-                <button type="submit" disabled={!prompt.trim() || !!busyId} className="ml-auto rounded-lg bg-foreground px-4 py-2 text-[13px] font-medium text-background disabled:opacity-50">
-                  {busyId === 'new' ? 'Building…' : 'Build card'}
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        {/* Filters */}
-        <div className="mt-5 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
-          {(['All', ...CARD_CATEGORIES, 'Pigmento'] as Filter[]).map(c => (
-            <button key={c} type="button" aria-pressed={filter === c} onClick={() => setFilter(c)}
-              className={`${chip} ${filter === c ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground hover:text-foreground'}`}>
-              {c === 'Pigmento' ? GENERATED : c}<span className="ml-1 opacity-60">{count(c)}</span>
-            </button>
-          ))}
-        </div>
-
         {/* Stage */}
-        <section className="pg mt-4 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
+        <section ref={stageRef} className="pg mt-2 scroll-mt-56 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
           <div className="masonry">
             {categories.map(cat => (
               <React.Fragment key={cat}>
                 <div className="cat-h">{cat === 'Pigmento' ? GENERATED : cat}</div>
+                {cat === 'Pigmento' && busyId === 'new' && (
+                  <div className="card" role="status" aria-live="polite">
+                    <div className="row"><div className="spin" aria-hidden /><div><h3 style={{ fontSize: 14 }}>Pigmento is building your card</h3><p className="xs muted">{pendingPrompt}</p></div></div>
+                    <div className="col mt" aria-hidden><div className="skel" style={{ height: 90 }} /><div className="skel" style={{ width: '70%' }} /><div className="skel" style={{ width: '45%' }} /></div>
+                  </div>
+                )}
                 {cat === 'Pigmento'
-                  ? (generated.length === 0
-                    ? <div className="card" style={{ borderStyle: 'dashed', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Use “Create with Pigmento” to build one from a sentence. It appears here, themed like the rest.</p></div>
+                  ? (generated.length === 0 && busyId !== 'new'
+                    ? <div className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Use “Create with Pigmento” to build one from a sentence. It appears here, themed like the rest.</p><button type="button" className="btn soft mt" onClick={onCreateWithPigmento}>Create with Pigmento</button></div>
                     : generated.map(card => (
-                      <GeneratedCardView key={card.id} card={card} tokensCss={tokensCss} busy={busyId === card.id} onRegenerate={c => create(c.prompt, c)} onDelete={remove} />
+                      <GeneratedCardView key={card.id} card={card} tokensCss={tokensCss} busy={busyId === card.id} onRegenerate={regenerate} onDelete={remove} />
                     )))
                   : PLAYGROUND_CARDS.filter(k => k.category === cat).map(({ id, component: C }) => (
                     <C key={id} {...(id === 'code-snippet' ? { css: exportCss } : {})} />
@@ -215,6 +237,8 @@ const Playground: React.FC<PlaygroundProps> = ({ brandPalette, neutralPalette, s
       </div>
     </div>
   );
-};
+});
+
+Playground.displayName = 'Playground';
 
 export default Playground;

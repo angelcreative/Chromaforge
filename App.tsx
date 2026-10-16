@@ -45,7 +45,7 @@ import StudioSidebar from './components/StudioSidebar';
 import StudioTopBar from './components/StudioTopBar';
 import AccountMenu from './components/AccountMenu';
 import CopilotPanel from './components/CopilotPanel';
-import Playground from './components/playground/Playground';
+import Playground, { PlaygroundHandle } from './components/playground/Playground';
 import DotGrid from './components/DotGrid';
 
 // Subscription Imports
@@ -155,6 +155,12 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  // Pigmento's second job inside the Playground: building cards from a sentence.
+  const playgroundRef = useRef<PlaygroundHandle>(null);
+  const [pigmentoMode, setPigmentoMode] = useState<'palette' | 'card'>('palette');
+  const [cardMessages, setCardMessages] = useState<ChatMessage[]>([]);
+  const [cardChatInput, setCardChatInput] = useState('');
+  const [isCardLoading, setIsCardLoading] = useState(false);
   const [generatingName, setGeneratingName] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false); 
@@ -584,6 +590,24 @@ const App: React.FC = () => {
       setSelectedColorForGrid(null);
   };
 
+  const handleCardSubmit = async (preset?: string) => {
+    const prompt = (preset ?? cardChatInput).trim();
+    if (!prompt || isCardLoading || !playgroundRef.current) return;
+    setCardChatInput('');
+    setCardMessages(prev => [...prev, { role: 'user', text: prompt }]);
+    setIsCardLoading(true);
+    const outcome = await playgroundRef.current.createCard(prompt);
+    setIsCardLoading(false);
+    setCardMessages(prev => [...prev, { role: 'model', text: outcome.message, creditsSpent: outcome.creditsSpent }]);
+    if (outcome.paymentRequired) {
+      if (user && !user.isAnonymous) setIsPricingOpen(true);
+      else {
+        buyAfterAuth.current = true;
+        askAccount('signup');
+      }
+    }
+  };
+
   const handleChatSubmit = async (e?: React.FormEvent, preset?: string) => {
     if (e) e.preventDefault();
     const text = (preset ?? chatInput).trim();
@@ -981,6 +1005,9 @@ const App: React.FC = () => {
   const paletteOpen = showWork && hasPalette && !showHome && !inBuild;
   const buildName = paletteName && paletteName !== 'Design Tokens' ? paletteName : `${customColors[0]?.name ?? 'My'} palette`;
 
+  const inPlayground = studioPane === 'playground' && !inBuild && !selectedColorForGrid;
+  const cardMode = inPlayground && pigmentoMode === 'card';
+
   const viewKey = inBuild
     ? 'build'
     : selectedColorForGrid
@@ -1069,6 +1096,10 @@ const App: React.FC = () => {
           globalConfig={globalCurveConfig}
           userId={paletteOwnerId}
           onCreditsChange={setCredits}
+          ref={playgroundRef}
+          onCreateWithPigmento={() => { setPigmentoMode('card'); setCopilotOpen(true); }}
+          insetLeft={shellOpen}
+          insetRight={copilotOpen}
         />
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
@@ -1395,11 +1426,13 @@ const App: React.FC = () => {
           open={copilotOpen}
           onToggle={() => setCopilotOpen((value) => !value)}
           onClose={() => setCopilotOpen(false)}
-          messages={messages}
-          input={chatInput}
-          onInput={setChatInput}
-          onSubmit={(text) => { void handleChatSubmit(undefined, text); }}
-          loading={isChatLoading}
+          mode={cardMode ? 'card' : 'palette'}
+          onModeChange={inPlayground ? setPigmentoMode : undefined}
+          messages={cardMode ? cardMessages : messages}
+          input={cardMode ? cardChatInput : chatInput}
+          onInput={cardMode ? setCardChatInput : setChatInput}
+          onSubmit={(text) => { if (cardMode) void handleCardSubmit(text); else void handleChatSubmit(undefined, text); }}
+          loading={cardMode ? isCardLoading : isChatLoading}
           balanceLabel={ownerView ? '' : creditCopy.meter}
           balanceTitle={ownerView ? '' : creditCopy.detail}
           balanceDetail={ownerView ? '' : creditCopy.detail}

@@ -156,6 +156,8 @@ export function buildPlaygroundTokens(
     t[key] = dark ? pick(r, [400, 300], t.surface, 3) : pick(r, [600, 500, 700], t.surface, 3);
     t[`${key}-soft`] = dark ? r[900] : r[100];
     t[`on-${key}-soft`] = dark ? pick(r, [200, 100, 50], r[900], 4.5) : pick(r, [800, 900], r[100], 4.5);
+    // Status text (hints, inline errors, deltas) straight on the card surface.
+    t[`${key}-text`] = dark ? pick(r, [300, 200, 100], t.surface, 4.5) : pick(r, [700, 800, 900], t.surface, 4.5);
   }
 
   // Radius scale
@@ -175,6 +177,8 @@ export function buildPlaygroundTokens(
     ['Success tag', 'on-success-soft', 'success-soft', 4.5],
     ['Warning tag', 'on-warning-soft', 'warning-soft', 4.5],
     ['Danger tag', 'on-danger-soft', 'danger-soft', 4.5],
+    ['Info tag', 'on-info-soft', 'info-soft', 4.5],
+    ['Error text', 'danger-text', 'surface', 4.5],
     ['Field border', 'border-strong', 'surface', 3],
     ['Switch off', 'switch-off', 'surface', 3],
     ['Accent on surface', 'accent', 'surface', 3],

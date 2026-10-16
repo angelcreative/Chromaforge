@@ -9,7 +9,8 @@
 .pg .cat-h{column-span:all;color:var(--text-2);font-size:13px;font-weight:600;margin:6px 2px 12px;display:flex;gap:8px;align-items:center}
 .pg .cat-h::after{content:"";flex:1;height:1px;background:var(--border)}
 .pg .cat-h:first-child{margin-top:0}
-.pg .card{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;font-family:var(--font);position:relative;overflow:hidden}
+/* Cards are borderless: separation comes from --surface on --bg. */
+.pg .card{background:var(--surface);color:var(--text);border:0;border-radius:var(--r-lg);padding:18px;font-family:var(--font);position:relative;overflow:hidden}
 .pg .card h3{margin:0;font-size:16px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
 .pg .card p{margin:0}
 .pg .muted{color:var(--text-2)}
@@ -24,6 +25,23 @@
 .pg .tag.warning{background:var(--warning-soft);color:var(--on-warning-soft)}
 .pg .tag.danger{background:var(--danger-soft);color:var(--on-danger-soft)}
 .pg .tag.info{background:var(--info-soft);color:var(--on-info-soft)}
+/* Status layer: callouts, field hints, invalid fields, deltas */
+.pg .note{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--r-md);font-size:13px;line-height:1.45;background:var(--accent-soft);color:var(--on-accent-soft)}
+.pg .note > .ico{margin-top:1px}
+.pg .note b{font-weight:600}
+.pg .note.success{background:var(--success-soft);color:var(--on-success-soft)}
+.pg .note.warning{background:var(--warning-soft);color:var(--on-warning-soft)}
+.pg .note.danger{background:var(--danger-soft);color:var(--on-danger-soft)}
+.pg .note.info{background:var(--info-soft);color:var(--on-info-soft)}
+.pg .hint{display:flex;align-items:center;gap:5px;font-size:12px;margin-top:6px;color:var(--text-2)}
+.pg .hint.success{color:var(--success-text)}
+.pg .hint.warning{color:var(--warning-text)}
+.pg .hint.danger{color:var(--danger-text)}
+.pg .hint.info{color:var(--info-text)}
+.pg .field.invalid,.pg .field[aria-invalid="true"]{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
+.pg .up{color:var(--success-text)}.pg .down{color:var(--danger-text)}
+.pg .dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none;background:var(--accent)}
+.pg .dot.success{background:var(--success)}.pg .dot.warning{background:var(--warning)}.pg .dot.danger{background:var(--danger)}.pg .dot.info{background:var(--info)}
 .pg .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border-radius:var(--r-md);border:1px solid transparent;font-weight:600;font-size:14px;cursor:pointer;background:var(--accent);color:var(--on-accent);transition:background .15s,transform .1s}
 .pg .btn:hover{background:var(--accent-hover)}
 .pg .btn:active{transform:translateY(1px)}
@@ -52,6 +70,12 @@
 .pg .ico.s{width:15px;height:15px}
 .pg .hero{border-radius:var(--r-md);background:linear-gradient(135deg,var(--p-300),var(--p-700));position:relative;overflow:hidden}
 .pg .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,rgba(255,255,255,.35),transparent 45%)}
+/* Stock photos (Pexels). The gradient stays underneath as the loading state and fallback. */
+.pg .hero > img,.pg .photo > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+.pg .hero > img.ready,.pg .photo > img.ready{opacity:1}
+.pg .hero.has-photo::after{display:none}
+.pg .photo{display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:linear-gradient(135deg,var(--p-300),var(--p-700));position:relative;overflow:hidden;object-fit:cover}
+.pg img.photo{background:var(--surface-2)}
 .pg .mono{font-family:var(--mono);font-size:12.5px}
 .pg .kbd{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:5px;border:1px solid var(--border-strong);color:var(--text-2)}
 .pg .seg-t{display:flex;background:var(--surface-2);border-radius:var(--r-md);padding:3px}

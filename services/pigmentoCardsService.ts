@@ -23,6 +23,7 @@ export interface GenerateCardResult {
   description: string;
   creditsSpent?: number;
   creditsRemaining?: number;
+  paymentRequired?: boolean;
 }
 
 const LOCAL_KEY = 'chromaforge_generated_cards';
@@ -55,6 +56,7 @@ export const generateCard = async (prompt: string, feedback?: string): Promise<G
         description: data.description || `HTTP ${response.status}: ${response.statusText}`,
         creditsSpent: data.creditsSpent,
         creditsRemaining: data.creditsRemaining,
+        paymentRequired: response.status === 402 || data.paymentRequired === true,
       };
     }
     return {

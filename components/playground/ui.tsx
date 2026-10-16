@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import * as RSwitch from '@radix-ui/react-switch';
 import * as RProgress from '@radix-ui/react-progress';
 import * as RTabs from '@radix-ui/react-tabs';
@@ -66,9 +66,66 @@ export const Segmented: React.FC<{ options: string[]; defaultValue?: string; cla
   </RTabs.Root>
 );
 
-/** Palette-driven image stand-in. Swap for the asset catalogue in phase 5. */
-export const Hero: React.FC<Div & { ratio?: string | number }> = ({ ratio = '16/9', className, style, ...rest }) => (
-  <div className={cx('hero', className)} style={{ aspectRatio: ratio as any, ...style }} aria-hidden {...rest} />
+type PhotoOrientation = 'landscape' | 'portrait' | 'square';
+interface StockPhoto { src: string; small: string; alt: string; credit: string; link: string }
+
+// One request per query per page load; the server caches across users.
+const photoRequests = new Map<string, Promise<StockPhoto | null>>();
+const loadPhoto = (query: string, orientation: PhotoOrientation) => {
+  const key = `${orientation}:${query}`;
+  let request = photoRequests.get(key);
+  if (!request) {
+    request = fetch(`/api/photo?q=${encodeURIComponent(query)}&orientation=${orientation}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => (d?.photo?.src ? d.photo as StockPhoto : null))
+      .catch(() => null);
+    photoRequests.set(key, request);
+  }
+  return request;
+};
+
+const useStockPhoto = (query?: string, orientation: PhotoOrientation = 'landscape') => {
+  const [photo, setPhoto] = useState<StockPhoto | null>(null);
+  useEffect(() => {
+    if (!query) return;
+    let alive = true;
+    loadPhoto(query, orientation).then(p => { if (alive) setPhoto(p); });
+    return () => { alive = false; };
+  }, [query, orientation]);
+  return photo;
+};
+
+/**
+ * Image slot. With `photo` it shows a Pexels stock photo for that query; the
+ * palette gradient stays underneath while it loads and as the fallback when
+ * the server has no Pexels key.
+ */
+export const Hero: React.FC<Div & { ratio?: string | number; photo?: string; orientation?: PhotoOrientation; thumb?: boolean }> = ({
+  ratio = '16/9', photo: query, orientation, thumb, className, style, children, ...rest
+}) => {
+  const photo = useStockPhoto(query, orientation ?? (String(ratio) === '1' ? 'square' : 'landscape'));
+  const [ready, setReady] = useState(false);
+  return (
+    <div className={cx('hero', photo && 'has-photo', className)} style={{ aspectRatio: ratio as any, ...style }} aria-hidden {...rest}>
+      {photo && (
+        <img src={thumb ? photo.small : photo.src} alt="" title={`Photo: ${photo.credit} / Pexels`} loading="lazy" referrerPolicy="no-referrer"
+          className={ready ? 'ready' : undefined} onLoad={() => setReady(true)} />
+      )}
+      {children}
+    </div>
+  );
+};
+
+/** Inline status callout (success, warning, danger, info; default uses the accent). */
+export const Note: React.FC<Div & { tone?: 'accent' | 'success' | 'warning' | 'danger' | 'info'; icon?: React.ReactNode }> = ({ tone = 'accent', icon, className, children, ...rest }) => (
+  <div className={cx('note', tone !== 'accent' && tone, className)} role={tone === 'danger' ? 'alert' : 'status'} {...rest}>
+    {icon}<span>{children}</span>
+  </div>
+);
+
+/** Helper or validation text under a field. */
+export const Hint: React.FC<React.HTMLAttributes<HTMLParagraphElement> & { tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'info' }> = ({ tone = 'neutral', className, ...rest }) => (
+  <p className={cx('hint', tone !== 'neutral' && tone, className)} {...rest} />
 );
 
 export const Divider = () => <div className="divider" role="separator" />;

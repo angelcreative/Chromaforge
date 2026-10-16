@@ -20,7 +20,7 @@ export const MusicPlayerCard: React.FC = () => {
   const [volume, setVolume] = useState([40]);
   return (
     <Card title="Music player">
-      <Hero ratio="1.6" style={{ margin: '-6px -6px 14px' }} />
+      <Hero ratio="1.6" photo="vinyl record album cover" style={{ margin: '-6px -6px 14px' }} />
       <div className="row between">
         <div><h3>Midnight Static</h3><p className="sm muted">Lumen Avenue</p></div>
         <LikeButton />
@@ -44,12 +44,12 @@ export const MusicPlayerCard: React.FC = () => {
 
 export const VideoCard: React.FC = () => (
   <Card title="Video">
-    <Hero style={{ display: 'grid', placeItems: 'center' }}>
-      <span className="btn icon" style={{ width: 52, height: 52, borderRadius: '50%', zIndex: 1 }}><Play {...ico} /></span>
+    <Hero photo="designer color swatches desk" style={{ display: 'grid', placeItems: 'center' }}>
+      <span className="btn icon" style={{ width: 52, height: 52, borderRadius: '50%', zIndex: 1, position: 'relative' }}><Play {...ico} /></span>
     </Hero>
     <h3 className="mt">Designing perceptual color scales</h3>
     <div className="row mt-s sm muted"><Avatar initials="IR" style={{ width: 24, height: 24, fontSize: 10 }} />Inés Rubio · 12 min</div>
-    <div className="row mt"><Tag>Tutorial</Tag><Tag tone="info">New</Tag></div>
+    <div className="row mt"><Tag>Tutorial</Tag><Tag tone="info">New</Tag><Tag tone="success">Free</Tag></div>
   </Card>
 );
 
@@ -60,13 +60,14 @@ export const SocialPostCard: React.FC = () => (
       <div style={{ flex: 1 }}><h3 style={{ fontSize: 14 }}>lucia.studio</h3><p className="xs muted">Valencia</p></div>
       <MoreHorizontal {...sm} />
     </div>
-    <Hero ratio="1" className="mt" style={{ marginInline: -18, borderRadius: 0 }} />
+    <Hero ratio="1" photo="colorful street mural" className="mt" style={{ marginInline: -18, borderRadius: 0 }} />
     <div className="row mt">
       <LikeButton />
       <Button variant="ghost" icon aria-label="Comment"><MessageCircle {...ico} /></Button>
       <Button variant="ghost" icon aria-label="Share"><Share2 {...ico} /></Button>
     </div>
     <p className="sm mt-s"><b>2,481 likes</b> · <span className="muted">New mural series in El Cabanyal</span></p>
+    <p className="xs mt-s up">+312 since yesterday</p>
   </Card>
 );
 
