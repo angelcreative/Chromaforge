@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Download, Library, PanelLeft, PanelLeftClose, Pipette, Plus, Settings, SlidersHorizontal } from 'lucide-react';
+import { Download, LayoutGrid, Library, PanelLeft, PanelLeftClose, Pipette, Plus, Settings, SlidersHorizontal } from 'lucide-react';
 import { THEME_OPTIONS, useThemePreference } from './ThemeToggle';
 import RampScaleControls from './RampScaleControls';
 import type { GlobalCurveConfig } from '../types';
@@ -16,6 +16,8 @@ export interface StudioSidebarProps {
   refineOpen: boolean;
   onRefine: () => void;
   onExportMarkdown: () => void;
+  playgroundOpen: boolean;
+  onPlayground: () => void;
   curve: GlobalCurveConfig;
   onCurve: (next: GlobalCurveConfig) => void;
 }
@@ -97,6 +99,8 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
   refineOpen,
   onRefine,
   onExportMarkdown,
+  playgroundOpen,
+  onPlayground,
   curve,
   onCurve,
 }) => {
@@ -186,6 +190,17 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
                       <Pipette className="size-4" strokeWidth={1.5} aria-hidden />
                     </span>
                     <span className="pr-2 text-left">Refine</span>
+                  </MotionButton>
+                  <MotionButton
+                    type="button"
+                    onClick={onPlayground}
+                    aria-pressed={playgroundOpen}
+                    className={`${actionRow} ${playgroundOpen ? 'bg-accent' : ''}`}
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center">
+                      <LayoutGrid className="size-4" strokeWidth={1.5} aria-hidden />
+                    </span>
+                    <span className="pr-2 text-left">Playground</span>
                   </MotionButton>
                   <MotionButton type="button" onClick={onExportMarkdown} className={actionRow}>
                     <span className="grid size-9 shrink-0 place-items-center">

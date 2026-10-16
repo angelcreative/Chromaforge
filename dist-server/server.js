@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
-import { compileComponent, cleanupOldBundles } from './services/componentCompiler.js';
+import { PIGMENTO_CARD_SYSTEM, cardRetryPrompt, validateCardHtml } from './services/pigmentoCards.js';
 import { CreditLedger, networkKeyForIp } from './services/creditLedger.js';
 import { isOwnerAccount } from './services/ownerGate.js';
 import { grantFromStripeEvent, verifyStripeSignature } from './services/stripeFulfillment.js';
@@ -328,347 +328,95 @@ app.post('/api/palette', async (req, res) => {
 // API endpoint for UI component generation
 app.post('/api/ui-design', async (req, res) => {
     try {
-        const { prompt, palette, availableComponents, config } = req.body;
-        if (!prompt || typeof prompt !== 'string') {
-            return res.status(400).json({
-                code: '',
-                description: 'Invalid request: prompt must be a string'
-            });
+        const { prompt, feedback } = req.body ?? {};
+        if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
+            return res.status(400).json({ html: '', description: 'Describe the card you want in a few words.' });
         }
-        if (!palette || !availableComponents || !config) {
-            return res.status(400).json({
-                code: '',
-                description: 'Invalid request: missing required fields'
-            });
-        }
-        // Get API key from environment
         const apiKey = process.env.API_KEY;
         if (!apiKey) {
             console.error('[Backend] API_KEY environment variable is not set');
-            return res.status(500).json({
-                code: '',
-                description: 'CRITICAL: No API Key found. Please configure API_KEY in Google Cloud Run settings.'
-            });
+            return res.status(500).json({ html: '', description: 'CRITICAL: No API Key found. Please configure API_KEY in Google Cloud Run settings.' });
         }
-        // Sanitize API key
         let sanitizedKey = apiKey.trim();
-        if ((sanitizedKey.startsWith('"') && sanitizedKey.endsWith('"')) ||
-            (sanitizedKey.startsWith("'") && sanitizedKey.endsWith("'"))) {
+        if ((sanitizedKey.startsWith('"') && sanitizedKey.endsWith('"')) || (sanitizedKey.startsWith("'") && sanitizedKey.endsWith("'"))) {
             sanitizedKey = sanitizedKey.slice(1, -1);
         }
         if (!sanitizedKey || sanitizedKey.length < 20) {
-            console.error('[Backend] API_KEY is invalid or too short');
-            return res.status(500).json({
-                code: '',
-                description: 'CRITICAL: Invalid API Key. Please check Google Cloud Run settings.'
-            });
+            return res.status(500).json({ html: '', description: 'CRITICAL: Invalid API Key. Please check Google Cloud Run settings.' });
         }
-        // Initialize Gemini
         const ai = new GoogleGenAI({ apiKey: sanitizedKey });
-        // Build palette context with shades
-        const brandPaletteContext = palette.brand.map((c) => {
-            const shades = c.shades?.map((s) => `${s.level}: ${s.hex}`).join(', ') || 'no shades';
-            return `- ${c.name}: ${c.hex} (shades: ${shades})`;
-        }).join('\n    ');
-        const neutralPaletteContext = palette.neutral.map((c) => {
-            const shades = c.shades?.map((s) => `${s.level}: ${s.hex}`).join(', ') || 'no shades';
-            return `- ${c.name}: ${c.hex} (shades: ${shades})`;
-        }).join('\n    ');
-        const semanticPaletteContext = palette.semantic.map((c) => {
-            const shades = c.shades?.map((s) => `${s.level}: ${s.hex}`).join(', ') || 'no shades';
-            return `- ${c.name}: ${c.hex} (shades: ${shades})`;
-        }).join('\n    ');
-        // Get primary color from palette
-        const primaryColor = palette.brand[config.primaryIndex]?.hex || palette.brand[0]?.hex || '#1976d2';
-        const primaryShade300 = palette.brand[config.primaryIndex]?.shades?.find((s) => s.level === 300)?.hex || primaryColor;
-        const primaryShade700 = palette.brand[config.primaryIndex]?.shades?.find((s) => s.level === 700)?.hex || primaryColor;
-        const secondaryColor = palette.brand[1]?.hex || palette.brand[0]?.hex || '#dc004e';
-        const secondaryShade300 = palette.brand[1]?.shades?.find((s) => s.level === 300)?.hex || secondaryColor;
-        const secondaryShade700 = palette.brand[1]?.shades?.find((s) => s.level === 700)?.hex || secondaryColor;
-        const bgDefault = palette.neutral[0]?.hex || '#ffffff';
-        const bgPaper = palette.neutral[1]?.hex || palette.neutral[0]?.hex || '#f5f5f5';
-        const textPrimary = palette.neutral[palette.neutral.length - 1]?.hex || '#000000';
-        const textSecondary = palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#666666';
-        const errorColor = palette.semantic.find((c) => c.name.toLowerCase().includes('error') || c.name.toLowerCase().includes('danger'))?.hex || '#d32f2f';
-        const warningColor = palette.semantic.find((c) => c.name.toLowerCase().includes('warning'))?.hex || '#ed6c02';
-        const infoColor = palette.semantic.find((c) => c.name.toLowerCase().includes('info'))?.hex || '#0288d1';
-        const successColor = palette.semantic.find((c) => c.name.toLowerCase().includes('success'))?.hex || '#2e7d32';
-        const primaryShade600 = palette.brand[config.primaryIndex]?.shades?.find((s) => s.level === 600)?.hex || primaryColor;
-        const context = `
-    You are a professional UI Designer and React Developer specializing in Google Material Design.
-    
-    === CRITICAL: ALWAYS USE CHROMAFORGE PALETTE COLORS ===
-    You MUST use colors from the provided ChromaForge palette. NEVER use hardcoded colors like "#FF5733", "blue", "red", "#1976d2", etc.
-    
-    === CURRENT COLOR PALETTE FROM CHROMAFORGE ===
-    Brand Colors:
-    ${brandPaletteContext || 'No brand colors'}
-    
-    Neutral Colors:
-    ${neutralPaletteContext || 'No neutral colors'}
-    
-    Semantic Colors:
-    ${semanticPaletteContext || 'No semantic colors'}
-    
-    === THEME CONFIGURATION ===
-    - Dark Mode: ${config.isDarkMode}
-    - Primary Color Index: ${config.primaryIndex}
-    - Surface Mode: ${config.surfaceMode}
-    - Text Mode: ${config.textMode}
-    - Disabled Mode: ${config.disabledMode}
-    
-    === USER REQUEST ===
-    "${prompt}"
-    
-    === TASK ===
-    Generate a React/JSX component using Material-UI (MUI) that matches the user's request.
-    
-    === CRITICAL RULES ===
-    1. **ALWAYS USE COLORS FROM CHROMAFORGE PALETTE**: 
-       - NEVER use hardcoded colors like "#FF5733", "blue", "red", "#1976d2", etc.
-       - ALWAYS reference colors from the provided ChromaForge palette above
-       - Create a theme object that maps ChromaForge colors to Material Design:
-         const theme = createTheme({
-           palette: {
-             primary: { 
-               main: '${primaryColor}',
-               light: '${primaryShade300}',
-               dark: '${primaryShade700}'
-             },
-             secondary: { 
-               main: '${secondaryColor}',
-               light: '${secondaryShade300}',
-               dark: '${secondaryShade700}'
-             },
-             background: { 
-               default: '${bgDefault}',
-               paper: '${bgPaper}'
-             },
-             text: {
-               primary: '${textPrimary}',
-               secondary: '${textSecondary}',
-               disabled: '${palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999'}'
-             },
-             error: { main: '${errorColor}' },
-             warning: { main: '${warningColor}' },
-             info: { main: '${infoColor}' },
-             success: { main: '${successColor}' },
-             action: {
-               disabled: '${palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999'}',
-               disabledBackground: '${palette.neutral[Math.floor(palette.neutral.length / 2) - 1]?.hex || palette.neutral[0]?.hex || '#cccccc'}'
-             }
-           }
-         });
-       - When user says "primary-600", use: '${primaryShade600}'
-       - When user says "use color X", find that color in the ChromaForge palette above
-       - **DISABLED COLORS**: ALWAYS use neutral colors from the palette for disabled states. NEVER use hardcoded gray colors.
-       - **SEMANTIC COLORS**: Use the semantic colors from the ChromaForge palette (error, warning, info, success) shown above.
-    
-    2. **Material-UI Components**: 
-       - Import from @mui/material (e.g., import { Button, Card, TextField, ThemeProvider, createTheme } from '@mui/material')
-       - Use Material Design patterns and spacing (8px grid)
-       - Follow Material Design elevation system
-       - Wrap component in ThemeProvider with the theme created from ChromaForge colors
-    
-    3. **Google Fonts**: 
-       - Use Google Fonts (Roboto is default)
-       - Material-UI uses Roboto by default, no need to import
-    
-    4. **Material Icons**: 
-       - Material Icons are available as helper functions (ShoppingCart, Home, Search, Menu, Favorite, Add, Delete, Edit, etc.)
-       - DO NOT import from @mui/icons-material - icons are provided as React components
-       - Examples: <ShoppingCart />, <Home />, <Search />, <Menu />, <Favorite />, <Add />, <Delete />, <Edit />
-       - These icon components are already available in the environment
-       - DO NOT use lucide-react icons
-    
-    5. **Component Structure**: 
-       - Create complete, functional React components
-       - You can create your own theme using createTheme() OR use the existing 'chromaForgePaletteTheme'
-       - If you create a theme, use the ChromaForge palette colors provided above
-       - Use sx prop or styled components for styling
-       - Example:
-         import { ThemeProvider, createTheme } from '@mui/material/styles';
-         import { Button, Card, CardContent, Typography } from '@mui/material';
-         // Icons are available as components (Favorite, Star, ShoppingCart, etc.)
-         
-         const theme = createTheme({
-           palette: {
-             primary: { main: '${primaryColor}' },
-             // ... use ChromaForge colors
-           }
-         });
-         
-         const GeneratedComponent = () => {
-           return (
-             <ThemeProvider theme={theme}>
-               <Card>
-                 <CardContent>
-                   <Typography variant="h5" color="text.primary">
-                     Title
-                   </Typography>
-                   <Button variant="contained" color="primary" startIcon={<ShoppingCart />}>
-                     Action
-                   </Button>
-                 </CardContent>
-               </Card>
-             </ThemeProvider>
-           );
-         };
-       - IMPORTANT: If creating a theme, ALWAYS use colors from ChromaForge palette above
-       - IMPORTANT: Icons are available as React components (Favorite, Star, ShoppingCart, etc.) - do NOT import them
-    
-    6. **Images**: 
-       - Use Picsum Photos: https://picsum.photos/[width]/[height]?random=[seed]
-       - Use descriptive seeds: portrait, nature, product, kitchen, etc.
-    
-    7. **Code Quality**: 
-       - Clean, readable, production-ready code
-       - Proper Material Design spacing and typography
-       - Accessible components with ARIA attributes
-       - NO hardcoded colors - ALWAYS use theme colors from ChromaForge palette
-    
-    === OUTPUT FORMAT ===
-    Return ONLY valid JSX/TSX code. No markdown code blocks, no explanations.
-    The code must:
-    - Import Material-UI components from @mui/material
-    - Import Material Icons from @mui/icons-material
-    - Create a theme using ChromaForge palette colors (NEVER hardcoded)
-    - Use ThemeProvider to wrap the component
-    - Reference colors from the theme, NEVER hardcoded colors
-    - Export the component as default or named export
-    `;
+        const context = `Build this card: ${prompt.trim().slice(0, 600)}` +
+            (typeof feedback === 'string' && feedback.trim() ? `\nThe user wants this changed from the previous version: ${feedback.trim().slice(0, 400)}` : '');
         const decision = await decideTurn(req, context, 'design', DESIGN_RESERVED_OUTPUT_TOKENS);
         if (decision.kind === 'refuse')
             return res.status(decision.status).json(decision.body);
-        const metered = await callModelIfAllowed(decision, () => ai.models.generateContent({
+        const schema = {
+            type: Type.OBJECT,
+            properties: {
+                title: { type: Type.STRING, description: 'Short card name, 2-4 words.' },
+                html: { type: Type.STRING, description: 'One <article class="card"> element using only the allowed classes and CSS variables.' },
+            },
+            required: ['title', 'html'],
+        };
+        const generate = (contents) => ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: context,
-            config: {
-                systemInstruction: "You are a React/JSX code generator specializing in Material Design. You output only valid, executable React component code using Material-UI. Always use colors from the ChromaForge palette provided. No explanations, no markdown, just code.",
-            }
-        }));
+            contents,
+            config: { systemInstruction: PIGMENTO_CARD_SYSTEM, responseMimeType: 'application/json', responseSchema: schema },
+        });
+        const metered = await callModelIfAllowed(decision, () => generate(context));
         if (metered.kind === 'refused')
             return res.status(metered.status).json(metered.body);
-        const response = metered.value;
-        let code = response.text;
-        if (!code) {
-            throw new Error("Empty response from AI");
-        }
-        // Clean up potential markdown formatting
-        code = code.replace(/^```(jsx|tsx|javascript|typescript)?\s*/i, '').replace(/\s*```$/i, '').trim();
-        const charge = await chargeTurn(metered.decision, context, code, response.usageMetadata);
-        // Extract component name if possible
-        const componentNameMatch = code.match(/(?:const|function|export\s+(?:const|function))\s+(\w+)/);
-        const componentName = componentNameMatch ? componentNameMatch[1] : 'GeneratedComponent';
-        // Construir tema para inyección
-        const theme = {
-            action: {
-                primary: primaryColor,
-                primaryHover: primaryShade700,
-                secondary: secondaryColor,
-                secondaryBg: secondaryShade300,
-            },
-            bg: {
-                page: bgDefault,
-                card: bgPaper,
-            },
-            text: {
-                main: textPrimary,
-                secondary: textSecondary,
-            },
-            disabled: {
-                bg: palette.neutral[Math.floor(palette.neutral.length / 2) - 1]?.hex || palette.neutral[0]?.hex || '#cccccc',
-                text: palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999',
-                border: palette.neutral[Math.floor(palette.neutral.length / 2)]?.hex || '#999999',
-            },
-            semantic: {
-                error: { main: errorColor },
-                warning: { main: warningColor },
-                info: { main: infoColor },
-                success: { main: successColor },
-            },
+        const parse = (text) => {
+            try {
+                return JSON.parse((text || '').replace(/^```json\s*/i, '').replace(/```$/, ''));
+            }
+            catch {
+                return null;
+            }
         };
-        // Compilar componente
-        const compileResult = await compileComponent({
-            code,
-            componentName,
-            theme,
-        });
-        if (compileResult.error) {
-            console.error('[Backend] Compilation error:', compileResult.error);
-            // Devolver código sin compilar como fallback
-            return res.json({
-                code: code,
-                description: `Generated ${componentName} based on your request. (Compilation failed: ${compileResult.error})`,
-                componentName: componentName,
-                bundleId: null,
-                ...charge,
-            });
+        let response = metered.value;
+        let data = parse(response.text);
+        let check = validateCardHtml(data?.html ?? '');
+        let usageText = response.text || '';
+        // One cheap retry with the validator's findings; the second call is metered on the same turn.
+        if (!check.ok) {
+            console.warn('[Pigmento] card rejected, retrying:', check.errors);
+            const retryContents = `${context}\n\nPrevious attempt:\n${data?.html ?? response.text ?? ''}\n\n${cardRetryPrompt(check.errors)}`;
+            const second = await generate(retryContents);
+            response = second;
+            data = parse(second.text);
+            check = validateCardHtml(data?.html ?? '');
+            usageText += second.text || '';
         }
-        // Limpiar bundles antiguos (en background)
-        cleanupOldBundles();
+        const charge = await chargeTurn(metered.decision, context, usageText, response.usageMetadata);
+        if (!check.ok) {
+            return res.status(422).json({ html: '', description: `Pigmento could not build a valid card: ${check.errors[0]}`, ...charge });
+        }
         return res.json({
-            code: code, // Mantener código original para mostrar en el editor
-            description: `Generated ${componentName} based on your request.`,
-            componentName: componentName,
-            bundleId: compileResult.bundleId, // ID del bundle compilado
+            title: typeof data?.title === 'string' && data.title.trim() ? data.title.trim().slice(0, 60) : 'Pigmento card',
+            html: check.html,
+            description: 'Card ready.',
             ...charge,
         });
     }
     catch (error) {
-        console.error("[Backend] Gemini API Error:", error);
-        let userMessage = "I encountered an error generating the UI component.";
-        if (error.message) {
-            if (error.message.includes('API key not valid') || error.message.includes('400')) {
-                userMessage = "Configuration Error (400): The API Key is invalid. Check Google Cloud Console.";
-            }
-            else if (error.message.toLowerCase().includes('leaked')) {
-                userMessage = "Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.";
-            }
-            else if (error.message.includes('403') || error.message.includes('permission denied')) {
+        console.error('[Backend] Pigmento card error:', error);
+        let userMessage = 'I encountered an error generating the card.';
+        if (error?.message) {
+            if (error.message.includes('API key not valid') || error.message.includes('400'))
+                userMessage = 'Configuration Error (400): The API Key is invalid. Check Google Cloud Console.';
+            else if (error.message.toLowerCase().includes('leaked'))
+                userMessage = 'Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.';
+            else if (error.message.includes('403') || error.message.includes('permission denied'))
                 userMessage = "Access Denied (403). Please enable 'Generative Language API' in Google Cloud Console for this API Key.";
-            }
-            else if (error.message.includes('429') || error.message.includes('quota')) {
-                userMessage = "API Quota Exceeded. Please try again later.";
-            }
-            else if (error.message.includes('fetch') || error.message.includes('network')) {
-                userMessage = "Network Error. Please check your connection.";
-            }
-            else {
+            else if (error.message.includes('429') || error.message.includes('quota'))
+                userMessage = 'API Quota Exceeded. Please try again later.';
+            else if (error.message.includes('fetch') || error.message.includes('network'))
+                userMessage = 'Network Error. Please check your connection.';
+            else
                 userMessage = `System Error: ${error.message.slice(0, 100)}`;
-            }
         }
-        return res.status(500).json({
-            code: '',
-            description: userMessage
-        });
-    }
-});
-// Endpoint para servir bundles compilados
-app.get('/api/bundles/:bundleId.js', (req, res) => {
-    try {
-        const { bundleId } = req.params;
-        // Usar el mismo directorio que componentCompiler
-        const bundlesDir = process.env.NODE_ENV === 'production'
-            ? '/tmp/chromaforge-bundles'
-            : join(process.cwd(), 'dist-server', 'bundles');
-        const bundlePath = join(bundlesDir, `${bundleId}.js`);
-        try {
-            const bundle = readFileSync(bundlePath, 'utf-8');
-            res.setHeader('Content-Type', 'application/javascript');
-            res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 hora
-            res.setHeader('Access-Control-Allow-Origin', '*'); // CORS para iframe
-            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups'); // Reducir warnings
-            res.send(bundle);
-        }
-        catch (error) {
-            console.error('[Server] Bundle not found:', bundlePath);
-            res.status(404).json({ error: 'Bundle not found' });
-        }
-    }
-    catch (error) {
-        console.error('[Server] Error serving bundle:', error);
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ html: '', description: userMessage });
     }
 });
 // Serve SPA - serve index.html for all routes
