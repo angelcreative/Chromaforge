@@ -1,5 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Moon, Sun, X } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, X } from 'lucide-react';
+import { Hint } from '../Hint';
 import PigmentoMark from '../pigmento/PigmentoMark';
 import LogoMark from '../LogoMark';
 import { MotionButton } from '../uiMotion';
@@ -24,6 +25,10 @@ export interface PlaygroundProps {
   onCreditsChange?: (remaining: number) => void;
   /** Opens the Pigmento chat in card mode. */
   onCreateWithPigmento: () => void;
+  /** Name of the palette the Playground is showing. */
+  paletteName: string;
+  /** Back to that palette. */
+  onBack: () => void;
 }
 
 export interface CardOutcome {
@@ -80,7 +85,7 @@ const segBtn = (on: boolean) => `rounded-md px-2.5 py-1 text-[13px] ${on ? 'bg-c
 
 const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   brandPalette, neutralPalette, semanticPalette, config, onConfigChange, globalConfig, userId, onCreditsChange,
-  onCreateWithPigmento,
+  onCreateWithPigmento, paletteName, onBack,
 }, ref) => {
   const [radius, setRadius] = useState(12);
   const [filter, setFilter] = useState<Filter>('All');
@@ -167,9 +172,17 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
           sliding underneath. */}
       <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pb-1 pt-5">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <div className="mr-auto">
-            <h2 className="text-2xl font-medium tracking-tight">Playground</h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">Your palette applied to {PLAYGROUND_CARDS.length} interfaces at once.</p>
+          <div className="mr-auto flex min-w-0 items-start gap-2">
+            <Hint label="See palette">
+              <MotionButton type="button" onClick={onBack} aria-label="See palette"
+                className="-ml-2 mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg text-foreground hover:bg-accent">
+                <ArrowLeft className="size-4" strokeWidth={1.5} aria-hidden />
+              </MotionButton>
+            </Hint>
+            <div className="min-w-0">
+              <h2 className="truncate text-2xl font-medium tracking-tight">{paletteName}</h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">Playground · your palette applied to {PLAYGROUND_CARDS.length} interfaces at once.</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Primary color">
