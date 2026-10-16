@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------
+    // 1. USUARIOS (Perfil, Estado PRO y Estadísticas)
+    // ---------------------------------------------------------
+    // El cliente solo puede tocar sus contadores de uso.
+    // isPro, créditos y cualquier otro campo solo se escriben desde
+    // el servidor (Admin SDK, que no pasa por estas reglas).
+    function isUsageCounter(keys) {
+      return keys.hasOnly(['savedPaletteCount', 'paletteCount', 'aiCount',
+                           'exportCount', 'tunerCount', 'editCount']);
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && isUsageCounter(request.resource.data.keys());
+      allow update: if request.auth != null && request.auth.uid == userId
+        && isUsageCounter(request.resource.data.diff(resource.data).affectedKeys());
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------
+    // 2. PALETAS
+    // ---------------------------------------------------------
+    match /palettes/{paletteId} {
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // ---------------------------------------------------------
+    // 3. CONTADOR GLOBAL (Para la Landing Page)
+    // ---------------------------------------------------------
+    // El cliente no escribe aquí; solo el servidor.
+    match /stats/global {
+      allow read;
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // 4. STRIPE / PAGOS (Extensión de Stripe)
+    // ---------------------------------------------------------
+    // La extensión escribe el doc del cliente y las suscripciones
+    // con privilegios de admin; el usuario solo crea checkout_sessions.
+    match /customers/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      match /checkout_sessions/{id} {
+        allow read, create: if request.auth != null && request.auth.uid == uid;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ---------------------------------------------------------
+    // 5. PLAYGROUND · Tarjetas creadas con Pigmento
+    // ---------------------------------------------------------
+    match /playgroundCards/{cardId} {
+      allow read, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.html is string
+        && request.resource.data.html.size() <= 8000
+        && request.resource.data.keys().hasOnly(['userId', 'title', 'prompt', 'html', 'createdAt']);
+      allow update: if false;
+    }
+  }
+}
