@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, RefreshCw, Trash2 } from 'lucide-react';
+import LogoMark from '../LogoMark';
+import { CARD_CREDITS_ESTIMATE } from '../../services/credits';
 import playgroundCss from './playground.css?raw';
 import type { GeneratedCard as GeneratedCardData } from '../../services/pigmentoCardsService';
 
@@ -75,8 +77,11 @@ export const GeneratedCardView: React.FC<Props> = ({ card, tokensCss, busy, onRe
         loading="lazy"
       />
       <div className="gen-tools" role="group" aria-label={`${card.title} actions`}>
-        <button type="button" className="btn ghost" style={{ height: 30, fontSize: 12 }} onClick={() => onRegenerate(card)} disabled={busy} aria-label="Regenerate">
-          <RefreshCw className="ico s" strokeWidth={1.8} /> Regenerate
+        <button type="button" className="btn ghost" style={{ height: 30, fontSize: 12 }} onClick={() => onRegenerate(card)} disabled={busy} aria-label={busy ? 'Regenerating' : 'Regenerate'}
+          title={`Build this card again. Uses about ${CARD_CREDITS_ESTIMATE} credits.`} aria-busy={busy}>
+          {busy
+            ? <><span aria-hidden style={{ display: 'grid', width: 16, height: 16, color: 'var(--text)' }}><LogoMark motion="loading" className="size-4" /></span> Regenerating…</>
+            : <><RefreshCw className="ico s" strokeWidth={1.8} /> Regenerate</>}
         </button>
         <button type="button" className="btn ghost icon" style={{ height: 30, width: 30 }} onClick={copy} aria-label={copied ? 'Copied' : 'Copy HTML'}>
           {copied ? <Check className="ico s" strokeWidth={1.8} /> : <Copy className="ico s" strokeWidth={1.8} />}

@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { CloseButton } from './FloatingDrawer';
 import { ChatMessage } from '../types';
-import { formatCompact } from '../services/credits';
+import { CARD_CREDITS_ESTIMATE, formatCompact } from '../services/credits';
+import { MAX_GENERATED_CARDS } from '../services/pigmentoCardsService';
 import LogoMark from './LogoMark';
 import PigmentoButton from './pigmento/PigmentoButton';
 import { MotionButton, enterMotion, presencePop, useReduced } from './uiMotion';
@@ -16,7 +17,7 @@ const PIGMENTO_STARTERS = [
   'Darker and moodier',
   'Fewer, calmer colors',
 ] as const;
-const CARD_GREETING = "Describe a card and I'll build it with your palette, status colors and real photos. Try one of these.";
+const CARD_GREETING = `Describe a card and I'll build it with your palette, status colors and real photos. Each card uses about ${CARD_CREDITS_ESTIMATE} credits from your balance, and you can keep up to ${MAX_GENERATED_CARDS}.`;
 const CARD_STARTERS = [
   'Food delivery order with dish photos',
   'Boarding pass with a gate change',
