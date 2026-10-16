@@ -45,6 +45,7 @@ import StudioSidebar from './components/StudioSidebar';
 import StudioTopBar from './components/StudioTopBar';
 import AccountMenu from './components/AccountMenu';
 import CopilotPanel from './components/CopilotPanel';
+import Playground from './components/playground/Playground';
 import DotGrid from './components/DotGrid';
 
 // Subscription Imports
@@ -122,7 +123,7 @@ const App: React.FC = () => {
   // UI State
   const [activeTab, setActiveTab] = useState<PaletteTab>('brand');
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor'); // Default to editor on mobile
-  const [studioPane, setStudioPane] = useState<'composer' | 'colors'>('composer');
+  const [studioPane, setStudioPane] = useState<'composer' | 'colors' | 'playground'>('composer');
   const [shellOpen, setShellOpen] = useState(false);
   const [showWork, setShowWork] = useState(false);
   const [refineOpen, setRefineOpen] = useState(false);
@@ -1033,6 +1034,8 @@ const App: React.FC = () => {
           refineOpen={refineOpen}
           onRefine={() => { if (refineOpen) setRefineOpen(false); else openRefine(); }}
           onExportMarkdown={handleDownloadSkill}
+          playgroundOpen={studioPane === 'playground'}
+          onPlayground={() => setStudioPane((pane) => (pane === 'playground' ? 'composer' : 'playground'))}
           curve={globalCurveConfig}
           onCurve={setGlobalCurveConfig}
         />
@@ -1056,6 +1059,17 @@ const App: React.FC = () => {
         />
       ) : selectedColorForGrid ? (
         <ContrastGrid color={selectedColorForGrid} globalConfig={globalCurveConfig} onClose={() => setSelectedColorForGrid(null)} />
+      ) : studioPane === 'playground' ? (
+        <Playground
+          brandPalette={workingColors}
+          neutralPalette={neutralPalette}
+          semanticPalette={semanticPalette}
+          config={playgroundConfig}
+          onConfigChange={setPlaygroundConfig}
+          globalConfig={globalCurveConfig}
+          userId={paletteOwnerId}
+          onCreditsChange={setCredits}
+        />
       ) : studioPane === 'colors' ? (
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">

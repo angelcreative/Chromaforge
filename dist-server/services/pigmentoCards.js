@@ -1,0 +1,92 @@
+/**
+ * Pigmento "create a card" pipeline (server side).
+ *
+ * The model writes plain HTML against the playground's component layer
+ * (.card, .btn, .field, .tag, .tgl …) and the token variables
+ * (var(--accent), var(--text-2) …). No framework, no hex, no scripts, no
+ * network. The client renders the result inside a sandboxed iframe with the
+ * same stylesheet and tokens the built-in cards use, so a generated card is
+ * indistinguishable from a hand-written one and re-themes instantly.
+ */
+export const CARD_COMPONENT_REFERENCE = `
+Available classes (from playground.css):
+- Layout: .card (root, required), .row, .row.between, .col, .mt, .mt-s, .divider
+- Text: h3 (card title), p, .muted (secondary), .faint (tertiary), .sm, .xs, .stat (big number), .mono, .kbd
+- Buttons: .btn (primary), .btn.ghost, .btn.line, .btn.soft, .btn.icon, .btn.full, disabled attribute
+- Inputs: .lbl (label), .field (input/select/textarea), .pin > input (code digits), .drop (dropzone)
+- Toggle: <button class="tgl" role="switch" aria-checked="true" data-state="checked"> (use data-state="unchecked" when off)
+- Tags: .tag, .tag.success, .tag.warning, .tag.danger, .tag.info
+- Avatar: <span class="av">AB</span>, .av.lg
+- Progress: <div class="bar-t"><i style="width:60%"></i></div>
+- Segmented: <div class="seg-t"><button aria-pressed="true">A</button><button>B</button></div>
+- Image stand-in: <div class="hero" style="aspect-ratio:16/9"></div> (palette gradient; never use <img>)
+- Chat: .bubble.in / .bubble.out · Calendar: .cal · Chart bars: .bars > i (.hi for highlight) · Ticket: .ticket, .iata, .perf
+- Inline SVG icons are allowed (stroke="currentColor", 24x24 viewBox, class="ico" or "ico s").
+
+Available CSS variables (use ONLY these for colour):
+--bg --surface --surface-2 --input --border --border-strong
+--text --text-2 --text-3
+--accent --on-accent --accent-hover --accent-soft --on-accent-soft --accent-text --focus
+--success --success-soft --on-success-soft  --warning --warning-soft --on-warning-soft
+--danger --danger-soft --on-danger-soft  --info --info-soft --on-info-soft
+--disabled-bg --disabled-text --switch-off
+--p-50 … --p-950 (brand ramp)  --n-50 … --n-950 (neutral ramp)
+--r-sm --r-md --r-lg (radius)
+`;
+const EXAMPLE_CARD = `<article class="card" aria-label="Boarding pass">
+  <div class="row between sm"><b style="color:var(--accent-text)">Chroma Air</b><span class="muted">Flight CA 2041</span></div>
+  <div class="ticket mt">
+    <div><p class="iata">MAD</p><p class="xs muted">Madrid · 07:40</p></div>
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--accent-text)"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+    <div><p class="iata">LIS</p><p class="xs muted">Lisbon · 07:55</p></div>
+  </div>
+  <div class="perf"></div>
+  <div class="row between sm">
+    <div><p class="xs muted">Gate</p><b>K42</b></div><div><p class="xs muted">Seat</p><b>14A</b></div><div><p class="xs muted">Boarding</p><b>07:10</b></div>
+  </div>
+</article>`;
+export const PIGMENTO_CARD_SYSTEM = `You are Pigmento, the UI assistant inside Chromaforge. You build small, polished UI cards that showcase the user's color palette.
+You output ONLY a JSON object: {"title": string, "html": string}. The html is ONE <article class="card"> element.
+Hard rules:
+- Use ONLY the classes and CSS variables listed. Colour comes exclusively from var(--…). Never write hex, rgb(), hsl(), named colours, or Tailwind classes.
+- No <script>, <style>, <img>, <video>, <iframe>, <form>, external URLs, or inline event handlers. Links use href="#".
+- Realistic, specific copy (names, places, amounts). Sentence case. No lorem ipsum. No emoji.
+- Keep it compact: one card, roughly 8–25 lines of HTML, like the example.
+- Every interactive control needs an accessible name (text or aria-label).
+${CARD_COMPONENT_REFERENCE}
+Example of a good card:
+${EXAMPLE_CARD}`;
+const BLOCKED_BLOCKS = /<\s*(script|style|iframe|object|template)\b[\s\S]*?<\s*\/\s*\1\s*>/gi;
+const BLOCKED_TAGS = /<\s*\/?\s*(script|style|img|video|audio|iframe|object|embed|form|link|meta|base)\b[^>]*>/gi;
+const ON_ATTR = /\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
+const JS_URL = /\s+(href|src|xlink:href)\s*=\s*("|')\s*javascript:[^"']*\2/gi;
+const EXTERNAL_URL = /(https?:)?\/\/[^\s"')]+/i;
+const HEX = /#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\b/i;
+const RAW_COLOR = /\b(rgba?|hsla?|oklch|oklab|color)\s*\(/i;
+/** Strip anything dangerous, then validate against the token-only contract. */
+export function validateCardHtml(raw) {
+    const errors = [];
+    let html = String(raw || '').trim();
+    // Unwrap accidental fences
+    html = html.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/, '').trim();
+    // Sanitise
+    html = html.replace(BLOCKED_BLOCKS, '').replace(BLOCKED_TAGS, '').replace(ON_ATTR, '').replace(JS_URL, ' $1="#"');
+    if (!/^<article\b[^>]*class=["'][^"']*\bcard\b/i.test(html))
+        errors.push('Root element must be <article class="card">.');
+    if (!/<\/article>\s*$/i.test(html))
+        errors.push('HTML must end with </article>.');
+    if (html.length > 8000)
+        errors.push('Card is too long (max 8000 characters).');
+    if (EXTERNAL_URL.test(html))
+        errors.push('External URLs are not allowed.');
+    const hexMatch = html.match(HEX);
+    if (hexMatch)
+        errors.push(`Hard-coded colour "${hexMatch[0]}" found. Use var(--…) tokens only.`);
+    const rawMatch = html.match(RAW_COLOR);
+    if (rawMatch)
+        errors.push(`Raw colour function "${rawMatch[0].trim()}" found. Use var(--…) tokens only.`);
+    if (/\bclass=["'][^"']*\b(bg-|text-|p-\d|rounded|flex-|grid-)/.test(html))
+        errors.push('Tailwind utility classes are not allowed.');
+    return { ok: errors.length === 0, html, errors };
+}
+export const cardRetryPrompt = (errors) => `Your previous answer was rejected:\n- ${errors.join('\n- ')}\nFix these and answer again with the same JSON shape.`;
