@@ -237,7 +237,11 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
                 )}
                 {cat === 'Pigmento'
                   ? (generated.length === 0 && busyId !== 'new'
-                    ? <div className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Describe a card in a sentence and Pigmento builds it with your tokens, status colors and photos. It appears here, themed like the rest.</p><p className="xs faint mt-s">Each card uses about {CARD_CREDITS_ESTIMATE} credits from your balance. You can keep up to {MAX_GENERATED_CARDS}.</p><button type="button" className="btn soft mt" onClick={onCreateWithPigmento}>Create with Pigmento</button></div>
+                    ? <div className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Describe a card in a sentence and Pigmento builds it with your tokens, status colors and photos. It appears here, themed like the rest.</p><p className="xs faint mt-s">Each card uses about {CARD_CREDITS_ESTIMATE} credits from your balance. You can keep up to {MAX_GENERATED_CARDS}.</p><MotionButton type="button" onClick={onCreateWithPigmento}
+                      className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
+                      <PigmentoMark className="size-6 -my-1" />
+                      Create with Pigmento
+                    </MotionButton></div>
                     : generated.map(card => (
                       <GeneratedCardView key={card.id} card={card} tokensCss={tokensCss} busy={busyId === card.id} onRegenerate={regenerate} onDelete={remove} />
                     )))
