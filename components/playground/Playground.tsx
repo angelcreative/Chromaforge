@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Moon, Sun, X } from 'lucide-react';
 import PigmentoMark from '../pigmento/PigmentoMark';
 import LogoMark from '../LogoMark';
@@ -44,6 +44,34 @@ const GENERATED = 'Created with Pigmento';
 const SCROLL_FADE: React.CSSProperties = {
   maskImage: 'linear-gradient(to bottom, transparent 0, #000 40px)',
   WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 40px)',
+};
+
+/**
+ * Masonry without CSS multi-column: cards are dealt into real flex columns,
+ * left to right, so no browser can split or overlap them (Safari did both).
+ */
+const COLUMN_MIN = 300;
+const COLUMN_GAP = 16;
+const Masonry: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [count, setCount] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setCount(Math.max(1, Math.floor((el.clientWidth + COLUMN_GAP) / (COLUMN_MIN + COLUMN_GAP))));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const items = React.Children.toArray(children);
+  const columns: React.ReactNode[][] = Array.from({ length: count }, () => []);
+  items.forEach((item, i) => columns[i % count].push(item));
+  return (
+    <div ref={ref} className="masonry">
+      {columns.map((column, i) => <div key={i} className="masonry-col">{column}</div>)}
+    </div>
+  );
 };
 
 const chip = 'rounded-full border px-3 py-1 text-[13px] transition-colors';
@@ -225,32 +253,39 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
 
         {/* Stage */}
         <section ref={stageRef} className="pg mt-2 scroll-mt-6 rounded-[20px] p-4 transition-colors sm:p-5" style={{ ...(tokens.vars as React.CSSProperties), background: 'var(--bg)' }} data-view="playground">
-          <div className="masonry">
-            {categories.map(cat => (
-              <React.Fragment key={cat}>
-                <div className="cat-h">{cat === 'Pigmento' ? GENERATED : cat}</div>
+          {categories.map(cat => (
+            <React.Fragment key={cat}>
+              <div className="cat-h">{cat === 'Pigmento' ? GENERATED : cat}</div>
+              <Masonry>
                 {cat === 'Pigmento' && busyId === 'new' && (
-                  <div className="card" role="status" aria-live="polite">
+                  <div key="building" className="card" role="status" aria-live="polite">
                     <div className="row"><span aria-hidden style={{ display: 'grid', width: 28, height: 28, flex: 'none', color: 'var(--text)' }}><LogoMark motion="loading" className="size-7" /></span><div><h3 style={{ fontSize: 14 }}>Pigmento is building your card</h3><p className="xs muted">{pendingPrompt}</p></div></div>
                     <div className="col mt" aria-hidden><div className="skel" style={{ height: 90 }} /><div className="skel" style={{ width: '70%' }} /><div className="skel" style={{ width: '45%' }} /></div>
                   </div>
                 )}
                 {cat === 'Pigmento'
                   ? (generated.length === 0 && busyId !== 'new'
-                    ? <div className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}><h3>No cards yet</h3><p className="sm muted mt-s">Describe a card in a sentence and Pigmento builds it with your tokens, status colors and photos. It appears here, themed like the rest.</p><p className="xs faint mt-s">Each card uses about {CARD_CREDITS_ESTIMATE} credits from your balance. You can keep up to {MAX_GENERATED_CARDS}.</p><MotionButton type="button" onClick={onCreateWithPigmento}
-                      className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
-                      <PigmentoMark className="size-6 -my-1" />
-                      Create with Pigmento
-                    </MotionButton></div>
+                    ? (
+                      <div key="empty" className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}>
+                        <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                          <PigmentoMark className="size-9 shrink-0" />
+                          <div>
+                            <h3>No cards yet</h3>
+                            <p className="sm muted mt-s">Use <b style={{ color: 'var(--text)' }}>Create with Pigmento</b> above to build your first card. Describe it in a sentence and Pigmento makes it with your tokens, status colors and photos, themed like the rest.</p>
+                            <p className="xs faint mt-s">Each card uses about {CARD_CREDITS_ESTIMATE} credits from your balance. You can keep up to {MAX_GENERATED_CARDS}.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
                     : generated.map(card => (
                       <GeneratedCardView key={card.id} card={card} tokensCss={tokensCss} busy={busyId === card.id} onRegenerate={regenerate} onDelete={remove} />
                     )))
                   : PLAYGROUND_CARDS.filter(k => k.category === cat).map(({ id, component: C }) => (
                     <C key={id} {...(id === 'code-snippet' ? { css: exportCss } : {})} />
                   ))}
-              </React.Fragment>
-            ))}
-          </div>
+              </Masonry>
+            </React.Fragment>
+          ))}
         </section>
       </div>
       </div>
