@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, RefreshCw, Trash2 } from 'lucide-react';
 import playgroundCss from './playground.css?raw';
 import type { GeneratedCard as GeneratedCardData } from '../../services/pigmentoCardsService';
@@ -15,6 +15,7 @@ const FONT_FACES = `
 @font-face{font-family:Geist;src:url('/fonts/Geist-Variable.woff2') format('woff2');font-weight:100 900;font-display:swap}
 @font-face{font-family:'Geist Mono';src:url('/fonts/GeistMono-Variable.woff2') format('woff2');font-weight:100 900;font-display:swap}
 html,body{margin:0;background:transparent}
+:root{color-scheme:normal}
 body{padding:0}
 .pg .card{margin:0}
 `;
@@ -34,11 +35,27 @@ export const GeneratedCardView: React.FC<Props> = ({ card, tokensCss, busy, onRe
     [card.html, tokensCss],
   );
 
+  // Size the frame to the card itself. body.scrollHeight never drops below the
+  // frame's own height, so it could only grow and left an empty strip.
   const measure = () => {
-    const doc = frame.current?.contentDocument;
-    const h = doc?.body?.scrollHeight;
-    if (h && Math.abs(h - height) > 2) setHeight(h);
+    const root = frame.current?.contentDocument?.querySelector('.pg');
+    const h = root ? Math.ceil(root.getBoundingClientRect().height) : 0;
+    if (h) setHeight(prev => (Math.abs(h - prev) > 1 ? h : prev));
   };
+  const observer = useRef<ResizeObserver | null>(null);
+  const onLoad = () => {
+    measure();
+    const doc = frame.current?.contentDocument;
+    const root = doc?.querySelector('.pg');
+    observer.current?.disconnect();
+    if (root) {
+      observer.current = new ResizeObserver(measure);
+      observer.current.observe(root);
+    }
+    doc?.fonts?.ready.then(measure).catch(() => {});
+    doc?.querySelectorAll('img').forEach(img => img.addEventListener('load', measure));
+  };
+  useEffect(() => () => observer.current?.disconnect(), []);
 
   const copy = () => {
     navigator.clipboard?.writeText(card.html).catch(() => {});
@@ -53,8 +70,8 @@ export const GeneratedCardView: React.FC<Props> = ({ card, tokensCss, busy, onRe
         title={card.title}
         sandbox="allow-same-origin"
         srcDoc={srcDoc}
-        onLoad={measure}
-        style={{ height, opacity: busy ? 0.5 : 1, transition: 'opacity .2s' }}
+        onLoad={onLoad}
+        style={{ height, colorScheme: 'normal', opacity: busy ? 0.5 : 1, transition: 'opacity .2s' }}
         loading="lazy"
       />
       <div className="gen-tools" role="group" aria-label={`${card.title} actions`}>
