@@ -63,7 +63,36 @@ interface Props {
   onConfigChange: (next: PlaygroundConfig) => void;
 }
 
-const RoleSwatches: React.FC<Props> = ({ palette, config, onConfigChange }) => {
+/** The 60·30·10 on/off switch with its animated proportion glyph. */
+export const RuleToggle: React.FC<Props> = ({ palette, config, onConfigChange }) => {
+  const reduce = useReduced();
+  const canUseRule = palette.length >= 3;
+  const ruleOn = !!config.ruleActive && canUseRule;
+  const roles = rolesOf(config);
+  const spring = reduce ? { duration: 0 } : { type: 'spring' as const, stiffness: 520, damping: 34 };
+  const toggle = () => {
+    if (ruleOn) { onConfigChange({ ...config, ruleActive: false }); return; }
+    const next = validRoles(roles, palette.length) ? roles : autoRoles(palette, config.primaryIndex);
+    onConfigChange({ ...withRoles(config, next), ruleActive: true });
+  };
+  return (
+    <Hint label={canUseRule ? (ruleOn ? 'Turn off the 60-30-10 rule' : 'Apply the 60-30-10 rule: pick a dominant, secondary and accent color') : 'Needs at least 3 colors'}>
+      <span>
+        <button type="button" onClick={toggle} disabled={!canUseRule} aria-pressed={ruleOn}
+          className={`relative inline-flex h-8 items-center gap-2 overflow-hidden rounded-lg px-2.5 text-[12px] transition-colors disabled:opacity-40 ${ruleOn ? 'bg-foreground text-background' : 'bg-accent text-muted-foreground hover:text-foreground'}`}>
+          <span className="flex h-3 w-6 overflow-hidden rounded-sm" aria-hidden>
+            <motion.i className="block h-full" animate={{ width: ruleOn ? '60%' : '34%' }} transition={spring} style={{ background: ruleOn ? palette[roles[60]]?.hex : 'currentColor', opacity: ruleOn ? 1 : 0.5 }} />
+            <motion.i className="block h-full" animate={{ width: ruleOn ? '30%' : '33%' }} transition={spring} style={{ background: ruleOn ? palette[roles[30]]?.hex : 'currentColor', opacity: ruleOn ? 1 : 0.3 }} />
+            <motion.i className="block h-full" animate={{ width: ruleOn ? '10%' : '33%' }} transition={spring} style={{ background: ruleOn ? palette[roles[10]]?.hex : 'currentColor', opacity: ruleOn ? 1 : 0.15 }} />
+          </span>
+          60·30·10
+        </button>
+      </span>
+    </Hint>
+  );
+};
+
+const RoleSwatches: React.FC<Props & { withToggle?: boolean; groupId?: string }> = ({ palette, config, onConfigChange, withToggle = true, groupId = 'pg-roles' }) => {
   const reduce = useReduced();
   const canUseRule = palette.length >= 3;
   const ruleOn = !!config.ruleActive && canUseRule;
@@ -74,12 +103,6 @@ const RoleSwatches: React.FC<Props> = ({ palette, config, onConfigChange }) => {
   useEffect(() => {
     if (ruleOn && !validRoles(roles, palette.length)) onConfigChange(withRoles(config, autoRoles(palette, config.primaryIndex)));
   });
-
-  const toggle = () => {
-    if (ruleOn) { onConfigChange({ ...config, ruleActive: false }); return; }
-    const next = validRoles(roles, palette.length) ? roles : autoRoles(palette, config.primaryIndex);
-    onConfigChange({ ...withRoles(config, next), ruleActive: true });
-  };
 
   const assign = (index: number, role: Role) => {
     const next = { ...roles };
@@ -95,7 +118,7 @@ const RoleSwatches: React.FC<Props> = ({ palette, config, onConfigChange }) => {
 
   return (
     <div className="flex items-center gap-3">
-      <LayoutGroup id="pg-roles">
+      <LayoutGroup id={groupId}>
         <div className="flex items-center gap-1.5" role={ruleOn ? 'group' : 'radiogroup'} aria-label={ruleOn ? 'Colour roles' : 'Primary color'}>
           {palette.map((c, i) => {
             const role = roleAt(i);
@@ -154,19 +177,7 @@ const RoleSwatches: React.FC<Props> = ({ palette, config, onConfigChange }) => {
         </div>
       </LayoutGroup>
 
-      <Hint label={canUseRule ? (ruleOn ? 'Turn off the 60-30-10 rule' : 'Apply the 60-30-10 rule: pick a dominant, secondary and accent color') : 'Needs at least 3 colors'}>
-        <span>
-          <button type="button" onClick={toggle} disabled={!canUseRule} aria-pressed={ruleOn}
-            className={`relative inline-flex h-8 items-center gap-2 overflow-hidden rounded-lg px-2.5 text-[12px] transition-colors disabled:opacity-40 ${ruleOn ? 'bg-foreground text-background' : 'bg-accent text-muted-foreground hover:text-foreground'}`}>
-            <span className="flex h-3 w-6 overflow-hidden rounded-sm" aria-hidden>
-              <motion.i className="block h-full" animate={{ width: ruleOn ? '60%' : '34%' }} transition={spring} style={{ background: ruleOn ? palette[roles[60]]?.hex : 'currentColor', opacity: ruleOn ? 1 : 0.5 }} />
-              <motion.i className="block h-full" animate={{ width: ruleOn ? '30%' : '33%' }} transition={spring} style={{ background: ruleOn ? palette[roles[30]]?.hex : 'currentColor', opacity: ruleOn ? 1 : 0.3 }} />
-              <motion.i className="block h-full" animate={{ width: ruleOn ? '10%' : '33%' }} transition={spring} style={{ background: ruleOn ? palette[roles[10]]?.hex : 'currentColor', opacity: ruleOn ? 1 : 0.15 }} />
-            </span>
-            60·30·10
-          </button>
-        </span>
-      </Hint>
+      {withToggle && <RuleToggle palette={palette} config={config} onConfigChange={onConfigChange} />}
     </div>
   );
 };
@@ -177,7 +188,7 @@ export const RoleBar: React.FC<{ palette: ColorData[]; config: PlaygroundConfig 
   const roles = rolesOf(config);
   const parts: [Role, string][] = [[60, palette[roles[60]]?.hex], [30, palette[roles[30]]?.hex], [10, palette[roles[10]]?.hex]];
   return (
-    <div className="mt-4 flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden>
+    <div className="mt-2 flex h-1.5 gap-0.5 overflow-hidden rounded-full md:mt-4 md:h-2" aria-hidden>
       {parts.map(([role, hex]) => (
         <motion.span key={role} initial={reduce ? false : { width: '33%' }} animate={{ width: `${role}%` }}
           transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
