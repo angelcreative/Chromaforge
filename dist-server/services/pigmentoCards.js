@@ -15,11 +15,16 @@ Available classes (from playground.css):
 - Buttons: .btn (primary), .btn.ghost, .btn.line, .btn.soft, .btn.icon, .btn.full, disabled attribute
 - Inputs: .lbl (label), .field (input/select/textarea), .pin > input (code digits), .drop (dropzone)
 - Toggle: <button class="tgl" role="switch" aria-checked="true" data-state="checked"> (use data-state="unchecked" when off)
-- Tags: .tag, .tag.success, .tag.warning, .tag.danger, .tag.info
+- Tags / pills: .tag, .tag.success, .tag.warning, .tag.danger, .tag.info
+- Status callout: <div class="note info"><svg class="ico s">…</svg><span><b>Heads up.</b> Text</span></div> (variants: success, warning, danger, info; plain .note uses the accent)
+- Field hint under an input: <p class="hint danger">Incorrect password</p> (variants: success, warning, danger, info; plain .hint is neutral). Mark the input itself with aria-invalid="true" when it has an error.
+- Status dot: <span class="dot success"></span> (success, warning, danger, info) · Trend: <span class="up">+12%</span> / <span class="down">-4%</span>
 - Avatar: <span class="av">AB</span>, .av.lg
 - Progress: <div class="bar-t"><i style="width:60%"></i></div>
 - Segmented: <div class="seg-t"><button aria-pressed="true">A</button><button>B</button></div>
-- Image stand-in: <div class="hero" style="aspect-ratio:16/9"></div> (palette gradient; never use <img>)
+- Photo: <div class="photo" data-photo="salmon poke bowl" role="img" aria-label="Salmon poke bowl" style="aspect-ratio:16/9"></div>
+  The server swaps it for a real stock photo matching data-photo (2-5 plain English words describing the subject). Use it whenever the card shows food, a product, a place, a person, travel, music or any real-world subject. For small thumbnails set a size, e.g. style="width:48px;height:48px;border-radius:var(--r-sm)". Max 3 photos. Never write <img> or URLs yourself.
+- Abstract image stand-in (no subject): <div class="hero" style="aspect-ratio:16/9"></div>
 - Chat: .bubble.in / .bubble.out · Calendar: .cal · Chart bars: .bars > i (.hi for highlight) · Ticket: .ticket, .iata, .perf
 - Inline SVG icons are allowed (stroke="currentColor", 24x24 viewBox, class="ico" or "ico s").
 
@@ -27,8 +32,9 @@ Available CSS variables (use ONLY these for colour):
 --bg --surface --surface-2 --input --border --border-strong
 --text --text-2 --text-3
 --accent --on-accent --accent-hover --accent-soft --on-accent-soft --accent-text --focus
---success --success-soft --on-success-soft  --warning --warning-soft --on-warning-soft
---danger --danger-soft --on-danger-soft  --info --info-soft --on-info-soft
+--success --success-soft --on-success-soft --success-text  --warning --warning-soft --on-warning-soft --warning-text
+--danger --danger-soft --on-danger-soft --danger-text  --info --info-soft --on-info-soft --info-text
+(--x-text is the readable status colour for text on --surface; --x is for fills, dots and icons)
 --disabled-bg --disabled-text --switch-off
 --p-50 … --p-950 (brand ramp)  --n-50 … --n-950 (neutral ramp)
 --r-sm --r-md --r-lg (radius)
@@ -52,7 +58,9 @@ Hard rules:
 - No <script>, <style>, <img>, <video>, <iframe>, <form>, external URLs, or inline event handlers. Links use href="#".
 - Realistic, specific copy (names, places, amounts). Sentence case. No lorem ipsum. No emoji.
 - Keep it compact: one card, roughly 8–25 lines of HTML, like the example.
+- The card has no border (the .card class is borderless by design). Don't add a border to the card unless the user explicitly asks for one.
 - Every interactive control needs an accessible name (text or aria-label).
+- Use the semantic colours wherever the content has a state: success for done/paid/online/positive change, warning for pending/expiring/low stock, danger for errors/overdue/destructive actions, info for neutral notices/new. Reach for .tag, .note, .hint, .dot, .up/.down. The accent is for the main action and brand, not for status.
 ${CARD_COMPONENT_REFERENCE}
 Example of a good card:
 ${EXAMPLE_CARD}`;
@@ -75,8 +83,8 @@ export function validateCardHtml(raw) {
         errors.push('Root element must be <article class="card">.');
     if (!/<\/article>\s*$/i.test(html))
         errors.push('HTML must end with </article>.');
-    if (html.length > 8000)
-        errors.push('Card is too long (max 8000 characters).');
+    if (html.length > 7000)
+        errors.push('Card is too long (max 7000 characters).');
     if (EXTERNAL_URL.test(html))
         errors.push('External URLs are not allowed.');
     const hexMatch = html.match(HEX);

@@ -16,7 +16,16 @@ const PIGMENTO_STARTERS = [
   'Darker and moodier',
   'Fewer, calmer colors',
 ] as const;
+const CARD_GREETING = "Describe a card and I'll build it with your palette, status colors and real photos. Try one of these.";
+const CARD_STARTERS = [
+  'Food delivery order with dish photos',
+  'Boarding pass with a gate change',
+  'Invoice summary with paid and overdue states',
+  'Smart thermostat control',
+  'Hotel booking with room photo',
+] as const;
 const PIGMENTO_STATUSES = ['Thinking', 'Working', 'Painting'] as const;
+const CARD_STATUSES = ['Sketching', 'Building', 'Theming'] as const;
 const STATUS_STEP_MS = 1400;
 
 export interface CopilotPanelProps {
@@ -33,6 +42,10 @@ export interface CopilotPanelProps {
   balanceDetail?: string;
   onCredits?: () => void;
   attention?: number;
+  /** 'card' builds Playground cards instead of editing the palette. */
+  mode?: 'palette' | 'card';
+  /** When set, the header shows a switch between both modes. */
+  onModeChange?: (mode: 'palette' | 'card') => void;
 }
 
 const CopilotPanel: React.FC<CopilotPanelProps> = ({
@@ -49,7 +62,14 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   balanceDetail,
   onCredits,
   attention = 0,
+  mode = 'palette',
+  onModeChange,
 }) => {
+  const card = mode === 'card';
+  const greeting = card ? CARD_GREETING : PIGMENTO_GREETING;
+  const starters = card ? CARD_STARTERS : PIGMENTO_STARTERS;
+  const statuses = card ? CARD_STATUSES : PIGMENTO_STATUSES;
+  const placeholder = card ? 'Describe a card' : 'Edit this palette';
   const reduce = useReduced();
   const pop = presencePop(reduce, 'bottom right');
   const [statusIndex, setStatusIndex] = useState(0);
@@ -61,10 +81,10 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
     }
     setStatusIndex(0);
     const timer = window.setInterval(() => {
-      setStatusIndex((current) => (current + 1) % PIGMENTO_STATUSES.length);
+      setStatusIndex((current) => (current + 1) % statuses.length);
     }, STATUS_STEP_MS);
     return () => window.clearInterval(timer);
-  }, [loading]);
+  }, [loading, statuses.length]);
 
   return (
   <>
@@ -81,17 +101,29 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[13px]">Pigmento</span>
-          <CloseButton onClick={onClose} />
+          <div className="flex items-center gap-2">
+            {onModeChange && (
+              <div className="inline-flex rounded-lg bg-accent p-0.5" role="group" aria-label="What Pigmento does">
+                {(['palette', 'card'] as const).map((m) => (
+                  <button key={m} type="button" aria-pressed={mode === m} onClick={() => onModeChange(m)}
+                    className={`rounded-md px-2 py-0.5 text-[12px] ${mode === m ? 'bg-card text-foreground shadow-panel' : 'text-muted-foreground hover:text-foreground'}`}>
+                    {m === 'palette' ? 'Edit palette' : 'Create card'}
+                  </button>
+                ))}
+              </div>
+            )}
+            <CloseButton onClick={onClose} />
+          </div>
         </div>
         <div className="mb-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           <div className="flex justify-start">
             <div className="max-w-[90%] rounded-2xl bg-background px-3 py-2 text-[13px] leading-relaxed text-foreground ring-1 ring-border">
-              {PIGMENTO_GREETING}
+              {greeting}
             </div>
           </div>
           {messages.length === 0 && !loading && (
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Suggestions">
-              {PIGMENTO_STARTERS.map((starter) => (
+              {starters.map((starter) => (
                 <MotionButton
                   key={starter}
                   type="button"
@@ -118,7 +150,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
               <div className="flex items-center gap-2 rounded-2xl bg-background px-3 py-2 text-[13px] text-muted-foreground ring-1 ring-border">
                 <LogoMark motion="loading" className="size-5 shrink-0 text-foreground" />
                 <span>
-                  {PIGMENTO_STATUSES[statusIndex]}
+                  {statuses[statusIndex % statuses.length]}
                   <span className="pigmento-dots" aria-hidden><span>.</span><span>.</span><span>.</span></span>
                 </span>
               </div>
@@ -150,8 +182,8 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
                 onSubmit();
               }
             }}
-            placeholder="Edit this palette"
-            aria-label="Edit this palette"
+            placeholder={placeholder}
+            aria-label={placeholder}
             className="max-h-28 min-h-[3rem] flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           <MotionButton

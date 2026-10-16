@@ -3,7 +3,7 @@ import { MusicPlayerCard, SocialPostCard, VideoCallCard, VideoCard } from './med
 import { CookieConsentCard, FeedbackCard, LoginCard, PaymentCard, PinCard, PreferencesCard, SearchCard, UploadCard } from './forms';
 import { CalendarCard, DroneMonitorCard, SalesCard, StatsCard, StepsCard, StorageCard, WeatherCard, WorkoutCard } from './data';
 import { BoardingPassCard, CandidatesCard, ChatCard, ContactCard, CreditCardCard, FoodOrderCard, ProductCard, ProfileCard } from './social';
-import { AlarmCard, CodeSnippetCard, LoadingCard, MapCard, MenubarCard, OnboardingCard } from './system';
+import { AlarmCard, CodeSnippetCard, LoadingCard, MapCard, MenubarCard, OnboardingCard, StatusMessagesCard } from './system';
 
 export type CardCategory = 'Media' | 'Forms' | 'Data' | 'Social' | 'Commerce' | 'System';
 export const CARD_CATEGORIES: CardCategory[] = ['Media', 'Forms', 'Data', 'Social', 'Commerce', 'System'];
@@ -45,6 +45,7 @@ export const PLAYGROUND_CARDS: CardDef[] = [
   { id: 'credit-card', name: 'Bank card', category: 'Commerce', component: CreditCardCard },
   { id: 'boarding-pass', name: 'Boarding pass', category: 'Commerce', component: BoardingPassCard },
   { id: 'onboarding', name: 'Onboarding', category: 'System', component: OnboardingCard },
+  { id: 'status', name: 'Status messages', category: 'System', component: StatusMessagesCard },
   { id: 'loading', name: 'Loading states', category: 'System', component: LoadingCard },
   { id: 'alarm', name: 'Alarms', category: 'System', component: AlarmCard },
   { id: 'menubar', name: 'Menubar', category: 'System', component: MenubarCard },

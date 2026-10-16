@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
 import { PIGMENTO_CARD_SYSTEM, cardRetryPrompt, validateCardHtml } from './services/pigmentoCards.js';
+import { fillPhotoSlots, findStockPhoto, PhotoOrientation } from './services/stockPhotos.js';
 import { CreditLedger, networkKeyForIp } from './services/creditLedger.js';
 import { isOwnerAccount } from './services/ownerGate.js';
 import { grantFromStripeEvent, verifyStripeSignature } from './services/stripeFulfillment.js';
@@ -374,6 +375,32 @@ app.post('/api/palette', async (req, res) => {
 });
 
 // API endpoint for UI component generation
+// Stock photo lookup for playground cards. The Pexels key stays on the server;
+// results are cached in stockPhotos.ts and each IP gets a modest budget.
+const photoBudget = new Map<string, { reset: number; count: number }>();
+const PHOTO_WINDOW_MS = 10 * 60 * 1000;
+const PHOTO_LIMIT = 120;
+app.get('/api/photo', async (req, res) => {
+  const q = typeof req.query.q === 'string' ? req.query.q : '';
+  const o = req.query.orientation;
+  const orientation: PhotoOrientation = o === 'portrait' || o === 'square' ? o : 'landscape';
+  if (q.trim().length < 2) return res.status(400).json({ photo: null });
+
+  const ip = clientIp(req);
+  const now = Date.now();
+  const budget = photoBudget.get(ip);
+  if (!budget || budget.reset < now) {
+    if (photoBudget.size > 5000) photoBudget.clear();
+    photoBudget.set(ip, { reset: now + PHOTO_WINDOW_MS, count: 1 });
+  } else if (++budget.count > PHOTO_LIMIT) {
+    return res.status(429).json({ photo: null });
+  }
+
+  const photo = await findStockPhoto(q, orientation);
+  res.set('Cache-Control', photo ? 'public, max-age=86400' : 'no-store');
+  return res.json({ photo });
+});
+
 app.post('/api/ui-design', async (req, res) => {
   try {
     const { prompt, feedback } = req.body ?? {};
@@ -445,9 +472,13 @@ app.post('/api/ui-design', async (req, res) => {
       return res.status(422).json({ html: '', description: `Pigmento could not build a valid card: ${check.errors[0]}`, ...charge });
     }
 
+    // Photo slots become real Pexels images after validation, so the model
+    // itself never writes a URL.
+    const html = await fillPhotoSlots(check.html).catch(() => check.html);
+
     return res.json({
       title: typeof data?.title === 'string' && data.title.trim() ? data.title.trim().slice(0, 60) : 'Pigmento card',
-      html: check.html,
+      html,
       description: 'Card ready.',
       ...charge,
     });

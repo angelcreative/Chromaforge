@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Check, Copy, MapPin, Plus, Share2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, CheckCircle2, Copy, Info, MapPin, Plus, Share2 } from 'lucide-react';
 import * as Menubar from '@radix-ui/react-menubar';
-import { Button, Card, Stat, Switch, Tag } from '../ui';
+import { Button, Card, Note, Stat, Switch, Tag } from '../ui';
 
 const sm = { className: 'ico s', strokeWidth: 1.8 } as const;
 
@@ -78,5 +78,18 @@ export const MapCard: React.FC = () => (
     <div className="map" role="img" aria-label="Map with a pin on Estudio Chroma"><div className="pinm" /></div>
     <div className="row between mt"><div><h3>Estudio Chroma</h3><p className="sm muted">C/ del Pez 14, Madrid</p></div><Tag tone="success">Open</Tag></div>
     <div className="row mt"><Button style={{ flex: 1 }}><MapPin {...sm} /> Directions</Button><Button variant="ghost" icon aria-label="Share"><Share2 {...sm} /></Button></div>
+  </Card>
+);
+
+export const StatusMessagesCard: React.FC = () => (
+  <Card title="Status messages">
+    <div className="row between"><h3>Export status</h3><span className="row xs muted" style={{ gap: 10 }}><span className="row" style={{ gap: 4 }}><span className="dot success" />3</span><span className="row" style={{ gap: 4 }}><span className="dot warning" />1</span><span className="row" style={{ gap: 4 }}><span className="dot danger" />1</span></span></div>
+    <div className="col mt" style={{ gap: 8 }}>
+      <Note tone="success" icon={<CheckCircle2 {...sm} />}><b>Tokens exported.</b> 42 variables written to tokens.css.</Note>
+      <Note tone="info" icon={<Info {...sm} />}>Figma sync runs every night at 02:00.</Note>
+      <Note tone="warning" icon={<AlertTriangle {...sm} />}><b>2 pairs</b> are close to the 4.5:1 limit.</Note>
+      <Note tone="danger" icon={<AlertCircle {...sm} />}><b>Upload failed.</b> brand.ase is larger than 5 MB.</Note>
+    </div>
+    <div className="row mt"><Button variant="ghost" style={{ flex: 1 }}>Dismiss all</Button><Button style={{ flex: 1 }}>Retry upload</Button></div>
   </Card>
 );
