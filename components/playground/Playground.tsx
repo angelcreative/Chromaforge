@@ -1,5 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Moon, Sparkles, Sun, X } from 'lucide-react';
+import { Moon, Sun, X } from 'lucide-react';
+import PigmentoMark from '../pigmento/PigmentoMark';
+import { MotionButton } from '../uiMotion';
 import './playground.css';
 import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
 import { buildPlaygroundTokens, tokensToCss } from '../../utils/playgroundTokens';
@@ -165,10 +167,11 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             {tokens.failures ? <><b>{tokens.failures}</b>&nbsp;contrast {tokens.failures === 1 ? 'issue' : 'issues'}</> : <><b>{tokens.audit.length}/{tokens.audit.length}</b>&nbsp;contrast checks pass</>}
           </button>
 
-          <button type="button" onClick={onCreateWithPigmento}
-            className="flex items-center gap-2 rounded-lg bg-foreground px-3 py-1.5 text-[13px] font-medium text-background hover:opacity-90">
-            <Sparkles className="size-4" strokeWidth={1.5} aria-hidden /> Create with Pigmento
-          </button>
+          <MotionButton type="button" onClick={onCreateWithPigmento}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
+            <PigmentoMark className="size-6 -my-1" />
+            Create with Pigmento
+          </MotionButton>
         </div>
 
         {/* Ramp strip */}
