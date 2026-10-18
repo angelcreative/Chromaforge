@@ -64,6 +64,11 @@ Hard rules:
 - Keep it compact: one card, roughly 8–25 lines of HTML, like the example.
 - The card has no border (the .card class is borderless by design). Don't add a border to the card unless the user explicitly asks for one.
 - Every interactive control needs an accessible name (text or aria-label).
+- Colour roles follow 60-30-10 inside the card, so stick to these classes and the user's palette lands in the right proportions:
+  · 10% accent: exactly ONE primary action per card as .btn (plus links, checked switches, progress fills, the active item). Never use the accent for large areas or decoration.
+  · 30% secondary: supporting pieces: .tag chips, .av avatars, .btn.soft secondary actions, chart bars, icon tiles (span.av with an svg).
+  · 60% dominant: the large calm areas: .hero or .photo slots, inner panels and low-emphasis controls (.btn.ghost, .btn.ghost.icon for steppers and icon buttons, .seg-t, .drop, blocks with background:var(--surface-2)).
+  · Never paint buttons black or white yourself; quantity steppers and icon buttons are .btn.ghost.icon.
 - Use the semantic colours wherever the content has a state: success for done/paid/online/positive change, warning for pending/expiring/low stock, danger for errors/overdue/destructive actions, info for neutral notices/new. Reach for .tag, .note, .hint, .dot, .up/.down. The accent is for the main action and brand, not for status.
 ${CARD_COMPONENT_REFERENCE}
 Example of a good card:

@@ -13,6 +13,8 @@ interface Props {
   onDelete: (card: GeneratedCardData) => void;
 }
 
+const TOOL = 'inline-flex h-8 items-center gap-1.5 rounded-lg bg-card px-2.5 text-[12px] shadow-panel ring-1 ring-border transition-colors hover:bg-accent disabled:opacity-60';
+
 const FONT_FACES = `
 @font-face{font-family:Geist;src:url('/fonts/Geist-Variable.woff2') format('woff2');font-weight:100 900;font-display:swap}
 @font-face{font-family:'Geist Mono';src:url('/fonts/GeistMono-Variable.woff2') format('woff2');font-weight:100 900;font-display:swap}
@@ -76,18 +78,20 @@ export const GeneratedCardView: React.FC<Props> = ({ card, tokensCss, busy, onRe
         style={{ height, colorScheme: 'normal', opacity: busy ? 0.5 : 1, transition: 'opacity .2s' }}
         loading="lazy"
       />
+      {/* App chrome, not part of the card: styled with the app theme so the palette and
+          the 60-30-10 roles never touch it. */}
       <div className="gen-tools" role="group" aria-label={`${card.title} actions`}>
-        <button type="button" className="btn ghost" style={{ height: 30, fontSize: 12 }} onClick={() => onRegenerate(card)} disabled={busy} aria-label={busy ? 'Regenerating' : 'Regenerate'}
-          title={`Build this card again. Uses about ${CARD_CREDITS_ESTIMATE} credits.`} aria-busy={busy}>
+        <button type="button" className={TOOL} style={{ color: 'var(--foreground)' }} onClick={() => onRegenerate(card)} disabled={busy}
+          aria-label={busy ? 'Regenerating' : 'Regenerate'} title={`Build this card again. Uses about ${CARD_CREDITS_ESTIMATE} credits.`} aria-busy={busy}>
           {busy
-            ? <><span aria-hidden style={{ display: 'grid', width: 16, height: 16, color: 'var(--text)' }}><LogoMark motion="loading" className="size-4" /></span> Regenerating…</>
-            : <><RefreshCw className="ico s" strokeWidth={1.8} /> Regenerate</>}
+            ? <><LogoMark motion="loading" className="size-4" /> Regenerating…</>
+            : <><RefreshCw className="size-3.5" strokeWidth={1.5} aria-hidden /> Regenerate</>}
         </button>
-        <button type="button" className="btn ghost icon" style={{ height: 30, width: 30 }} onClick={copy} aria-label={copied ? 'Copied' : 'Copy HTML'}>
-          {copied ? <Check className="ico s" strokeWidth={1.8} /> : <Copy className="ico s" strokeWidth={1.8} />}
+        <button type="button" className={`${TOOL} w-8 justify-center px-0`} style={{ color: 'var(--foreground)' }} onClick={copy} aria-label={copied ? 'Copied' : 'Copy HTML'}>
+          {copied ? <Check className="size-3.5" strokeWidth={1.5} aria-hidden /> : <Copy className="size-3.5" strokeWidth={1.5} aria-hidden />}
         </button>
-        <button type="button" className="btn ghost icon" style={{ height: 30, width: 30, color: 'var(--danger)' }} onClick={() => onDelete(card)} aria-label="Delete card">
-          <Trash2 className="ico s" strokeWidth={1.8} />
+        <button type="button" className={`${TOOL} w-8 justify-center px-0`} style={{ color: 'var(--destructive)' }} onClick={() => onDelete(card)} aria-label="Delete card">
+          <Trash2 className="size-3.5" strokeWidth={1.5} aria-hidden />
         </button>
       </div>
     </div>
