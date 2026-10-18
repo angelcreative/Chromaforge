@@ -113,13 +113,12 @@ export function buildPlaygroundTokens(
 
   const t: Record<string, string> = {};
 
-  // Surfaces
-  // 60-30-10 only shapes what is inside the cards: the page background and the
-  // card surface stay neutral, and the dominant (60) colour takes the large
-  // areas inside a card (inner panels via --surface-2, image fills via --d-*).
+  // Surfaces. Neutrals are the canvas and never take a 60-30-10 role: page
+  // background, card surface, inner neutral fills (--surface-2: ghost buttons,
+  // tracks, menus) and text stay neutral whatever the roles are.
   t.bg = dark ? n[950] : s[100];
   t.surface = dark ? n[900] : '#FFFFFF';
-  t['surface-2'] = dom ? (dark ? dom[800] : dom[100]) : (dark ? n[800] : s[50]);
+  t['surface-2'] = dark ? n[800] : s[50];
   t.input = dark ? n[950] : '#FFFFFF';
   t.border = dark ? n[800] : n[200];
   // Control borders must reach 3:1 (WCAG 1.4.11), not just look subtle.
@@ -156,6 +155,22 @@ export function buildPlaygroundTokens(
     t['accent-text'] = pick(p, [300, 200, 100], t.surface, 4.5);
   }
   t.focus = t.accent;
+
+  // Dominant (the 60%): large content areas inside a card, never controls.
+  // --dominant-soft fills panels and bands, --dominant-tint the quieter
+  // surfaces (chat bubbles, drop zones). With the rule off they are neutral.
+  if (dom) {
+    t['dominant-soft'] = dark ? dom[900] : dom[100];
+    t['on-dominant-soft'] = dark ? pick(dom, [100, 50, 200], dom[900], 4.5) : pick(dom, [800, 900, 950], dom[100], 4.5);
+    t['dominant-tint'] = dark ? dom[950] : dom[50];
+  } else {
+    t['dominant-soft'] = t['surface-2'];
+    t['on-dominant-soft'] = t.text;
+    t['dominant-tint'] = t['surface-2'];
+  }
+  // Strong neutral for high-contrast secondary buttons (black on light, white on dark).
+  t.ink = t.text;
+  t['on-ink'] = t.surface;
 
   // Secondary (the 30%): supporting fills, chips, avatars, charts, image fills.
   if (secondarySource) {
@@ -201,6 +216,7 @@ export function buildPlaygroundTokens(
     ['Danger tag', 'on-danger-soft', 'danger-soft', 4.5],
     ['Info tag', 'on-info-soft', 'info-soft', 4.5],
     ['Secondary chip', 'on-secondary-soft', 'secondary-soft', 4.5],
+    ['Dominant panel', 'on-dominant-soft', 'dominant-soft', 4.5],
     ['Error text', 'danger-text', 'surface', 4.5],
     ['Field border', 'border-strong', 'surface', 3],
     ['Switch off', 'switch-off', 'surface', 3],

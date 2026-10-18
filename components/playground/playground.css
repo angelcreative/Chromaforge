@@ -48,6 +48,14 @@
 .pg .btn:hover{background:var(--accent-hover)}
 .pg .btn:active{transform:translateY(1px)}
 .pg .btn.ghost{background:var(--surface-2);color:var(--text)}
+.pg .btn.plain{background:transparent;color:var(--text)}
+.pg .btn.plain:hover{background:var(--surface-2)}
+.pg .btn.ink{background:var(--ink);color:var(--on-ink)}
+.pg .btn.ink:hover{background:var(--ink);opacity:.88}
+.pg .btn.round{border-radius:999px}
+/* Dominant (60%) content areas: a tinted block or band inside a card */
+.pg .panel{background:var(--dominant-soft);color:var(--on-dominant-soft);border-radius:var(--r-md);padding:12px 14px}
+.pg .panel .muted,.pg .panel .faint{color:inherit}
 .pg .btn.ghost:hover{background:var(--border)}
 .pg .btn.line{background:transparent;border-color:var(--border-strong);color:var(--text)}
 .pg .btn.soft{background:var(--secondary-soft);color:var(--on-secondary-soft)}
@@ -96,12 +104,12 @@
 .pg .pin{display:flex;gap:8px}
 .pg .pin input{width:44px;height:52px;text-align:center;font-size:20px;font-weight:600;border-radius:var(--r-md);border:1px solid var(--border-strong);background:var(--input);color:var(--text)}
 .pg .pin input:focus{outline:2px solid var(--focus);border-color:transparent}
-.pg .drop{border:1.5px dashed var(--border-strong);border-radius:var(--r-md);padding:20px;text-align:center;background:var(--surface-2)}
+.pg .drop{border:1.5px dashed var(--border-strong);border-radius:var(--r-md);padding:20px;text-align:center;background:var(--dominant-tint)}
 .pg .bars{display:flex;align-items:end;gap:6px;height:90px}
 .pg .bars i{flex:1;border-radius:4px 4px 0 0;background:var(--s-200)}
 .pg .bars i.hi{background:var(--accent)}
 .pg .bubble{padding:8px 12px;border-radius:14px;max-width:80%;font-size:14px}
-.pg .bubble.in{background:var(--surface-2);border-bottom-left-radius:4px}
+.pg .bubble.in{background:var(--dominant-tint);border-bottom-left-radius:4px}
 .pg .bubble.out{background:var(--accent);color:var(--on-accent);margin-left:auto;border-bottom-right-radius:4px}
 .pg .cc{border-radius:var(--r-lg);padding:18px;color:var(--n-50);aspect-ratio:1.586;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,var(--d-600),var(--d-900))}
 .pg .dial{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--v)*1%),var(--surface-2) 0)}

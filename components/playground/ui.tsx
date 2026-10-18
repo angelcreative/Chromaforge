@@ -20,7 +20,7 @@ export const Card: React.FC<Div & { title: string }> = ({ title, className, chil
   <article className={cx('card', className)} aria-label={title} {...rest}>{children}</article>
 );
 
-export const Button: React.FC<Btn & { variant?: 'primary' | 'ghost' | 'line' | 'soft'; icon?: boolean; full?: boolean }> = ({
+export const Button: React.FC<Btn & { variant?: 'primary' | 'ghost' | 'line' | 'soft' | 'plain' | 'ink'; icon?: boolean; full?: boolean }> = ({
   variant = 'primary', icon, full, className, ...rest
 }) => (
   <button

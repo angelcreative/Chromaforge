@@ -72,8 +72,8 @@ export const CalendarCard: React.FC = () => {
       <div className="row between">
         <h3>October 2026</h3>
         <div className="row" style={{ gap: 4 }}>
-          <Button variant="ghost" icon style={{ height: 30, width: 30 }} aria-label="Previous month"><ChevronLeft {...sm} /></Button>
-          <Button variant="ghost" icon style={{ height: 30, width: 30 }} aria-label="Next month"><ChevronRight {...sm} /></Button>
+          <Button variant="plain" icon style={{ height: 30, width: 30 }} aria-label="Previous month"><ChevronLeft {...sm} /></Button>
+          <Button variant="plain" icon style={{ height: 30, width: 30 }} aria-label="Next month"><ChevronRight {...sm} /></Button>
         </div>
       </div>
       <div className="cal mt" role="grid">
@@ -105,7 +105,7 @@ export const StepsCard: React.FC = () => (
   <Card title="Steps">
     <div className="row"><span className="av"><Footprints {...sm} /></span><div><h3>8,204 steps</h3><p className="xs muted">Goal 10,000</p></div></div>
     <Progress value={82} className="mt" style={{ height: 8 }} />
-    <div className="row between mt sm">
+    <div className="row between mt sm panel">
       <div><p className="muted xs">Distance</p><b>6.1 km</b></div>
       <div><p className="muted xs">Time</p><b>1 h 12</b></div>
       <div><p className="muted xs">Pace</p><b>11'48"</b></div>
