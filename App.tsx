@@ -46,6 +46,7 @@ import StudioTopBar from './components/StudioTopBar';
 import AccountMenu from './components/AccountMenu';
 import CopilotPanel from './components/CopilotPanel';
 import Playground, { PlaygroundHandle } from './components/playground/Playground';
+import { CardReference, ReferenceMode, prepareReferenceImage } from './utils/referenceImage';
 import DotGrid from './components/DotGrid';
 
 // Subscription Imports
@@ -161,6 +162,14 @@ const App: React.FC = () => {
   const [cardMessages, setCardMessages] = useState<ChatMessage[]>([]);
   const [cardChatInput, setCardChatInput] = useState('');
   const [isCardLoading, setIsCardLoading] = useState(false);
+  const [cardReference, setCardReference] = useState<CardReference | null>(null);
+  const attachCardReference = async (file: File) => {
+    try {
+      setCardReference(await prepareReferenceImage(file, cardReference?.mode ?? 'inspire'));
+    } catch (error: any) {
+      showToast(error?.message || 'That image could not be used.');
+    }
+  };
   const [generatingName, setGeneratingName] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false); 
@@ -609,12 +618,15 @@ const App: React.FC = () => {
   };
 
   const handleCardSubmit = async (preset?: string) => {
-    const prompt = (preset ?? cardChatInput).trim();
+    const reference = cardReference;
+    const typed = (preset ?? cardChatInput).trim();
+    const prompt = typed || (reference ? (reference.mode === 'recreate' ? 'Recreate this card' : 'A card inspired by this image') : '');
     if (!prompt || isCardLoading || !playgroundRef.current) return;
     setCardChatInput('');
-    setCardMessages(prev => [...prev, { role: 'user', text: prompt }]);
+    setCardReference(null);
+    setCardMessages(prev => [...prev, { role: 'user', text: prompt, imageUrl: reference?.previewUrl }]);
     setIsCardLoading(true);
-    const outcome = await playgroundRef.current.createCard(prompt);
+    const outcome = await playgroundRef.current.createCard(prompt, reference);
     setIsCardLoading(false);
     setCardMessages(prev => [...prev, { role: 'model', text: outcome.message, creditsSpent: outcome.creditsSpent }]);
     if (outcome.paymentRequired) {
@@ -1451,6 +1463,10 @@ const App: React.FC = () => {
           onInput={cardMode ? setCardChatInput : setChatInput}
           onSubmit={(text) => { if (cardMode) void handleCardSubmit(text); else void handleChatSubmit(undefined, text); }}
           loading={cardMode ? isCardLoading : isChatLoading}
+          attachment={cardMode ? cardReference : undefined}
+          onAttach={cardMode ? attachCardReference : undefined}
+          onAttachmentMode={(mode) => setCardReference(prev => (prev ? { ...prev, mode } : prev))}
+          onClearAttachment={() => setCardReference(null)}
           balanceLabel={ownerView ? '' : creditCopy.meter}
           balanceTitle={ownerView ? '' : creditCopy.detail}
           balanceDetail={ownerView ? '' : creditCopy.detail}

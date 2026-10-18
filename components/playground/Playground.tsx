@@ -11,6 +11,7 @@ import { ColorData, GlobalCurveConfig, PlaygroundConfig } from '../../types';
 import { buildPlaygroundTokens, tokensToCss } from '../../utils/playgroundTokens';
 import { CARD_CATEGORIES, CardCategory, PLAYGROUND_CARDS } from './cards';
 import { GeneratedCardView } from './GeneratedCard';
+import type { CardReference } from '../../utils/referenceImage';
 import RoleSwatches, { RoleBar, RuleToggle } from './RoleSwatches';
 import { showToast } from '../Toast';
 import {
@@ -42,7 +43,7 @@ export interface CardOutcome {
 }
 
 export interface PlaygroundHandle {
-  createCard: (text: string) => Promise<CardOutcome>;
+  createCard: (text: string, reference?: CardReference | null) => Promise<CardOutcome>;
 }
 
 type Filter = 'All' | CardCategory | 'Pigmento';
@@ -100,6 +101,8 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   const [generated, setGenerated] = useState<GeneratedCard[]>([]);
   const stageRef = useRef<HTMLElement>(null);
   const busyRef = useRef(false);
+  // Reference images by card id, kept for this session so Regenerate can reuse them (not stored).
+  const references = useRef(new Map<string, CardReference>());
 
   const selectedIndex = brandPalette.length ? Math.min(Math.max(config.primaryIndex, 0), brandPalette.length - 1) : 0;
   const tokens = useMemo(
@@ -115,7 +118,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
     return () => { alive = false; };
   }, [userId]);
 
-  const create = async (text: string, replace?: GeneratedCard): Promise<CardOutcome> => {
+  const create = async (text: string, replace?: GeneratedCard, reference?: CardReference | null): Promise<CardOutcome> => {
     const clean = text.trim();
     if (!clean) return { ok: false, message: 'Describe the card you want in a few words.' };
     if (busyRef.current) return { ok: false, message: 'I am still building the previous card. Give me a moment.' };
@@ -130,13 +133,15 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
       requestAnimationFrame(() => stageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
     try {
-      const result = await generateCard(clean);
+      const result = await generateCard(clean, undefined, reference);
       if (typeof result.creditsRemaining === 'number') onCreditsChange?.(result.creditsRemaining);
       if (!result.html) {
         return { ok: false, message: result.description, creditsSpent: result.creditsSpent, paymentRequired: result.paymentRequired };
       }
       if (replace) await removeGeneratedCard(userId, replace.id).catch(() => {});
       const saved = await saveGeneratedCard(userId, { title: result.title || 'Pigmento card', prompt: clean, html: result.html });
+      if (replace) references.current.delete(replace.id);
+      if (reference) references.current.set(saved.id, reference);
       setGenerated(prev => [saved, ...prev.filter(c => c.id !== replace?.id)]);
       return { ok: true, message: `Done. “${saved.title}” is in the Playground, themed with your palette.`, creditsSpent: result.creditsSpent };
     } catch (error: any) {
@@ -148,7 +153,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
     }
   };
 
-  useImperativeHandle(ref, () => ({ createCard: (text: string) => create(text) }));
+  useImperativeHandle(ref, () => ({ createCard: (text: string, reference?: CardReference | null) => create(text, undefined, reference) }));
 
   if (!tokens) {
     return <p className="text-[13px] text-muted-foreground">Generate a palette first to activate the playground.</p>;
@@ -199,7 +204,8 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
   );
 
   const regenerate = async (card: GeneratedCard) => {
-    const outcome = await create(card.prompt, card);
+    // Reuse the reference image from this session, if the card was made from one.
+    const outcome = await create(card.prompt, card, references.current.get(card.id));
     if (!outcome.ok) showToast(outcome.message);
   };
 
