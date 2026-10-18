@@ -1,6 +1,7 @@
 import { auth, db, isDemoMode } from '../firebaseConfig';
 import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, serverTimestamp, where } from 'firebase/firestore';
 import { getCreditWalletId } from './creditWallet';
+import type { CardReference } from '../utils/referenceImage';
 
 /**
  * Client side of the Pigmento "create a card" feature:
@@ -36,7 +37,7 @@ const readLocal = (): GeneratedCard[] => {
 const writeLocal = (cards: GeneratedCard[]) => localStorage.setItem(LOCAL_KEY, JSON.stringify(cards));
 const isLocal = (userId: string) => userId === 'local' || isDemoMode || !db;
 
-export const generateCard = async (prompt: string, feedback?: string): Promise<GenerateCardResult> => {
+export const generateCard = async (prompt: string, feedback?: string, reference?: CardReference | null): Promise<GenerateCardResult> => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (!isDemoMode && auth?.currentUser) {
     try {
@@ -48,7 +49,10 @@ export const generateCard = async (prompt: string, feedback?: string): Promise<G
     const response = await fetch('/api/ui-design', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ prompt, feedback, walletId: getCreditWalletId() }),
+      body: JSON.stringify({
+        prompt, feedback, walletId: getCreditWalletId(),
+        reference: reference ? { data: reference.data, mimeType: reference.mimeType, mode: reference.mode } : undefined,
+      }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || typeof data.html !== 'string' || !data.html) {

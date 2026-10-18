@@ -64,6 +64,8 @@ export interface ChatMessage {
   text: string;
   palettePreview?: ColorData[]; // Visual swatch strip for AI responses
   creditsSpent?: number;
+  /** Thumbnail of a reference image the user attached (Pigmento card mode). */
+  imageUrl?: string;
 }
 
 export interface Shade {

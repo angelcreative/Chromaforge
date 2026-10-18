@@ -405,7 +405,19 @@ app.get('/api/photo', async (req, res) => {
 
 app.post('/api/ui-design', async (req, res) => {
   try {
-    const { prompt, feedback } = req.body ?? {};
+    const { prompt, feedback, reference: rawReference } = req.body ?? {};
+
+    // Optional reference image: Pigmento recreates it or takes inspiration from it.
+    const reference = (() => {
+      const r = rawReference;
+      if (!r || typeof r !== 'object') return null;
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(r.mimeType)) return null;
+      if (typeof r.data !== 'string' || r.data.length > 1_400_000 || !/^[A-Za-z0-9+/=]+$/.test(r.data)) return null;
+      return { mimeType: r.mimeType as string, data: r.data as string, mode: r.mode === 'recreate' ? 'recreate' : 'inspire' };
+    })();
+    if (rawReference && !reference) {
+      return res.status(400).json({ html: '', description: 'The reference image could not be read. Use a JPG, PNG or WebP under 1 MB.' });
+    }
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
       return res.status(400).json({ html: '', description: 'Describe the card you want in a few words.' });
@@ -425,7 +437,10 @@ app.post('/api/ui-design', async (req, res) => {
     }
 
     const ai = new GoogleGenAI({ apiKey: sanitizedKey });
-    const context = `Build this card: ${prompt.trim().slice(0, 600)}` +
+    const referenceNote = !reference ? '' : reference.mode === 'recreate'
+      ? '\nA reference image is attached. Recreate that card as faithfully as the allowed classes and tokens permit: same layout, hierarchy, components, content and copy (keep its language). Replace its colours with the tokens; never copy hex values. If the request text asks for changes, apply them.'
+      : '\nA reference image is attached. Use it only as inspiration (layout ideas, density, mood) and build an original card for the request with the allowed classes and tokens. If the request text asks to copy it more closely, do so.';
+    const context = `Build this card: ${prompt.trim().slice(0, 600)}` + referenceNote +
       (typeof feedback === 'string' && feedback.trim() ? `\nThe user wants this changed from the previous version: ${feedback.trim().slice(0, 400)}` : '');
 
     const decision = await decideTurn(req, context, 'design', DESIGN_RESERVED_OUTPUT_TOKENS);
@@ -439,9 +454,11 @@ app.post('/api/ui-design', async (req, res) => {
       },
       required: ['title', 'html'],
     };
-    const generate = (contents: string) => ai.models.generateContent({
+    const generate = (text: string) => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents,
+      contents: reference
+        ? [{ role: 'user', parts: [{ inlineData: { mimeType: reference.mimeType, data: reference.data } }, { text }] }]
+        : text,
       config: { systemInstruction: PIGMENTO_CARD_SYSTEM, responseMimeType: 'application/json', responseSchema: schema },
     });
 
