@@ -12,7 +12,8 @@ export const CARD_COMPONENT_REFERENCE = `
 Available classes (from playground.css):
 - Layout: .card (root, required), .row, .row.between, .col, .mt, .mt-s, .divider
 - Text: h3 (card title), p, .muted (secondary), .faint (tertiary), .sm, .xs, .stat (big number), .mono, .kbd
-- Buttons: .btn (primary), .btn.ghost, .btn.line, .btn.soft, .btn.icon, .btn.full, disabled attribute
+- Buttons: .btn (primary), .btn.soft, .btn.line, .btn.ink (strong neutral), .btn.plain (no background), .btn.ghost (neutral fill), .btn.icon, .btn.round, .btn.full, disabled attribute
+- Panel: <div class="panel">…</div> (dominant-tinted block for key facts, totals or a summary band)
 - Inputs: .lbl (label), .field (input/select/textarea), .pin > input (code digits), .drop (dropzone)
 - Toggle: <button class="tgl" role="switch" aria-checked="true" data-state="checked"> (use data-state="unchecked" when off)
 - Tags / pills: .tag, .tag.success, .tag.warning, .tag.danger, .tag.info
@@ -32,6 +33,7 @@ Available CSS variables (use ONLY these for colour):
 --bg --surface --surface-2 --input --border --border-strong
 --text --text-2 --text-3
 --accent --on-accent --accent-hover --accent-soft --on-accent-soft --accent-text --focus
+--dominant-soft --on-dominant-soft --dominant-tint (the 60% content colour: panels, bubbles, fills)
 --secondary-soft --on-secondary-soft --secondary-text (the supporting 30% colour: chips, avatars, secondary fills; .tag and .av already use it)
 --success --success-soft --on-success-soft --success-text  --warning --warning-soft --on-warning-soft --warning-text
 --danger --danger-soft --on-danger-soft --danger-text  --info --info-soft --on-info-soft --info-text
@@ -61,6 +63,11 @@ Hard rules:
 - Keep it compact: one card, roughly 8–25 lines of HTML, like the example.
 - The card has no border (the .card class is borderless by design). Don't add a border to the card unless the user explicitly asks for one.
 - Every interactive control needs an accessible name (text or aria-label).
+- Colour roles follow 60-30-10, as a guide rather than a quota. Neutrals are the canvas and take no role: the card surface, text, borders and low-emphasis controls stay neutral. Not every element needs colour or a background; leave things neutral when colour adds nothing.
+  · 10% accent: the ONE main action per card as .btn, plus links, checked switches, progress fills and the active item. Never large areas or decoration.
+  · 30% secondary: supporting pieces: .tag chips, .av avatars, .btn.soft secondary actions, chart bars, icon tiles (span.av with an svg).
+  · 60% dominant: large content areas, never controls: .hero or .photo slots, .panel blocks (a tinted band for key facts, totals, summaries), chat bubbles (.bubble.in) and drop zones.
+  · Buttons by emphasis: main action .btn; secondary .btn.soft or .btn.line; strong neutral .btn.ink (black on light, white on dark) for steppers or a high-contrast secondary; icon-only and low-emphasis actions are .btn.plain.icon with no background. Only the main CTA gets a coloured fill. Never paint colours on buttons yourself.
 - Use the semantic colours wherever the content has a state: success for done/paid/online/positive change, warning for pending/expiring/low stock, danger for errors/overdue/destructive actions, info for neutral notices/new. Reach for .tag, .note, .hint, .dot, .up/.down. The accent is for the main action and brand, not for status.
 ${CARD_COMPONENT_REFERENCE}
 Example of a good card:

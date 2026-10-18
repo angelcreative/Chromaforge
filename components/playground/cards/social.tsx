@@ -73,9 +73,9 @@ const QtyRow: React.FC<{ name: string; photo: string; price: number; initial: nu
       <Hero photo={photo} thumb orientation="square" style={{ width: 48, height: 48, flex: 'none', aspectRatio: 'auto' }} />
       <div style={{ flex: 1 }}><p className="sm"><b>{name}</b></p><p className="xs muted">€{price.toFixed(2)}</p></div>
       <div className="row" style={{ gap: 6 }}>
-        <Button variant="ghost" icon style={{ width: 28, height: 28 }} aria-label={`Remove one ${name}`} onClick={() => setQ(v => Math.max(0, v - 1))}>−</Button>
+        <Button variant="ink" icon className="round" style={{ width: 28, height: 28 }} aria-label={`Remove one ${name}`} onClick={() => setQ(v => Math.max(0, v - 1))}>−</Button>
         <b className="sm" aria-live="polite">{q}</b>
-        <Button variant="ghost" icon style={{ width: 28, height: 28 }} aria-label={`Add one ${name}`} onClick={() => setQ(v => v + 1)}>+</Button>
+        <Button variant="ink" icon className="round" style={{ width: 28, height: 28 }} aria-label={`Add one ${name}`} onClick={() => setQ(v => v + 1)}>+</Button>
       </div>
     </div>
   );
@@ -116,8 +116,8 @@ export const BoardingPassCard: React.FC = () => (
       <div><p className="iata">LIS</p><p className="xs muted">Lisbon · 07:55</p></div>
     </div>
     <div className="perf" aria-hidden />
-    <div className="row between sm">
-      <div><p className="xs muted">Gate</p><b style={{ color: 'var(--warning-text)' }}>K48</b></div><div><p className="xs muted">Seat</p><b>14A</b></div><div><p className="xs muted">Group</p><b>2</b></div><div><p className="xs muted">Boarding</p><b>07:10</b></div>
+    <div className="row between sm panel">
+      <div><p className="xs muted">Gate</p><b>K48</b></div><div><p className="xs muted">Seat</p><b>14A</b></div><div><p className="xs muted">Group</p><b>2</b></div><div><p className="xs muted">Boarding</p><b>07:10</b></div>
     </div>
     <Note tone="warning" className="mt" icon={<AlertTriangle {...sm} />}><b>Gate changed</b> from K42 to K48.</Note>
   </Card>

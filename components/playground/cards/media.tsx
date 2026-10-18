@@ -9,7 +9,7 @@ const sm = { className: 'ico s', strokeWidth: 1.8 } as const;
 const LikeButton: React.FC = () => {
   const [on, setOn] = useState(false);
   return (
-    <Button variant="ghost" icon aria-pressed={on} aria-label="Like" onClick={() => setOn(v => !v)} style={{ color: on ? 'var(--danger)' : undefined }}>
+    <Button variant="plain" icon aria-pressed={on} aria-label="Like" onClick={() => setOn(v => !v)} style={{ color: on ? 'var(--danger)' : undefined }}>
       <Heart {...ico} fill={on ? 'currentColor' : 'none'} />
     </Button>
   );
@@ -28,11 +28,11 @@ export const MusicPlayerCard: React.FC = () => {
       <Progress value={42} className="mt" />
       <div className="row between xs faint mt-s"><span>1:38</span><span>3:52</span></div>
       <div className="row mt" style={{ justifyContent: 'center', gap: 14 }}>
-        <Button variant="ghost" icon aria-label="Previous"><SkipBack {...sm} /></Button>
+        <Button variant="plain" icon aria-label="Previous"><SkipBack {...sm} /></Button>
         <Button icon aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying(v => !v)} style={{ width: 48, height: 48, borderRadius: '50%' }}>
           {playing ? <Pause {...ico} /> : <Play {...ico} />}
         </Button>
-        <Button variant="ghost" icon aria-label="Next"><SkipForward {...sm} /></Button>
+        <Button variant="plain" icon aria-label="Next"><SkipForward {...sm} /></Button>
       </div>
       <Slider.Root className="row mt" value={volume} onValueChange={setVolume} max={100} aria-label="Volume" style={{ position: 'relative', height: 20 }}>
         <Slider.Track className="bar-t" style={{ flex: 1 }}><Slider.Range asChild><i /></Slider.Range></Slider.Track>
@@ -63,8 +63,8 @@ export const SocialPostCard: React.FC = () => (
     <Hero ratio="1" photo="colorful street mural" className="mt" style={{ marginInline: -18, borderRadius: 0 }} />
     <div className="row mt">
       <LikeButton />
-      <Button variant="ghost" icon aria-label="Comment"><MessageCircle {...ico} /></Button>
-      <Button variant="ghost" icon aria-label="Share"><Share2 {...ico} /></Button>
+      <Button variant="plain" icon aria-label="Comment"><MessageCircle {...ico} /></Button>
+      <Button variant="plain" icon aria-label="Share"><Share2 {...ico} /></Button>
     </div>
     <p className="sm mt-s"><b>2,481 likes</b> · <span className="muted">New mural series in El Cabanyal</span></p>
     <p className="xs mt-s up">+312 since yesterday</p>

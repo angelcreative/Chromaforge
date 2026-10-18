@@ -19,9 +19,9 @@ import { useReduced } from '../uiMotion';
 type Role = 60 | 30 | 10;
 
 const ROLES: { role: Role; name: string; use: string }[] = [
-  { role: 60, name: 'Dominant', use: 'Large areas in cards: panels and images' },
-  { role: 30, name: 'Secondary', use: 'Chips, avatars and charts' },
-  { role: 10, name: 'Accent', use: 'Buttons, links and active states' },
+  { role: 60, name: 'Dominant', use: 'Large content areas: images, panels, bubbles' },
+  { role: 30, name: 'Secondary', use: 'Chips, avatars, soft buttons, charts' },
+  { role: 10, name: 'Accent', use: 'Main action, links, active states' },
 ];
 
 const chroma = (hex: string) => {
