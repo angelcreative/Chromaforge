@@ -82,6 +82,24 @@ const firebaseAccountFromIdToken = async (idToken: string): Promise<{ email: str
   return { email, uid: typeof localId === 'string' ? localId : null };
 };
 
+/** Turns a Gemini SDK error into a message people can act on (shared by palettes and cards). */
+const geminiErrorMessage = (error: any, fallback: string): string => {
+  const message: string = typeof error?.message === 'string' ? error.message : '';
+  if (!message) return fallback;
+  const lower = message.toLowerCase();
+  // 402: the Gemini project's prepaid balance in Google AI Studio is used up.
+  if (lower.includes('prepayment') || lower.includes('"code":402') || /\b402\b/.test(message)) {
+    console.error('[Backend] Gemini prepaid credit is depleted. Top up billing for the API_KEY project in Google AI Studio.');
+    return "Pigmento is taking a short break: the AI service has run out of credit. Your credits were not used. Please try again later.";
+  }
+  if (message.includes('API key not valid') || message.includes('400')) return 'Configuration Error (400): The API Key is invalid. Check Google Cloud Console.';
+  if (lower.includes('leaked')) return 'Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.';
+  if (message.includes('403') || lower.includes('permission denied')) return "Access Denied (403). Please enable 'Generative Language API' in Google Cloud Console for this API Key.";
+  if (message.includes('429') || lower.includes('quota')) return 'API Quota Exceeded. Please try again later.';
+  if (lower.includes('fetch') || lower.includes('network')) return 'Network Error. Please check your connection.';
+  return `System Error: ${message.slice(0, 100)}`;
+};
+
 const clientIp = (req: express.Request): string => {
   const raw = req.ip || req.socket.remoteAddress || 'unknown';
   return raw.replace(/^::ffff:/, '');
@@ -348,23 +366,7 @@ app.post('/api/palette', async (req, res) => {
   } catch (error: any) {
     console.error("[Backend] Gemini API Error:", error);
     
-    let userMessage = "I encountered an error generating the palette.";
-    
-    if (error.message) {
-      if (error.message.includes('API key not valid') || error.message.includes('400')) {
-        userMessage = "Configuration Error (400): The API Key is invalid. Check Google Cloud Console.";
-      } else if (error.message.toLowerCase().includes('leaked')) {
-        userMessage = "Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.";
-      } else if (error.message.includes('403') || error.message.includes('permission denied')) {
-        userMessage = "Access Denied (403). Please enable 'Generative Language API' in Google Cloud Console for this API Key.";
-      } else if (error.message.includes('429') || error.message.includes('quota')) {
-        userMessage = "API Quota Exceeded. Please try again later.";
-      } else if (error.message.includes('fetch') || error.message.includes('network')) {
-        userMessage = "Network Error. Please check your connection.";
-      } else {
-        userMessage = `System Error: ${error.message.slice(0, 100)}`;
-      }
-    }
+    const userMessage = geminiErrorMessage(error, 'I encountered an error generating the palette.');
     
     return res.status(500).json({ 
       name: "Error", 
@@ -503,15 +505,7 @@ app.post('/api/ui-design', async (req, res) => {
     });
   } catch (error: any) {
     console.error('[Backend] Pigmento card error:', error);
-    let userMessage = 'I encountered an error generating the card.';
-    if (error?.message) {
-      if (error.message.includes('API key not valid') || error.message.includes('400')) userMessage = 'Configuration Error (400): The API Key is invalid. Check Google Cloud Console.';
-      else if (error.message.toLowerCase().includes('leaked')) userMessage = 'Access Denied (403). Google blocked this Gemini API key because it was published. Set a new API_KEY on the server.';
-      else if (error.message.includes('403') || error.message.includes('permission denied')) userMessage = "Access Denied (403). Please enable 'Generative Language API' in Google Cloud Console for this API Key.";
-      else if (error.message.includes('429') || error.message.includes('quota')) userMessage = 'API Quota Exceeded. Please try again later.';
-      else if (error.message.includes('fetch') || error.message.includes('network')) userMessage = 'Network Error. Please check your connection.';
-      else userMessage = `System Error: ${error.message.slice(0, 100)}`;
-    }
+    const userMessage = geminiErrorMessage(error, 'I encountered an error generating the card.');
     return res.status(500).json({ html: '', description: userMessage });
   }
 });
