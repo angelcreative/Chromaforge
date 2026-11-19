@@ -1,7 +1,7 @@
 
 import { motion } from 'motion/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronDown, Heart, Plus, Upload } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, Heart, Plus, Upload } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MotionButton, enterMotion, fadeEnter, useReduced } from './components/uiMotion';
 import { Hint } from './components/Hint';
@@ -20,6 +20,7 @@ import ColorRowInput from './components/ColorRowInput';
 import ImportModal from './components/ImportModal';
 import ComposerAttach from './components/ComposerAttach';
 import DescribeHeading from './components/DescribeHeading';
+import LogoMark from './components/LogoMark';
 import GradientList from './components/GradientList';
 import { ntc } from './utils/ntc';
 // Auth & Storage Imports
@@ -45,7 +46,6 @@ import StudioTopBar from './components/StudioTopBar';
 import AccountMenu from './components/AccountMenu';
 import CopilotPanel from './components/CopilotPanel';
 import Playground, { PlaygroundHandle } from './components/playground/Playground';
-import PigmentoOrb, { PRIMARIES, PigmentoMood } from './components/pigmento/PigmentoOrb';
 import { CardReference, ReferenceMode, prepareReferenceImage } from './utils/referenceImage';
 import DotGrid from './components/DotGrid';
 
@@ -582,28 +582,6 @@ const App: React.FC = () => {
           return;
       }
       handleImport(colors);
-  };
-
-  // Pigmento is the home send button: asleep while the prompt is empty, awake
-  // (looking at the text) while typing, happy with a hop when sending, and
-  // surprised when there are no credits left. The short beat lets the face show
-  // before the view switches to the loader.
-  const [sendMood, setSendMood] = useState<PigmentoMood | null>(null);
-  const [typing, setTyping] = useState(false);
-  const typingTimer = useRef<number | null>(null);
-  const noteTyping = () => {
-      setTyping(true);
-      if (typingTimer.current !== null) window.clearTimeout(typingTimer.current);
-      typingTimer.current = window.setTimeout(() => setTyping(false), 900);
-  };
-  const sendWithPigmento = () => {
-      if (!chatInput.trim() || sendMood) return;
-      const mood: PigmentoMood = !ownerView && credits === 0 ? 'oops' : 'happy';
-      setSendMood(mood);
-      window.setTimeout(() => {
-          setSendMood(null);
-          submitHomeComposer();
-      }, reduce ? 0 : mood === 'oops' ? 900 : 480);
   };
 
   const submitHomeComposer = () => {
@@ -1194,7 +1172,7 @@ const App: React.FC = () => {
             aria-label={generatingName ? `Generating ${generatingName}` : 'Generating palette'}
           >
             <div className="flex w-full max-w-3xl items-center justify-center gap-3">
-              <PigmentoOrb className="size-14" colors={PRIMARIES} mood="thinking" />
+              <LogoMark motion="loading" className="block size-[46px] max-h-[46px] max-w-[46px] shrink-0 bg-transparent text-foreground" />
               <h1 className="min-w-0 truncate text-3xl font-medium tracking-tight text-foreground">{generatingName}</h1>
             </div>
           </div>
@@ -1211,19 +1189,19 @@ const App: React.FC = () => {
                 {creditCopy.detail}
               </p>
             )}
-            <motion.form className="mt-8" onSubmit={(e) => { e.preventDefault(); sendWithPigmento(); }} {...enterMotion(reduce)}>
+            <motion.form className="mt-8" onSubmit={(e) => { e.preventDefault(); submitHomeComposer(); }} {...enterMotion(reduce)}>
               <div className="rounded-2xl border border-border bg-card p-3 shadow-panel">
                 <textarea
                   rows={4}
                   className="max-h-48 min-h-[7rem] w-full resize-none bg-transparent px-2 py-2 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
                   placeholder="A calm brand for a coastal studio"
                   value={chatInput}
-                  onChange={(e) => { setChatInput(e.target.value); noteTyping(); }}
+                  onChange={(e) => setChatInput(e.target.value)}
                   onPaste={pasteHomeComposer}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      sendWithPigmento();
+                      submitHomeComposer();
                     }
                   }}
                   aria-label="Palette prompt"
@@ -1239,18 +1217,11 @@ const App: React.FC = () => {
                   </div>
                   <MotionButton
                     type="submit"
-                    disabled={!chatInput.trim() || !!sendMood}
-                    className="grid size-12 shrink-0 place-items-center rounded-[30%] transition-transform enabled:hover:scale-[1.05] disabled:cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+                    disabled={!chatInput.trim()}
+                    className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
                     aria-label="Send"
-                    title={chatInput.trim() ? 'Send' : undefined}
                   >
-                    <PigmentoOrb
-                      className="size-12"
-                      colors={PRIMARIES}
-                      mood={sendMood ?? (chatInput.trim() ? 'awake' : 'asleep')}
-                      gaze={typing && !sendMood ? { x: -0.85, y: -0.35 } : null}
-                      track
-                    />
+                    <ArrowUp className="size-4" strokeWidth={1.5} />
                   </MotionButton>
                 </div>
               </div>
