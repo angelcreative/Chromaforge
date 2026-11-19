@@ -11,9 +11,7 @@
    the size, a 16s spin, 7/9/11s drifts and a 4s breathe. Here the colours
    come from the user's palette instead of the brand artwork. */
 .po-orb{position:absolute;inset:7%;animation:po-breathe 4s ease-in-out infinite alternate}
-/* On dark glass the blobs need more light than Titan's free-floating orb */
-.po-spin{position:absolute;inset:0;filter:blur(8cqw) saturate(1.6) brightness(1.25);animation:po-spin 16s linear infinite}
-.po-glow{position:absolute;inset:26%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.5),transparent 70%);filter:blur(5cqw);mix-blend-mode:screen}
+.po-spin{position:absolute;inset:0;filter:blur(8cqw) saturate(1.5);animation:po-spin 16s linear infinite}
 .po-blob{position:absolute;border-radius:50%}
 .po-blob.core{inset:9%}
 .po-blob.b1{width:64%;height:64%;left:6%;top:10%;animation:po-drift1 7s ease-in-out infinite alternate}
@@ -25,10 +23,8 @@
 /* Eyes float with the orb, look around and blink. */
 .po-face{position:absolute;inset:0;display:grid;place-items:center;animation:po-bob 5s ease-in-out infinite}
 .po-eyes{display:flex;gap:8cqw;transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
-/* Plain black eyes: they read on any orb colour, light or dark */
-.po-eyes>i{display:block;width:19cqw;height:25cqw;border-radius:50%;
-  background:radial-gradient(circle at 50% 45%,#16161c 0 60%,#050507 100%);
-  box-shadow:0 0 0 .6cqw rgba(0,0,0,.18),0 1.5cqw 4cqw rgba(0,0,0,.35);transform-origin:50% 60%;transition:transform .09s ease-in}
+.po-eyes>i{display:block;width:19cqw;height:25cqw;border-radius:50%;background:#fff;
+  transform-origin:50% 60%;transition:transform .09s ease-in}
 .po[data-blink="true"] .po-eyes>i{transform:scaleY(.12)}
 /* Thinking: eyes squint a little (the orb's speed ramps up in JS, like Titan's) */
 .po[data-busy="true"] .po-eyes>i{height:20cqw}

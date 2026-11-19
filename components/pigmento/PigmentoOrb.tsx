@@ -34,8 +34,9 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
   const source = (colors || []).filter(Boolean);
   const palette = source.length >= 2 ? source.slice(0, 4) : SPECTRUM;
   const [core, c1, c2, c3] = Array.from({ length: 4 }, (_, i) => palette[i % palette.length]);
-  // Lifted towards white a little so dark palette colours still glow on the glass.
-  const lit = (color: string) => `color-mix(in oklab, ${color} 82%, white)`;
+  // Every colour is brought to a mid lightness (hue and chroma kept), so the white
+  // eyes always read: pastel palettes deepen, very dark ones lift.
+  const lit = (color: string) => `oklch(from ${color} clamp(0.55, l, 0.72) max(c, 0.04) h)`;
   const blob = (color: string) => ({ background: `radial-gradient(circle, ${lit(color)} 0%, ${lit(color)} 38%, transparent 72%)` });
 
   // Busy ramps the animations' playbackRate over 700ms (Titan's AiOrb technique),
@@ -128,7 +129,6 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
             <span className="po-blob b2" style={blob(c2)} />
             <span className="po-blob b3" style={blob(c3)} />
           </span>
-          <span className="po-glow" />
         </span>
         <span className="po-shine" />
         <span className="po-face">
