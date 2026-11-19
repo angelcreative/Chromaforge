@@ -25,9 +25,10 @@
 /* Eyes float with the orb, look around and blink. */
 .po-face{position:absolute;inset:0;display:grid;place-items:center;animation:po-bob 5s ease-in-out infinite}
 .po-eyes{display:flex;gap:8cqw;transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
+/* Black eyes with a small catchlight: they read on any orb colour, light or dark */
 .po-eyes>i{display:block;width:19cqw;height:25cqw;border-radius:50%;
-  background:radial-gradient(circle at 38% 32%,#fff 0 55%,#e9eefc 100%);
-  box-shadow:0 0 6cqw rgba(255,255,255,.55);transform-origin:50% 60%;transition:transform .09s ease-in}
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.9) 0 9%,transparent 11%),radial-gradient(circle at 50% 45%,#16161c 0 60%,#050507 100%);
+  box-shadow:0 0 0 .6cqw rgba(0,0,0,.18),0 1.5cqw 4cqw rgba(0,0,0,.35);transform-origin:50% 60%;transition:transform .09s ease-in}
 .po[data-blink="true"] .po-eyes>i{transform:scaleY(.12)}
 /* Thinking: eyes squint a little (the orb's speed ramps up in JS, like Titan's) */
 .po[data-busy="true"] .po-eyes>i{height:20cqw}
