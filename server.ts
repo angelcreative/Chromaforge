@@ -1,5 +1,5 @@
 import express from 'express';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
@@ -307,6 +307,9 @@ app.post('/api/palette', async (req, res) => {
       contents: context,
       config: {
         systemInstruction: "You are a color engine. You act as a JSON API. You strictly modify existing arrays when requested.",
+        // Gemini 3 thinks at length by default, which made palettes slow and billed
+        // the thoughts as output tokens. A palette needs only light reasoning.
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -461,7 +464,7 @@ app.post('/api/ui-design', async (req, res) => {
       contents: reference
         ? [{ role: 'user', parts: [{ inlineData: { mimeType: reference.mimeType, data: reference.data } }, { text }] }]
         : text,
-      config: { systemInstruction: PIGMENTO_CARD_SYSTEM, responseMimeType: 'application/json', responseSchema: schema },
+      config: { systemInstruction: PIGMENTO_CARD_SYSTEM, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, responseMimeType: 'application/json', responseSchema: schema },
     });
 
     const metered = await callModelIfAllowed(decision, () => generate(context));
