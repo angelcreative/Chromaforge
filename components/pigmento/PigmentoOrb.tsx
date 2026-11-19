@@ -3,8 +3,8 @@ import './pigmentoOrb.css';
 
 /** Apple-like spectrum used until there is a palette to take colours from. */
 const SPECTRUM = ['#ff4d8d', '#ffb340', '#3d8bff', '#9b5cff'];
-/** Primary red, yellow and blue: Pigmento before any palette exists (home). */
-export const PRIMARIES = ['#2563eb', '#e5383b', '#ffd60a', '#2563eb'];
+/** Pigmento's own colour before any palette exists (home): a single turquoise. */
+export const PRIMARIES = ['#19c5c8', '#19c5c8', '#19c5c8', '#19c5c8'];
 
 /**
  * awake: wanders, blinks, follows the pointer · thinking: fast colours, looks around ·
