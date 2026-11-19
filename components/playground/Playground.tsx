@@ -234,7 +234,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
           <div className="flex shrink-0 items-center gap-1.5 md:hidden">
             <MotionButton type="button" onClick={onCreateWithPigmento} aria-label="Create with Pigmento"
               className="grid size-9 place-items-center rounded-lg border border-border bg-card text-foreground">
-              <PigmentoMark className="size-6" />
+              <PigmentoMark colors={brandPalette.map(c => c.hex)} className="size-6" />
             </MotionButton>
             <MotionButton type="button" onClick={() => setSheetOpen(true)} aria-label="Playground settings" aria-haspopup="dialog"
               className="relative grid size-9 place-items-center rounded-lg border border-border bg-card text-foreground">
@@ -252,7 +252,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
             {auditButton}
             <MotionButton type="button" onClick={onCreateWithPigmento} title={`Each card uses about ${CARD_CREDITS_ESTIMATE} credits. You can keep up to ${MAX_GENERATED_CARDS}.`}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent">
-              <PigmentoMark className="size-6 -my-1" />
+              <PigmentoMark colors={brandPalette.map(c => c.hex)} className="size-6 -my-1" />
               Create with Pigmento
             </MotionButton>
           </div>
@@ -361,7 +361,7 @@ const Playground = forwardRef<PlaygroundHandle, PlaygroundProps>(({
                     ? (
                       <div key="empty" className="card" style={{ border: '1px dashed var(--border-strong)', background: 'transparent' }}>
                         <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
-                          <PigmentoMark className="size-9 shrink-0" />
+                          <PigmentoMark colors={brandPalette.map(c => c.hex)} className="size-9 shrink-0" />
                           <div>
                             <h3>No cards yet</h3>
                             <p className="sm muted mt-s">Use <b style={{ color: 'var(--text)' }}>Create with Pigmento</b> above to build your first card. Describe it in a sentence and Pigmento makes it with your tokens, status colors and photos, themed like the rest.</p>

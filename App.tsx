@@ -1467,6 +1467,7 @@ const App: React.FC = () => {
           onAttach={cardMode ? attachCardReference : undefined}
           onAttachmentMode={(mode) => setCardReference(prev => (prev ? { ...prev, mode } : prev))}
           onClearAttachment={() => setCardReference(null)}
+          orbColors={(inBuild ? customColors : workingColors).map(c => c.hex)}
           balanceLabel={ownerView ? '' : creditCopy.meter}
           balanceTitle={ownerView ? '' : creditCopy.detail}
           balanceDetail={ownerView ? '' : creditCopy.detail}
