@@ -1,13 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChromaCompanion } from './ChromaCompanion.js';
 import { AnimatePresence, motion } from 'motion/react';
 import LogoMark from '../LogoMark';
+import PigmentoOrb from './PigmentoOrb';
 import { presenceFade, useReduced } from '../uiMotion';
-
-type MarkVariant = 'positive' | 'negative';
-
-const markVariant = (): MarkVariant =>
-  document.documentElement.dataset.theme === 'dark' ? 'negative' : 'positive';
 
 interface PigmentoButtonProps {
   open: boolean;
@@ -15,40 +10,16 @@ interface PigmentoButtonProps {
   attention?: number;
   /** A reply is pending; the label stays hidden while Pigmento is in use. */
   busy?: boolean;
+  /** Palette colours for the orb. */
+  colors?: string[];
 }
 
-const PigmentoButton: React.FC<PigmentoButtonProps> = ({ open, onActivate, attention = 0, busy = false }) => {
+const PigmentoButton: React.FC<PigmentoButtonProps> = ({ open, onActivate, attention = 0, busy = false, colors }) => {
   const reduce = useReduced();
-  const hostRef = useRef<HTMLDivElement>(null);
-  const companionRef = useRef<ChromaCompanion | null>(null);
   const activateRef = useRef(onActivate);
   activateRef.current = onActivate;
   const [bouncing, setBouncing] = useState(false);
   const bounceTimer = useRef<number | null>(null);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    const companion = new (ChromaCompanion as any)(host, {
-      variant: markVariant(),
-      name: 'Pigmento',
-      onActivate: () => activateRef.current(),
-    });
-    companionRef.current = companion;
-    const root = document.documentElement;
-    const sync = () => companion.setVariant(markVariant());
-    const observer = new MutationObserver(sync);
-    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => {
-      observer.disconnect();
-      companion.dispose();
-      companionRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    companionRef.current?.canvas.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }, [open]);
 
   useEffect(() => {
     if (!attention) return;
@@ -80,10 +51,16 @@ const PigmentoButton: React.FC<PigmentoButtonProps> = ({ open, onActivate, atten
           </motion.button>
         )}
       </AnimatePresence>
-      <div
-        ref={hostRef}
-        className={`fixed bottom-4 right-4 z-50 size-16 overflow-hidden rounded-full bg-card shadow-panel focus-within:outline focus-within:outline-2 focus-within:outline-offset-[3px] focus-within:outline-[var(--ring)]${bouncing ? ' pigmento-dock-bounce' : ''}`}
-      />
+      <button
+        type="button"
+        onClick={() => activateRef.current()}
+        aria-label="Pigmento"
+        aria-expanded={open}
+        className={`fixed bottom-4 right-4 z-50 size-16 rounded-[30%] transition-transform hover:scale-[1.04] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--ring)]${bouncing ? ' pigmento-dock-bounce' : ''}`}
+      >
+        {/* With the panel open Pigmento looks up at it */}
+        <PigmentoOrb className="size-16" colors={colors} busy={busy} track={!open} gaze={open && !busy ? { x: -0.35, y: -0.8 } : null} />
+      </button>
     </>
   );
 };

@@ -199,7 +199,7 @@ const BuildPalette: React.FC<BuildPaletteProps> = ({
               onClick={onAskPigmento}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground hover:bg-accent"
             >
-              <PigmentoMark className="size-6 -my-1" />
+              <PigmentoMark colors={colors.map(c => c.hex)} className="size-6 -my-1" />
               Improve with Pigmento
             </MotionButton>
             <Popover.Root open={saveOpen} onOpenChange={setSaveOpen}>

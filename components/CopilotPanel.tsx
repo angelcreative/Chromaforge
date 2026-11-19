@@ -53,6 +53,8 @@ export interface CopilotPanelProps {
   onAttach?: (file: File) => void;
   onAttachmentMode?: (mode: ReferenceMode) => void;
   onClearAttachment?: () => void;
+  /** Palette colours for Pigmento's orb. */
+  orbColors?: string[];
 }
 
 const CopilotPanel: React.FC<CopilotPanelProps> = ({
@@ -75,6 +77,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
   onAttach,
   onAttachmentMode,
   onClearAttachment,
+  orbColors,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -267,7 +270,7 @@ const CopilotPanel: React.FC<CopilotPanelProps> = ({
       </motion.form>
     )}
     </AnimatePresence>
-    <PigmentoButton open={open} onActivate={onToggle} attention={attention} busy={loading} />
+    <PigmentoButton open={open} onActivate={onToggle} attention={attention} busy={loading} colors={orbColors} />
   </>
   );
 };
