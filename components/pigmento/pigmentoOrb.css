@@ -11,7 +11,7 @@
    the size, a 16s spin, 7/9/11s drifts and a 4s breathe. Here the colours
    come from the user's palette instead of the brand artwork. */
 .po-orb{position:absolute;inset:7%;animation:po-breathe 4s ease-in-out infinite alternate}
-.po-spin{position:absolute;inset:0;filter:blur(8cqw) saturate(1.5);animation:po-spin 16s linear infinite}
+.po-spin{position:absolute;inset:0;filter:blur(8cqw) saturate(1.5);animation:po-spin 16s linear infinite;transition:filter .6s ease}
 .po-blob{position:absolute;border-radius:50%}
 .po-blob.core{inset:9%}
 .po-blob.b1{width:64%;height:64%;left:6%;top:10%;animation:po-drift1 7s ease-in-out infinite alternate}
@@ -23,11 +23,21 @@
 /* Eyes float with the orb, look around and blink. */
 .po-face{position:absolute;inset:0;display:grid;place-items:center;animation:po-bob 5s ease-in-out infinite}
 .po-eyes{display:flex;gap:8cqw;transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
-.po-eyes>i{display:block;width:19cqw;height:25cqw;border-radius:50%;background:#fff;
-  transform-origin:50% 60%;transition:transform .09s ease-in}
+.po-eyes>i{display:block;box-sizing:border-box;width:19cqw;height:25cqw;border-radius:50%;background:#fff;border:0 solid #fff;
+  transform-origin:50% 60%;transition:transform .09s ease-in,height .25s ease,width .25s ease,border-radius .25s ease,background-color .2s ease}
 .po[data-blink="true"] .po-eyes>i{transform:scaleY(.12)}
 /* Thinking: eyes squint a little (the orb's speed ramps up in JS, like Titan's) */
-.po[data-busy="true"] .po-eyes>i{height:20cqw}
+.po[data-mood="thinking"] .po-eyes>i{height:20cqw}
+
+/* Asleep: closed eyes as soft arcs, a grey and slow orb */
+.po[data-mood="asleep"] .po-spin{filter:blur(8cqw) saturate(.12) brightness(.75)}
+.po[data-mood="asleep"] .po-eyes>i{height:9cqw;background-color:transparent;border-width:0 0 3.4cqw 0;border-radius:0 0 50% 50% / 0 0 100% 100%;transform:translateY(4cqw)}
+/* Happy (sent): eyes become ^ ^ and the orb hops, as if throwing the message */
+.po[data-mood="happy"]{animation:po-hop .5s cubic-bezier(.3,1.6,.5,1)}
+.po[data-mood="happy"] .po-spin{filter:blur(8cqw) saturate(1.8) brightness(1.15)}
+.po[data-mood="happy"] .po-eyes>i{height:10cqw;background-color:transparent;border-width:3.4cqw 0 0 0;border-radius:50% 50% 0 0 / 100% 100% 0 0}
+/* Oops (no credits): small round surprised eyes */
+.po[data-mood="oops"] .po-eyes>i{width:14cqw;height:14cqw}
 
 @keyframes po-spin{to{transform:rotate(360deg)}}
 @keyframes po-drift1{0%{transform:translate(-5%,-3%) scale(1)}100%{transform:translate(6%,5%) scale(1.08)}}
@@ -35,7 +45,9 @@
 @keyframes po-drift3{0%{transform:translate(-4%,5%) scale(.97)}100%{transform:translate(5%,-4%) scale(1.07)}}
 @keyframes po-breathe{0%{transform:scale(1)}100%{transform:scale(1.03)}}
 @keyframes po-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3cqw)}}
+@keyframes po-hop{0%{transform:none}40%{transform:translateY(-16%) scale(1.06)}100%{transform:none}}
 @media (prefers-reduced-motion:reduce){
-  .po-orb,.po-spin,.po-blob,.po-face{animation:none}
+  .po,.po-orb,.po-spin,.po-blob,.po-face{animation:none}
+  .po-eyes>i{transition:none}
   .po-eyes{transition:none}
 }

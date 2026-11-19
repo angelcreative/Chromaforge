@@ -3,13 +3,22 @@ import './pigmentoOrb.css';
 
 /** Apple-like spectrum used until there is a palette to take colours from. */
 const SPECTRUM = ['#ff4d8d', '#ffb340', '#3d8bff', '#9b5cff'];
+/** Primary red, yellow and blue: Pigmento before any palette exists (home). */
+export const PRIMARIES = ['#2563eb', '#e5383b', '#ffd60a', '#2563eb'];
+
+/**
+ * awake: wanders, blinks, follows the pointer · thinking: fast colours, looks around ·
+ * asleep: closed eyes, grey and slow · happy: ^ ^ eyes and a hop · oops: surprised eyes.
+ */
+export type PigmentoMood = 'awake' | 'thinking' | 'asleep' | 'happy' | 'oops';
 
 export interface PigmentoOrbProps {
   className?: string;
   /** Palette colours for the orb; falls back to a spectrum with fewer than two. */
   colors?: string[];
-  /** Thinking: colours speed up, eyes look up. */
+  /** Thinking: colours speed up, eyes look up. Same as mood="thinking". */
   busy?: boolean;
+  mood?: PigmentoMood;
   /** Follow the pointer with the eyes (the launcher does; small marks don't). */
   track?: boolean;
   /** Fixed gaze in -1..1 (e.g. towards an open panel); overrides wandering. */
@@ -24,7 +33,10 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
  * wander, blink and follow the pointer. Decorative: the control around it
  * carries the label.
  */
-const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors, busy = false, track = false, gaze = null }) => {
+const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors, busy = false, mood: moodProp, track = false, gaze = null }) => {
+  const mood: PigmentoMood = busy ? 'thinking' : (moodProp ?? 'awake');
+  const thinking = mood === 'thinking';
+  const lively = mood === 'awake' || thinking;
   const ref = useRef<HTMLSpanElement>(null);
   const [look, setLook] = useState({ x: 0, y: 0 });
   const [blink, setBlink] = useState(false);
@@ -45,7 +57,7 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof el.getAnimations !== 'function') return;
-    const target = busy ? 5 : 1;
+    const target = thinking ? 5 : mood === 'asleep' ? 0.3 : 1;
     const from = rate.current;
     const start = performance.now();
     let frame = 0;
@@ -59,11 +71,11 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [busy]);
+  }, [thinking, mood]);
 
   // Blink every few seconds, sometimes twice.
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || !lively) return;
     let timer = 0;
     const schedule = () => {
       timer = window.setTimeout(() => {
@@ -77,14 +89,14 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
     };
     schedule();
     return () => window.clearTimeout(timer);
-  }, [reduce]);
+  }, [reduce, lively]);
 
   // Wander: glance somewhere, sometimes back to the middle. Busy looks up and around.
   useEffect(() => {
-    if (reduce || gaze) return;
+    if (reduce || gaze || !lively) return;
     let timer = 0;
     const tick = () => {
-      if (busy) {
+      if (thinking) {
         setLook(prev => ({ x: prev.x > 0 ? -0.55 : 0.55, y: -0.75 }));
         timer = window.setTimeout(tick, 650);
         return;
@@ -96,14 +108,14 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
     };
     tick();
     return () => window.clearTimeout(timer);
-  }, [busy, gaze, reduce]);
+  }, [thinking, lively, gaze, reduce]);
 
   // Follow the pointer while it moves.
   useEffect(() => {
-    if (!track || reduce || gaze) return;
+    if (!track || reduce || gaze || mood !== 'awake') return;
     let frame = 0;
     const onMove = (event: PointerEvent) => {
-      if (busy || frame) return;
+      if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
         const rect = ref.current?.getBoundingClientRect();
@@ -116,11 +128,11 @@ const PigmentoOrb: React.FC<PigmentoOrbProps> = ({ className = 'size-16', colors
     };
     window.addEventListener('pointermove', onMove, { passive: true });
     return () => { window.removeEventListener('pointermove', onMove); window.cancelAnimationFrame(frame); };
-  }, [track, busy, gaze, reduce]);
+  }, [track, mood, gaze, reduce]);
 
-  const eye = gaze ?? look;
+  const eye = lively ? (gaze ?? look) : { x: 0, y: 0 };
   return (
-    <span ref={ref} className={`po ${className}`} data-busy={busy} data-blink={blink} aria-hidden>
+    <span ref={ref} className={`po ${className}`} data-mood={mood} data-blink={lively && blink} aria-hidden>
       <span className="po-glass">
         <span className="po-orb">
           <span className="po-spin">
